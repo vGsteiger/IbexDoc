@@ -1,11 +1,12 @@
 use std::sync::Mutex;
 use crate::constants::{KEYCHAIN_SERVICE, RECOVERY_FILENAME};
+use crate::database::DbPool;
 
 /// Application state shared across all Tauri commands.
 pub struct AppState {
     pub auth: Mutex<AuthState>,
     pub data_dir: std::path::PathBuf,
-    // db: Option<DbPool>,       // added in PKG-2
+    pub db: Mutex<Option<DbPool>>,
     // llm: Option<LlmEngine>,   // added in PKG-4
 }
 
@@ -27,7 +28,64 @@ impl AppState {
         Self {
             auth: Mutex::new(initial_state),
             data_dir,
+            db: Mutex::new(None),
         }
+    }
+
+    /// Initialize database after unlock with encryption key
+    pub fn init_db(&self, key: &[u8; 32]) -> Result<(), crate::error::AppError> {
+        let db_path = self.data_dir.join("dokassist.db");
+        let pool = crate::database::init_db(&db_path, key)?;
+
+        let mut db_lock = self.db.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string())
+            ))
+        })?;
+        *db_lock = Some(pool);
+
+        Ok(())
+    }
+
+    /// Get database connection (requires unlock)
+    pub fn get_db(&self) -> Result<DbPool, crate::error::AppError> {
+        // Check auth state first
+        let auth = self.auth.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Auth state mutex poisoned".to_string())
+            ))
+        })?;
+
+        if !matches!(*auth, AuthState::Unlocked { .. }) {
+            return Err(crate::error::AppError::AuthRequired);
+        }
+        drop(auth);
+
+        // Then get database pool
+        let db_lock = self.db.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string())
+            ))
+        })?;
+        db_lock
+            .as_ref()
+            .cloned()
+            .ok_or(crate::error::AppError::AuthRequired)
+    }
+
+    /// Clear database pool on lock
+    pub fn clear_db(&self) -> Result<(), crate::error::AppError> {
+        let mut db_lock = self.db.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string())
+            ))
+        })?;
+        *db_lock = None;
+        Ok(())
     }
 }
 

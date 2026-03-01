@@ -1,0 +1,134 @@
+use crate::error::AppError;
+use rusqlite::{Connection, OpenFlags};
+use std::path::Path;
+use std::sync::{Arc, Mutex};
+
+/// Database connection pool wrapper
+#[derive(Clone)]
+pub struct DbPool {
+    conn: Arc<Mutex<Connection>>,
+}
+
+impl DbPool {
+    /// Get a connection from the pool
+    pub fn conn(&self) -> Result<std::sync::MutexGuard<Connection>, AppError> {
+        self.conn
+            .lock()
+            .map_err(|_| AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database connection pool poisoned".to_string())
+            )))
+    }
+}
+
+/// Initialize the database with SQLCipher encryption
+/// Returns a connection pool handle
+pub fn init_db(db_path: &Path, key: &[u8; 32]) -> Result<DbPool, AppError> {
+    // Open database with SQLCipher support
+    let conn = Connection::open_with_flags(
+        db_path,
+        OpenFlags::SQLITE_OPEN_READ_WRITE
+            | OpenFlags::SQLITE_OPEN_CREATE
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )?;
+
+    // Set the encryption key (SQLCipher uses raw key mode)
+    // The key must be set before any other operations
+    let mut key_hex = hex::encode(key);
+    conn.execute(&format!("PRAGMA key = \"x'{}'\";", key_hex), [])?;
+
+    // Zeroize the key hex string
+    use zeroize::Zeroize;
+    key_hex.zeroize();
+
+    // Verify the key is correct by attempting a simple operation
+    // This will fail if the key is wrong or the database is corrupted
+    conn.query_row("SELECT count(*) FROM sqlite_master;", [], |_| Ok(()))?;
+
+    // Enable foreign keys
+    conn.execute("PRAGMA foreign_keys = ON;", [])?;
+
+    // Run migrations
+    run_migrations(&conn)?;
+
+    Ok(DbPool {
+        conn: Arc::new(Mutex::new(conn)),
+    })
+}
+
+/// Run database migrations
+fn run_migrations(conn: &Connection) -> Result<(), AppError> {
+    // Check current schema version
+    let version: i32 = conn
+        .query_row("PRAGMA user_version;", [], |row| row.get(0))?;
+
+    log::info!("Current database schema version: {}", version);
+
+    // Migration 1: Initial schema
+    if version < 1 {
+        log::info!("Running migration 001: Initial schema");
+        conn.execute_batch(include_str!("migrations/001_initial.sql"))?;
+        conn.execute("PRAGMA user_version = 1;", [])?;
+    }
+
+    log::info!("Database migrations complete");
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_db_init() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let key = crate::crypto::generate_key();
+
+        let pool = init_db(&db_path, &key).unwrap();
+        let conn = pool.conn().unwrap();
+
+        // Verify foreign keys are enabled
+        let fk_enabled: i32 = conn
+            .query_row("PRAGMA foreign_keys;", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(fk_enabled, 1);
+    }
+
+    #[test]
+    fn test_db_wrong_key() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let key1 = crate::crypto::generate_key();
+        let key2 = crate::crypto::generate_key();
+
+        // Create database with key1
+        init_db(&db_path, &key1).unwrap();
+
+        // Try to open with wrong key
+        let result = init_db(&db_path, &key2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_db_reopen_with_correct_key() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let key = crate::crypto::generate_key();
+
+        // Create database
+        let pool1 = init_db(&db_path, &key).unwrap();
+        drop(pool1);
+
+        // Reopen with same key
+        let pool2 = init_db(&db_path, &key).unwrap();
+        let conn = pool2.conn().unwrap();
+
+        // Verify we can query
+        let version: i32 = conn
+            .query_row("PRAGMA user_version;", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(version, 1);
+    }
+}
