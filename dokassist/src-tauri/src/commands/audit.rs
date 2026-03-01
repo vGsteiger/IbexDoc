@@ -18,23 +18,19 @@ pub struct QueryAuditLogRequest {
 /// This command is for administrative/settings purposes to view audit history
 #[tauri::command]
 pub async fn query_audit_log(
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
     request: QueryAuditLogRequest,
 ) -> Result<Vec<AuditEntry>, AppError> {
-    // PKG-2: When database is implemented, get connection from state
-    // For now, return empty vec as database infrastructure isn't ready yet
-    // let conn = state.db.conn()?;
+    let pool = state.get_db()?;
+    let conn = pool.conn()?;
 
-    // query_log(
-    //     &conn,
-    //     request.entity_type.as_deref(),
-    //     request.entity_id.as_deref(),
-    //     request.from.as_deref(),
-    //     request.to.as_deref(),
-    //     request.limit.unwrap_or(100),
-    //     request.offset.unwrap_or(0),
-    // )
-
-    // Temporary: return empty until PKG-2 is implemented
-    Ok(vec![])
+    query_log(
+        &conn,
+        request.entity_type.as_deref(),
+        request.entity_id.as_deref(),
+        request.from.as_deref(),
+        request.to.as_deref(),
+        request.limit.unwrap_or(100),
+        request.offset.unwrap_or(0),
+    )
 }
