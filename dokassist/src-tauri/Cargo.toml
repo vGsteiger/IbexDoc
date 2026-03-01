@@ -1,0 +1,47 @@
+[package]
+name = "dokassist"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+
+[lib]
+name = "dokassist_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Core
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+log = "0.4"
+env_logger = "0.11"
+tokio = { version = "1", features = ["full"] }
+
+# IDs and time
+uuid = { version = "1", features = ["v7"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Crypto (PKG-1)
+security-framework = "3"
+aes-gcm = "0.10"
+ring = "0.17"
+argon2 = "0.5"
+bip39 = "2"
+zeroize = { version = "1", features = ["derive"] }
+rand = "0.8"
+hex = "0.4"
+
+# Database (PKG-2)
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher", "vtab"] }
+
+# LLM (PKG-4)
+# llama_cpp = { version = "0.4", features = ["metal"] }  # uncomment in PKG-4
+reqwest = { version = "0.12", features = ["stream"] }
+
+# PDF (PKG-3)
+pdf-extract = "0.7"
