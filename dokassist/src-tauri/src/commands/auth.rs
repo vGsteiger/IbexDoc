@@ -47,6 +47,10 @@ pub async fn initialize_app(state: State<'_, AppState>) -> Result<Vec<String>, A
         fs_key: zeroize::Zeroizing::new(fs_key),
     };
 
+    // Initialize database with db_key
+    drop(auth); // Release lock before calling init_db
+    state.init_db(&db_key)?;
+
     Ok(words)
 }
 
@@ -87,6 +91,10 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
         fs_key: zeroize::Zeroizing::new(fs_key),
     };
 
+    // Initialize database with db_key
+    drop(auth); // Release lock before calling init_db
+    state.init_db(&db_key)?;
+
     Ok(true)
 }
 
@@ -118,6 +126,10 @@ pub async fn recover_app(
         db_key: zeroize::Zeroizing::new(db_key),
         fs_key: zeroize::Zeroizing::new(fs_key),
     };
+
+    // Initialize database with db_key
+    drop(auth); // Release lock before calling init_db
+    state.init_db(&db_key)?;
 
     Ok(true)
 }

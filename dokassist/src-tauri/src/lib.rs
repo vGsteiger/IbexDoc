@@ -1,6 +1,8 @@
+mod ahv;
 mod commands;
 mod constants;
 mod crypto;
+mod database;
 mod error;
 mod keychain;
 mod models;
