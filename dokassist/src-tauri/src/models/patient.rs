@@ -393,6 +393,226 @@ mod tests {
         let patients = list_patients(&conn, 10, 0).unwrap();
         assert_eq!(patients.len(), 5);
     }
+
+    // ========== SQL Injection Security Tests ==========
+
+    #[test]
+    fn test_sql_injection_in_create_first_name() {
+        let (_dir, conn) = setup_test_db();
+
+        // Attempt SQL injection via first_name field
+        let malicious_input = CreatePatient {
+            ahv_number: generate_test_ahv(999),
+            first_name: "'; DROP TABLE patients; --".to_string(),
+            last_name: "TestUser".to_string(),
+            date_of_birth: "1980-01-01".to_string(),
+            gender: None,
+            address: None,
+            phone: None,
+            email: None,
+            insurance: None,
+            gp_name: None,
+            gp_address: None,
+            notes: None,
+        };
+
+        let patient = create_patient(&conn, malicious_input).unwrap();
+
+        // Verify the malicious string was stored as literal data
+        assert_eq!(patient.first_name, "'; DROP TABLE patients; --");
+
+        // Verify table still exists by querying it
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM patients", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_sql_injection_in_update_phone() {
+        let (_dir, conn) = setup_test_db();
+
+        // Create a patient first
+        let input = CreatePatient {
+            ahv_number: generate_test_ahv(100),
+            first_name: "Test".to_string(),
+            last_name: "User".to_string(),
+            date_of_birth: "1980-01-01".to_string(),
+            gender: None,
+            address: None,
+            phone: Some("+41791234567".to_string()),
+            email: None,
+            insurance: None,
+            gp_name: None,
+            gp_address: None,
+            notes: None,
+        };
+        let patient = create_patient(&conn, input).unwrap();
+
+        // Attempt SQL injection via phone field update
+        let malicious_update = UpdatePatient {
+            phone: Some("'; DROP TABLE patients; --".to_string()),
+            ..Default::default()
+        };
+
+        let result = update_patient(&conn, &patient.id, malicious_update);
+        assert!(result.is_ok());
+
+        // Verify the malicious string was stored as literal data
+        let updated = get_patient(&conn, &patient.id).unwrap();
+        assert_eq!(updated.phone.unwrap(), "'; DROP TABLE patients; --");
+
+        // Verify table still exists (not dropped)
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM patients", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_sql_injection_in_update_multiple_fields() {
+        let (_dir, conn) = setup_test_db();
+
+        // Create a patient
+        let input = CreatePatient {
+            ahv_number: generate_test_ahv(101),
+            first_name: "Test".to_string(),
+            last_name: "User".to_string(),
+            date_of_birth: "1980-01-01".to_string(),
+            gender: None,
+            address: None,
+            phone: None,
+            email: None,
+            insurance: None,
+            gp_name: None,
+            gp_address: None,
+            notes: None,
+        };
+        let patient = create_patient(&conn, input).unwrap();
+
+        // Attempt SQL injection in multiple fields
+        let malicious_update = UpdatePatient {
+            email: Some("admin@test.com' OR '1'='1".to_string()),
+            notes: Some("'; DELETE FROM patients WHERE '1'='1".to_string()),
+            address: Some("123 Main St'; UPDATE patients SET ahv_number='000' WHERE '1'='1".to_string()),
+            ..Default::default()
+        };
+
+        let result = update_patient(&conn, &patient.id, malicious_update);
+        assert!(result.is_ok());
+
+        // Verify all malicious strings were stored as literal data
+        let updated = get_patient(&conn, &patient.id).unwrap();
+        assert_eq!(updated.email.unwrap(), "admin@test.com' OR '1'='1");
+        assert_eq!(updated.notes.unwrap(), "'; DELETE FROM patients WHERE '1'='1");
+        assert_eq!(updated.address.unwrap(), "123 Main St'; UPDATE patients SET ahv_number='000' WHERE '1'='1");
+
+        // Verify patient data unchanged (AHV still original)
+        assert_eq!(updated.ahv_number, "756.0000.0101.53"); // Original AHV
+    }
+
+    #[test]
+    fn test_sql_injection_in_notes_field() {
+        let (_dir, conn) = setup_test_db();
+
+        // Attempt SQL injection via notes field (common place for free-text)
+        let malicious_input = CreatePatient {
+            ahv_number: generate_test_ahv(102),
+            first_name: "Test".to_string(),
+            last_name: "User".to_string(),
+            date_of_birth: "1980-01-01".to_string(),
+            gender: None,
+            address: None,
+            phone: None,
+            email: None,
+            insurance: None,
+            gp_name: None,
+            gp_address: None,
+            notes: Some("Patient fine. '; DROP TABLE sessions; DROP TABLE diagnoses; --".to_string()),
+        };
+
+        let patient = create_patient(&conn, malicious_input).unwrap();
+
+        // Verify the malicious string was stored as literal data
+        assert_eq!(
+            patient.notes.unwrap(),
+            "Patient fine. '; DROP TABLE sessions; DROP TABLE diagnoses; --"
+        );
+
+        // Verify related tables still exist
+        conn.execute("SELECT COUNT(*) FROM sessions", []).unwrap();
+        conn.execute("SELECT COUNT(*) FROM diagnoses", []).unwrap();
+    }
+
+    #[test]
+    fn test_sql_injection_classic_or_bypass() {
+        let (_dir, conn) = setup_test_db();
+
+        // Create a patient
+        let input = CreatePatient {
+            ahv_number: generate_test_ahv(103),
+            first_name: "Test".to_string(),
+            last_name: "User".to_string(),
+            date_of_birth: "1980-01-01".to_string(),
+            gender: None,
+            address: None,
+            phone: None,
+            email: None,
+            insurance: None,
+            gp_name: None,
+            gp_address: None,
+            notes: None,
+        };
+        let patient = create_patient(&conn, input).unwrap();
+
+        // Attempt classic OR '1'='1 injection in update
+        let malicious_update = UpdatePatient {
+            last_name: Some("Smith' OR '1'='1".to_string()),
+            ..Default::default()
+        };
+
+        update_patient(&conn, &patient.id, malicious_update).unwrap();
+
+        // Verify only ONE patient was updated (not all due to OR condition)
+        let patients = list_patients(&conn, 100, 0).unwrap();
+        assert_eq!(patients.len(), 1);
+        assert_eq!(patients[0].last_name, "Smith' OR '1'='1"); // Stored as literal
+    }
+
+    #[test]
+    fn test_sql_injection_unicode_and_special_chars() {
+        let (_dir, conn) = setup_test_db();
+
+        // Test with various special characters and unicode
+        let malicious_input = CreatePatient {
+            ahv_number: generate_test_ahv(104),
+            first_name: "Hans\"; DROP TABLE patients; --".to_string(),
+            last_name: "Müller' OR 1=1; --".to_string(),
+            date_of_birth: "1980-01-01".to_string(),
+            gender: Some("male\x00admin".to_string()), // Null byte injection attempt
+            address: Some("Straße 123\'; DELETE FROM patients WHERE \'x\'=\'x".to_string()),
+            phone: None,
+            email: Some("test@test.com\"; UPDATE patients SET notes='hacked' WHERE \"\"=\"".to_string()),
+            insurance: None,
+            gp_name: None,
+            gp_address: None,
+            notes: Some("普通話'; DROP TABLE patients; --".to_string()), // Unicode with injection
+        };
+
+        let patient = create_patient(&conn, malicious_input).unwrap();
+
+        // Verify all strings stored as literal data
+        assert!(patient.first_name.contains("DROP TABLE"));
+        assert!(patient.last_name.contains("OR 1=1"));
+        assert!(patient.email.unwrap().contains("UPDATE patients"));
+        assert!(patient.notes.unwrap().contains("普通話"));
+
+        // Verify table still exists and intact
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM patients", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 1);
+    }
 }
 
 impl Default for UpdatePatient {

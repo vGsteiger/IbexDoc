@@ -181,20 +181,214 @@ impl LlmEngine {
 - **Key zeroization** after use (via `zeroize` crate)
 
 ### SQL Injection Prevention
-All database operations use parameterized queries:
+
+#### 3.1 Overview
+**SQL injection** occurs when untrusted user input is concatenated directly into SQL query strings, allowing attackers to:
+- Extract unauthorized data
+- Modify or delete records
+- Execute administrative operations
+- Bypass authentication
+
+**Defense**: DokAssist uses **parameterized queries (prepared statements)** exclusively, ensuring user input is always treated as data, never as SQL code.
+
+#### 3.2 Safe Patterns in Current Codebase
+
+##### Pattern 1: Static Queries with Parameters (Most Common)
+
+**All INSERT, SELECT, DELETE queries follow this pattern:**
 
 ```rust
-// GOOD (current implementation):
+// SAFE: Static query with parameterized values
 conn.execute(
-    "INSERT INTO patients (id, ahv, first_name) VALUES (?, ?, ?)",
-    params![id, ahv, first_name],
+    "INSERT INTO patients (id, ahv, first_name, last_name) VALUES (?, ?, ?, ?)",
+    params![id, ahv, first_name, last_name],
 )?;
 
-// NEVER do this:
-// let query = format!("INSERT INTO patients VALUES ('{}')", user_input);
+// SAFE: Query parameters prevent injection
+let patient = conn.query_row(
+    "SELECT * FROM patients WHERE ahv = ? AND last_name = ?",
+    params![ahv, last_name],
+    |row| { /* ... */ }
+)?;
+
+// SAFE: DELETE with parameter
+conn.execute("DELETE FROM patients WHERE id = ?", params![id])?;
 ```
 
-**Enforcement**: Code review must reject any string interpolation into SQL queries.
+**Why safe**: The SQL structure is fixed. The `?` placeholders are filled by the database driver using type-safe binding, not string concatenation. Even if `ahv` contains `' OR '1'='1`, it's treated as a literal string value, not SQL code.
+
+##### Pattern 2: Dynamic UPDATE Queries (Partial Updates)
+
+**UPDATE queries in models use dynamic column lists but remain safe:**
+
+```rust
+// In models/patient.rs, models/diagnosis.rs, etc.
+pub fn update_patient(conn: &Connection, id: &str, input: UpdatePatient) -> Result<Patient, AppError> {
+    let mut updates = Vec::new();
+    let mut values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
+    // Build column list from optional fields
+    if let Some(phone) = input.phone {
+        updates.push("phone = ?");        // Hardcoded column name
+        values.push(Box::new(phone));     // User value as parameter
+    }
+    if let Some(email) = input.email {
+        updates.push("email = ?");        // Hardcoded column name
+        values.push(Box::new(email));     // User value as parameter
+    }
+    // ... more fields ...
+
+    if updates.is_empty() {
+        return get_patient(conn, id);
+    }
+
+    // Construct query with JOIN on hardcoded column assignments
+    let query = format!("UPDATE patients SET {} WHERE id = ?", updates.join(", "));
+    values.push(Box::new(id.to_string()));
+
+    // Execute with all values as parameters
+    let params: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v.as_ref()).collect();
+    conn.execute(&query, params.as_slice())?;
+
+    get_patient(conn, id)
+}
+```
+
+**Why safe**:
+1. **Column names are hardcoded literals**: The strings `"phone = ?"`, `"email = ?"` come from the source code, not user input
+2. **Values are parameterized**: User input goes into the `values` vector and is passed via `params.as_slice()`
+3. **No user-controlled identifiers**: The `format!()` macro only concatenates hardcoded strings, not user data
+4. **Type safety**: Rust's type system ensures only valid data types can be bound to parameters
+
+**Attack scenario (fails)**:
+```rust
+// Attacker provides malicious input
+let malicious_input = UpdatePatient {
+    phone: Some("'; DROP TABLE patients; --".to_string()),
+    ..Default::default()
+};
+
+// Resulting query construction:
+// updates = ["phone = ?"]
+// values = ["'; DROP TABLE patients; --"]
+// query = "UPDATE patients SET phone = ? WHERE id = ?"
+// params = ["'; DROP TABLE patients; --", "patient-id-123"]
+
+// When executed, the database driver treats the malicious string as:
+//   SET phone = ''; DROP TABLE patients; --'   <- Literal string value
+// NOT as SQL code. The apostrophes and semicolons are escaped automatically.
+```
+
+##### Pattern 3: PRAGMA Statements (Special Case)
+
+**SQLCipher key setup uses format!() with trusted input:**
+
+```rust
+// In database.rs:38
+let key_hex = hex::encode(db_key);  // Cryptographic key, not user input
+conn.execute(&format!("PRAGMA key = \"x'{}'\";", key_hex), [])?;
+```
+
+**Why safe**:
+- `db_key` is a `[u8; 32]` from the keychain, not user-controlled
+- `hex::encode()` produces only valid hexadecimal characters `[0-9a-f]`
+- No user input reaches this code path
+- PRAGMA is executed before database decryption (wrong key fails safely)
+
+**Why format!() is used**: SQLite PRAGMA statements don't support parameterized queries for key material. This is a known limitation documented in SQLCipher.
+
+#### 3.3 Unsafe Patterns (Prohibited)
+
+**NEVER do any of the following:**
+
+```rust
+// DANGEROUS: String interpolation of user input into query
+let query = format!("SELECT * FROM patients WHERE name = '{}'", user_input);
+conn.query_row(&query, [], |row| { /* ... */ })?;
+
+// DANGEROUS: String concatenation
+let query = "SELECT * FROM patients WHERE id = '".to_string() + &user_id + "'";
+conn.query_row(&query, [], |row| { /* ... */ })?;
+
+// DANGEROUS: User-controlled table/column names
+let table = user_input;  // e.g., "patients; DROP TABLE patients; --"
+let query = format!("SELECT * FROM {}", table);
+conn.query_row(&query, [], |row| { /* ... */ })?;
+
+// DANGEROUS: Raw SQL from user input
+let user_query = request.query_string;  // Attacker-provided
+conn.execute(&user_query, [])?;
+```
+
+#### 3.4 Code Review Checklist
+
+Before merging any database-related PR, verify:
+
+- [ ] **No user input in format!() SQL strings**: Column names, table names, WHERE clause structure must be hardcoded
+- [ ] **All user values use params![] or params.as_slice()**: Check that `?` placeholders match parameter count
+- [ ] **No string concatenation for query building**: Use `format!()` only for joining hardcoded literals (like `updates.join(", ")`)
+- [ ] **No raw SQL from external sources**: Never execute query strings from user input, files, or APIs
+- [ ] **PRAGMA statements use trusted input only**: Keys, pragmas, and settings must come from application code, not users
+
+#### 3.5 Testing SQL Injection Resistance
+
+**Test cases must verify that malicious input is safely handled:**
+
+See `src-tauri/src/models/patient.rs` tests for examples:
+
+```rust
+#[test]
+fn test_sql_injection_in_update() {
+    // Attempt SQL injection via phone field
+    let malicious_input = UpdatePatient {
+        phone: Some("'; DROP TABLE patients; --".to_string()),
+        ..Default::default()
+    };
+
+    let result = update_patient(&conn, &patient_id, malicious_input);
+    assert!(result.is_ok());
+
+    // Verify the malicious string was stored as literal data
+    let updated = get_patient(&conn, &patient_id).unwrap();
+    assert_eq!(updated.phone.unwrap(), "'; DROP TABLE patients; --");
+
+    // Verify table still exists (not dropped)
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM patients", [], |row| row.get(0)).unwrap();
+    assert!(count > 0);
+}
+```
+
+#### 3.6 Enforcement Policy
+
+**Automatic enforcement:**
+- Rust's type system prevents many SQL injection patterns at compile time
+- `rusqlite` crate's `ToSql` trait ensures type-safe parameter binding
+- No raw string queries are accepted by the API
+
+**Manual enforcement:**
+- Code review must reject any `format!()` or string concatenation that includes user input in SQL context
+- Pre-commit hooks (future): Add linting rules to detect unsafe patterns
+- Security audits: Periodic review of all `.execute()` and `.query()` calls
+
+#### 3.7 Comparison: Safe vs. Unsafe Examples
+
+| Code Pattern | Status | Explanation |
+|--------------|--------|-------------|
+| `conn.execute("INSERT INTO patients (name) VALUES (?)", params![name])?` | ✅ SAFE | Parameterized value |
+| `conn.execute(&format!("UPDATE t SET {} WHERE id = ?", "col = ?"), params![val, id])?` | ✅ SAFE | format!() with hardcoded column literals |
+| `updates.push("phone = ?"); values.push(Box::new(phone));` | ✅ SAFE | Hardcoded column, parameterized value |
+| `conn.execute(&format!("PRAGMA key = \"x'{}'\";", hex_key), [])?` | ✅ SAFE | Trusted cryptographic input, not user data |
+| `conn.execute(&format!("SELECT * FROM {} WHERE id = ?", table), params![id])?` | ❌ UNSAFE | User-controlled table name |
+| `conn.execute(&format!("SELECT * FROM t WHERE name = '{}'", name), [])?` | ❌ UNSAFE | User input interpolated into query |
+| `let query = "SELECT * FROM t WHERE id = '".to_string() + &id + "'"` | ❌ UNSAFE | String concatenation with user input |
+
+**Rule of thumb**: If user input appears inside `format!()` or string concatenation for SQL, it's wrong. User input must **only** go through `params![]` or `ToSql` binding.
+
+#### 3.8 Future Considerations
+
+- **Prepared statement caching**: Reuse compiled statements for performance (rusqlite supports this)
+- **Query builder library**: Consider using a type-safe query builder like `diesel` or `sea-query` for complex queries
+- **Static analysis**: Add `cargo clippy` custom lints to detect unsafe SQL patterns automatically
 
 ---
 
