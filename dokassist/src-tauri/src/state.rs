@@ -37,7 +37,12 @@ impl AppState {
         let db_path = self.data_dir.join("dokassist.db");
         let pool = crate::database::init_db(&db_path, key)?;
 
-        let mut db_lock = self.db.lock().unwrap();
+        let mut db_lock = self.db.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string())
+            ))
+        })?;
         *db_lock = Some(pool);
 
         Ok(())
@@ -45,11 +50,42 @@ impl AppState {
 
     /// Get database connection (requires unlock)
     pub fn get_db(&self) -> Result<DbPool, crate::error::AppError> {
-        let db_lock = self.db.lock().unwrap();
+        // Check auth state first
+        let auth = self.auth.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Auth state mutex poisoned".to_string())
+            ))
+        })?;
+
+        if !matches!(*auth, AuthState::Unlocked { .. }) {
+            return Err(crate::error::AppError::AuthRequired);
+        }
+        drop(auth);
+
+        // Then get database pool
+        let db_lock = self.db.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string())
+            ))
+        })?;
         db_lock
             .as_ref()
             .cloned()
             .ok_or(crate::error::AppError::AuthRequired)
+    }
+
+    /// Clear database pool on lock
+    pub fn clear_db(&self) -> Result<(), crate::error::AppError> {
+        let mut db_lock = self.db.lock().map_err(|_| {
+            crate::error::AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string())
+            ))
+        })?;
+        *db_lock = None;
+        Ok(())
     }
 }
 

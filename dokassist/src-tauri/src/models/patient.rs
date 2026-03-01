@@ -108,14 +108,21 @@ pub fn create_patient(conn: &Connection, input: CreatePatient) -> Result<Patient
 }
 
 pub fn get_patient(conn: &Connection, id: &str) -> Result<Patient, AppError> {
-    let patient = conn.query_row(
-        "SELECT id, ahv_number, first_name, last_name, date_of_birth,
-                gender, address, phone, email, insurance, gp_name, gp_address, notes,
-                created_at, updated_at
-         FROM patients WHERE id = ?",
-        params![id],
-        row_to_patient,
-    )?;
+    let patient = conn
+        .query_row(
+            "SELECT id, ahv_number, first_name, last_name, date_of_birth,
+                    gender, address, phone, email, insurance, gp_name, gp_address, notes,
+                    created_at, updated_at
+             FROM patients WHERE id = ?",
+            params![id],
+            row_to_patient,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("Patient not found: {}", id))
+            }
+            other => AppError::from(other),
+        })?;
 
     Ok(patient)
 }
@@ -250,6 +257,29 @@ mod tests {
         (dir, conn)
     }
 
+    // Helper function to generate valid AHV numbers for testing
+    fn generate_test_ahv(index: usize) -> String {
+        // Base: 756 + 8 digits + checksum
+        let base = format!("75600000{:04}", index);
+
+        // Calculate EAN-13 checksum
+        let sum: u32 = base
+            .chars()
+            .enumerate()
+            .map(|(i, c)| {
+                let digit = c.to_digit(10).unwrap();
+                if i % 2 == 0 {
+                    digit
+                } else {
+                    digit * 3
+                }
+            })
+            .sum();
+
+        let checksum = (10 - (sum % 10)) % 10;
+        format!("{}{}", base, checksum)
+    }
+
     #[test]
     fn test_create_and_get_patient() {
         let (_dir, conn) = setup_test_db();
@@ -341,10 +371,10 @@ mod tests {
     fn test_list_patients() {
         let (_dir, conn) = setup_test_db();
 
-        // Create multiple patients
+        // Create multiple patients with valid AHV numbers
         for i in 0..5 {
             let input = CreatePatient {
-                ahv_number: format!("756000000001{}", i),
+                ahv_number: generate_test_ahv(i),
                 first_name: format!("Test{}", i),
                 last_name: format!("User{}", i),
                 date_of_birth: "1980-01-01".to_string(),

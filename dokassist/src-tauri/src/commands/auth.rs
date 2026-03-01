@@ -142,6 +142,10 @@ pub async fn lock_app(state: State<'_, AppState>) -> Result<(), AppError> {
     // Only lock if currently unlocked
     if matches!(*auth, AuthState::Unlocked { .. }) {
         *auth = AuthState::Locked;
+        drop(auth);
+
+        // Clear database pool
+        state.clear_db()?;
     }
 
     Ok(())

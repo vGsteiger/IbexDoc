@@ -70,12 +70,19 @@ pub fn create_report(conn: &Connection, input: CreateReport) -> Result<Report, A
 }
 
 pub fn get_report(conn: &Connection, id: &str) -> Result<Report, AppError> {
-    let report = conn.query_row(
-        "SELECT id, patient_id, report_type, content, generated_at, model_name, prompt_hash, session_ids, created_at
-         FROM reports WHERE id = ?",
-        params![id],
-        row_to_report,
-    )?;
+    let report = conn
+        .query_row(
+            "SELECT id, patient_id, report_type, content, generated_at, model_name, prompt_hash, session_ids, created_at
+             FROM reports WHERE id = ?",
+            params![id],
+            row_to_report,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("Report not found: {}", id))
+            }
+            other => AppError::from(other),
+        })?;
 
     Ok(report)
 }

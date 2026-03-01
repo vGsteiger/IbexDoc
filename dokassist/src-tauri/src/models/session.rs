@@ -70,13 +70,20 @@ pub fn create_session(conn: &Connection, input: CreateSession) -> Result<Session
 }
 
 pub fn get_session(conn: &Connection, id: &str) -> Result<Session, AppError> {
-    let session = conn.query_row(
-        "SELECT id, patient_id, session_date, session_type, duration_minutes, notes, amdp_data,
-                created_at, updated_at
-         FROM sessions WHERE id = ?",
-        params![id],
-        row_to_session,
-    )?;
+    let session = conn
+        .query_row(
+            "SELECT id, patient_id, session_date, session_type, duration_minutes, notes, amdp_data,
+                    created_at, updated_at
+             FROM sessions WHERE id = ?",
+            params![id],
+            row_to_session,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("Session not found: {}", id))
+            }
+            other => AppError::from(other),
+        })?;
 
     Ok(session)
 }

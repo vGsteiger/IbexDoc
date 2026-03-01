@@ -78,13 +78,20 @@ pub fn create_medication(
 }
 
 pub fn get_medication(conn: &Connection, id: &str) -> Result<Medication, AppError> {
-    let medication = conn.query_row(
-        "SELECT id, patient_id, substance, dosage, frequency, start_date, end_date, notes,
-                created_at, updated_at
-         FROM medications WHERE id = ?",
-        params![id],
-        row_to_medication,
-    )?;
+    let medication = conn
+        .query_row(
+            "SELECT id, patient_id, substance, dosage, frequency, start_date, end_date, notes,
+                    created_at, updated_at
+             FROM medications WHERE id = ?",
+            params![id],
+            row_to_medication,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("Medication not found: {}", id))
+            }
+            other => AppError::from(other),
+        })?;
 
     Ok(medication)
 }

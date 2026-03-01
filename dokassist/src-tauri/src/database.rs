@@ -14,7 +14,10 @@ impl DbPool {
     pub fn conn(&self) -> Result<std::sync::MutexGuard<Connection>, AppError> {
         self.conn
             .lock()
-            .map_err(|e| AppError::Database(rusqlite::Error::InvalidQuery))
+            .map_err(|_| AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database connection pool poisoned".to_string())
+            )))
     }
 }
 
@@ -31,12 +34,16 @@ pub fn init_db(db_path: &Path, key: &[u8; 32]) -> Result<DbPool, AppError> {
 
     // Set the encryption key (SQLCipher uses raw key mode)
     // The key must be set before any other operations
-    let key_hex = hex::encode(key);
+    let mut key_hex = hex::encode(key);
     conn.execute(&format!("PRAGMA key = \"x'{}'\";", key_hex), [])?;
+
+    // Zeroize the key hex string
+    use zeroize::Zeroize;
+    key_hex.zeroize();
 
     // Verify the key is correct by attempting a simple operation
     // This will fail if the key is wrong or the database is corrupted
-    conn.execute("SELECT count(*) FROM sqlite_master;", [])?;
+    conn.query_row("SELECT count(*) FROM sqlite_master;", [], |_| Ok(()))?;
 
     // Enable foreign keys
     conn.execute("PRAGMA foreign_keys = ON;", [])?;
@@ -53,8 +60,7 @@ pub fn init_db(db_path: &Path, key: &[u8; 32]) -> Result<DbPool, AppError> {
 fn run_migrations(conn: &Connection) -> Result<(), AppError> {
     // Check current schema version
     let version: i32 = conn
-        .query_row("PRAGMA user_version;", [], |row| row.get(0))
-        .unwrap_or(0);
+        .query_row("PRAGMA user_version;", [], |row| row.get(0))?;
 
     log::info!("Current database schema version: {}", version);
 

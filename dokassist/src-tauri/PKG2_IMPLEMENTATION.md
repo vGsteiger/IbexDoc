@@ -11,13 +11,13 @@ Implemented complete SQLCipher-encrypted database layer with full CRUD operation
 - **migrations/001_initial.sql**: Complete schema with all tables, indexes, triggers, and FTS5 virtual table
 - **ahv.rs**: Swiss AHV number validation with EAN-13 checksum algorithm
 
-### Models (All with full CRUD)
-- **models/patient.rs**: Patient entity with AHV validation
-- **models/session.rs**: Session entity for clinical visits
-- **models/diagnosis.rs**: Diagnosis entity with ICD-10 codes
-- **models/medication.rs**: Medication tracking
-- **models/report.rs**: Generated reports
-- **models/file_record.rs**: File metadata (already existed, now integrated)
+### Models
+- **models/patient.rs**: Patient entity with AHV validation (full CRUD)
+- **models/session.rs**: Session entity for clinical visits (full CRUD)
+- **models/diagnosis.rs**: Diagnosis entity with ICD-10 codes (full CRUD)
+- **models/medication.rs**: Medication tracking (full CRUD)
+- **models/report.rs**: Generated reports (full CRUD)
+- **models/file_record.rs**: File metadata struct only (CRUD in PKG-3)
 
 ### Integration
 - **state.rs**: Added DbPool to AppState with initialization methods

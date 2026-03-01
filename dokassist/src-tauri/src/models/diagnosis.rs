@@ -76,13 +76,20 @@ pub fn create_diagnosis(conn: &Connection, input: CreateDiagnosis) -> Result<Dia
 }
 
 pub fn get_diagnosis(conn: &Connection, id: &str) -> Result<Diagnosis, AppError> {
-    let diagnosis = conn.query_row(
-        "SELECT id, patient_id, icd10_code, description, status, diagnosed_date, resolved_date, notes,
-                created_at, updated_at
-         FROM diagnoses WHERE id = ?",
-        params![id],
-        row_to_diagnosis,
-    )?;
+    let diagnosis = conn
+        .query_row(
+            "SELECT id, patient_id, icd10_code, description, status, diagnosed_date, resolved_date, notes,
+                    created_at, updated_at
+             FROM diagnoses WHERE id = ?",
+            params![id],
+            row_to_diagnosis,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("Diagnosis not found: {}", id))
+            }
+            other => AppError::from(other),
+        })?;
 
     Ok(diagnosis)
 }
