@@ -5,3 +5,4 @@ pub mod sessions;
 pub mod reports;
 pub mod search;
 pub mod settings;
+pub mod llm;
