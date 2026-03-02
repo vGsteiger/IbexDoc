@@ -100,7 +100,7 @@
       <!-- Edit Mode -->
       {#if isEditing}
         <div class="bg-gray-800 rounded-lg p-6">
-          <PatientForm {patient} onsubmit={handleUpdate} oncancel={handleCancelEdit} {isSubmitting} />
+          <PatientForm {patient} on:submit={handleUpdate} on:cancel={handleCancelEdit} {isSubmitting} />
         </div>
       {:else}
         <!-- View Mode -->

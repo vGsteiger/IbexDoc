@@ -70,28 +70,31 @@
     // Format as user types
     displayValue = formatAhv(raw);
 
-    // Get plain digits for validation
+    // Get plain digits for validation and binding
     const digits = raw.replace(/\D/g, '');
 
-    // Only validate if we have enough digits
-    if (digits.length === 13) {
+    // Always update bound value with plain digits and dispatch input
+    value = digits;
+    dispatch('input', digits);
+
+    // Now validate based on the current digits
+    if (digits.length === 0) {
+      validationError = '';
+      isValid = true;
+    } else if (digits.length < 13) {
+      validationError = `Enter 13 digits (${digits.length}/13)`;
+      isValid = false;
+    } else if (digits.length === 13) {
       isValid = validateAhvChecksum(digits);
       if (!isValid) {
         validationError = 'Invalid AHV checksum';
       } else {
         validationError = '';
-        // Update bound value with plain digits
-        value = digits;
-        dispatch('input', digits);
       }
-    } else if (digits.length > 0) {
-      validationError = `Enter 13 digits (${digits.length}/13)`;
-      isValid = false;
     } else {
-      validationError = '';
-      isValid = true;
-      value = '';
-      dispatch('input', '');
+      // More than 13 digits is invalid
+      validationError = 'AHV must contain exactly 13 digits';
+      isValid = false;
     }
   }
 

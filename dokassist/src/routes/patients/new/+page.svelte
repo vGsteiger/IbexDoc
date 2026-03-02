@@ -35,7 +35,7 @@
     {/if}
 
     <div class="bg-gray-800 rounded-lg p-6">
-      <PatientForm onsubmit={handleSubmit} oncancel={handleCancel} {isSubmitting} />
+      <PatientForm on:submit={handleSubmit} on:cancel={handleCancel} {isSubmitting} />
     </div>
   </div>
 </div>
