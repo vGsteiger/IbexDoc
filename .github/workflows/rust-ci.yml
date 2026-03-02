@@ -26,6 +26,7 @@ jobs:
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
+        components: rustfmt, clippy
 
     - name: Cache cargo registry
       uses: actions/cache@v4
@@ -82,3 +83,18 @@ jobs:
       working-directory: ./dokassist/src-tauri
       run: cargo run --example test_audit
       continue-on-error: true
+
+    # Lint checks run once, reusing the compilation artifacts from above
+    - name: Run clippy
+      if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+      working-directory: ./dokassist/src-tauri
+      run: |
+        cargo clippy --all-targets --all-features -- \
+          -D warnings \
+          -A clippy::too_many_arguments \
+          -A clippy::type_complexity
+
+    - name: Check formatting
+      if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+      working-directory: ./dokassist/src-tauri
+      run: cargo fmt -- --check
