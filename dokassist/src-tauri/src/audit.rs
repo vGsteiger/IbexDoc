@@ -53,9 +53,13 @@ pub struct AuditEntry {
 /// * `details` - Optional details (field names changed, not values - no PHI)
 ///
 /// # Examples
-/// ```
+/// ```no_run
+/// use crate::audit::{self, AuditAction};
+/// # let conn = rusqlite::Connection::open_in_memory().unwrap();
+/// # let id = "patient-123";
 /// audit::log(&conn, AuditAction::View, "patient", Some(&id), None)?;
 /// audit::log(&conn, AuditAction::Update, "patient", Some(&id), Some("fields: first_name,last_name"))?;
+/// # Ok::<(), crate::error::AppError>(())
 /// ```
 pub fn log(
     conn: &Connection,
@@ -131,7 +135,7 @@ pub fn query_log(
         params.push(Box::new(to_date.to_string()));
     }
 
-    query.push_str(" ORDER BY timestamp DESC LIMIT ? OFFSET ?");
+    query.push_str(" ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?");
     params.push(Box::new(limit as i64));
     params.push(Box::new(offset as i64));
 
@@ -155,11 +159,14 @@ pub fn query_log(
 
 /// Create the audit_log table in the database
 /// This should be called during database initialization
+///
+/// Note: In production, the audit_log table is created via migrations (001_initial.sql).
+/// This function is provided for testing purposes and should match the migration schema.
 pub fn create_table(conn: &Connection) -> Result<(), AppError> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
             action TEXT NOT NULL,
             entity_type TEXT NOT NULL,
             entity_id TEXT,
@@ -168,9 +175,9 @@ pub fn create_table(conn: &Connection) -> Result<(), AppError> {
         [],
     )?;
 
-    // Create index for efficient queries
+    // Create indexes matching the migration schema
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp)",
+        "CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp DESC)",
         [],
     )?;
 

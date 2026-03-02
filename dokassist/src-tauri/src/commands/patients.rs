@@ -11,10 +11,16 @@ pub async fn create_patient(
 ) -> Result<Patient, AppError> {
     let pool = state.get_db()?;
     let conn = pool.conn()?;
-    let patient = crate::models::patient::create_patient(&conn, input)?;
 
-    // PKG-6: Audit logging
-    audit::log(&conn, AuditAction::Create, "patient", Some(&patient.id), None)?;
+    // Begin transaction to ensure atomicity
+    let tx = conn.unchecked_transaction()?;
+
+    let patient = crate::models::patient::create_patient(&tx, input)?;
+
+    // PKG-6: Audit logging (within same transaction)
+    audit::log(&tx, AuditAction::Create, "patient", Some(&patient.id), None)?;
+
+    tx.commit()?;
 
     Ok(patient)
 }
@@ -61,6 +67,9 @@ pub async fn update_patient(
     let pool = state.get_db()?;
     let conn = pool.conn()?;
 
+    // Begin transaction to ensure atomicity
+    let tx = conn.unchecked_transaction()?;
+
     // Build details string with changed field names only (no PHI values)
     let mut changed_fields = Vec::new();
     if input.first_name.is_some() { changed_fields.push("first_name"); }
@@ -76,15 +85,17 @@ pub async fn update_patient(
     if input.gp_address.is_some() { changed_fields.push("gp_address"); }
     if input.notes.is_some() { changed_fields.push("notes"); }
 
-    let patient = crate::models::patient::update_patient(&conn, &id, input)?;
+    let patient = crate::models::patient::update_patient(&tx, &id, input)?;
 
-    // PKG-6: Audit logging with field tracking
+    // PKG-6: Audit logging with field tracking (within same transaction)
     let details = if !changed_fields.is_empty() {
         Some(format!("fields: {}", changed_fields.join(",")))
     } else {
         None
     };
-    audit::log(&conn, AuditAction::Update, "patient", Some(&id), details.as_deref())?;
+    audit::log(&tx, AuditAction::Update, "patient", Some(&id), details.as_deref())?;
+
+    tx.commit()?;
 
     Ok(patient)
 }
@@ -96,10 +107,16 @@ pub async fn delete_patient(
 ) -> Result<(), AppError> {
     let pool = state.get_db()?;
     let conn = pool.conn()?;
-    crate::models::patient::delete_patient(&conn, &id)?;
 
-    // PKG-6: Audit logging
-    audit::log(&conn, AuditAction::Delete, "patient", Some(&id), None)?;
+    // Begin transaction to ensure atomicity
+    let tx = conn.unchecked_transaction()?;
+
+    crate::models::patient::delete_patient(&tx, &id)?;
+
+    // PKG-6: Audit logging (within same transaction)
+    audit::log(&tx, AuditAction::Delete, "patient", Some(&id), None)?;
+
+    tx.commit()?;
 
     Ok(())
 }
