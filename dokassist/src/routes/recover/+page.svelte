@@ -24,11 +24,18 @@
     error = null;
 
     try {
-      await recoverApp(words);
+      const recovered = await recoverApp(words);
+
+      if (!recovered) {
+        error = 'Failed to recover account';
+        return;
+      }
+
       authStatus.set('unlocked');
       goto('/patients');
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to recover account';
+    } finally {
       isRecovering = false;
     }
   }

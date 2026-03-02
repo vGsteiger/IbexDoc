@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-
-export type AuthStatus = 'first_run' | 'locked' | 'unlocked' | 'recovery_required';
+import type { AuthStatus } from './stores/auth';
 
 export async function checkAuth(): Promise<AuthStatus> {
   return await invoke<AuthStatus>('check_auth');
@@ -20,4 +19,15 @@ export async function recoverApp(words: string[]): Promise<boolean> {
 
 export async function lockApp(): Promise<void> {
   return await invoke<void>('lock_app');
+}
+
+export interface LlmEngineStatus {
+  is_loaded: boolean;
+  model_name: string | null;
+  model_path: string | null;
+  total_ram_bytes: number;
+}
+
+export async function getEngineStatus(): Promise<LlmEngineStatus> {
+  return await invoke<LlmEngineStatus>('get_engine_status');
 }

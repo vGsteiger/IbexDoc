@@ -17,7 +17,6 @@
     try {
       const mnemonic = await initializeApp();
       words = mnemonic;
-      authStatus.set('unlocked');
       isLoading = false;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to initialize app';
@@ -46,6 +45,7 @@
         return;
       }
     }
+    authStatus.set('unlocked');
     goto('/patients');
   }
 </script>

@@ -13,11 +13,18 @@
     error = null;
 
     try {
-      await unlockApp();
+      const unlocked = await unlockApp();
+
+      if (!unlocked) {
+        error = 'Failed to unlock';
+        return;
+      }
+
       authStatus.set('unlocked');
       goto('/patients');
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to unlock';
+    } finally {
       isUnlocking = false;
     }
   }

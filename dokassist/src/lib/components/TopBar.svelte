@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { getEngineStatus } from '$lib/api';
 
   let searchInput = $state<HTMLInputElement | null>(null);
   let llmStatus = $state<'loaded' | 'not_loaded'>('not_loaded');
@@ -13,12 +14,31 @@
     };
 
     window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
+
+    // Check LLM status on mount
+    updateLlmStatus();
+
+    // Poll for LLM status every 5 seconds
+    const interval = setInterval(updateLlmStatus, 5000);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+      clearInterval(interval);
+    };
   });
 
+  async function updateLlmStatus() {
+    try {
+      const status = await getEngineStatus();
+      llmStatus = status.is_loaded ? 'loaded' : 'not_loaded';
+    } catch (error) {
+      console.error('Failed to get LLM status:', error);
+      llmStatus = 'not_loaded';
+    }
+  }
+
   function handleSearch(e: Event) {
-    const target = e.target as HTMLInputElement;
-    console.log('Search:', target.value);
+    // TODO: Implement search functionality
   }
 </script>
 
