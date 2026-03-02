@@ -126,6 +126,7 @@ pub fn index_patient(conn: &Connection, patient: &Patient) -> Result<(), AppErro
 }
 
 /// Index file content (called after LLM metadata extraction)
+#[allow(clippy::too_many_arguments)]
 pub fn index_file(
     conn: &Connection,
     file_id: &str,
@@ -197,6 +198,7 @@ pub fn index_session(
 }
 
 /// Index finalized report content
+#[allow(clippy::too_many_arguments)]
 pub fn index_report(
     conn: &Connection,
     report_id: &str,

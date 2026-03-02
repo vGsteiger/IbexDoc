@@ -68,11 +68,7 @@ pub fn record_failed_attempt(data_dir: &Path) {
     let mut state = read_attempt_state(data_dir);
     state.count = state.count.saturating_add(1);
     let lockout = lockout_duration(state.count);
-    state.locked_until_secs = if lockout > 0 {
-        now_secs() + lockout
-    } else {
-        0
-    };
+    state.locked_until_secs = if lockout > 0 { now_secs() + lockout } else { 0 };
     write_attempt_state(data_dir, &state);
     log::warn!(
         "Recovery attempt {} failed. Lockout: {}s",

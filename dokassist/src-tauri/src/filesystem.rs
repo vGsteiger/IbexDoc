@@ -216,9 +216,11 @@ pub fn read_file(
         .canonicalize()
         .map_err(AppError::Filesystem)?;
     // full_path must exist for canonicalize to succeed — read errors become NotFound
-    assert_within_vault(&canonical_vault_base, &full_path).map_err(|e| match full_path.exists() {
-        false => AppError::NotFound(vault_path.to_string()),
-        true => e,
+    assert_within_vault(&canonical_vault_base, &full_path).map_err(|e| {
+        match full_path.exists() {
+            false => AppError::NotFound(vault_path.to_string()),
+            true => e,
+        }
     })?;
 
     // Read encrypted file
