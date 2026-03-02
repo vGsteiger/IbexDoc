@@ -6,12 +6,16 @@ use std::path::Path;
 ///
 /// This prevents Spotlight from indexing encrypted files in the vault directory.
 pub fn exclude_from_spotlight(dir: &Path) -> Result<(), AppError> {
-    // Ensure directory exists
+    // Ensure directory exists and is actually a directory
     if !dir.exists() {
         return Err(AppError::Filesystem(std::io::Error::new(
             std::io::ErrorKind::NotFound,
             format!("Directory does not exist: {}", dir.display()),
         )));
+    }
+
+    if !dir.is_dir() {
+        return Err(AppError::Validation(format!("Path is not a directory: {}", dir.display())));
     }
 
     // Create .metadata_never_index file (works on all macOS versions)

@@ -40,17 +40,24 @@ pub fn get_file_record(conn: &Connection, id: &str) -> Result<FileRecord, AppErr
          FROM files WHERE id = ?1"
     )?;
 
-    let record = stmt.query_row([id], |row| {
-        Ok(FileRecord {
-            id: row.get(0)?,
-            patient_id: row.get(1)?,
-            filename: row.get(2)?,
-            vault_path: row.get(3)?,
-            mime_type: row.get(4)?,
-            size_bytes: row.get(5)?,
-            created_at: row.get(6)?,
+    let record = stmt
+        .query_row([id], |row| {
+            Ok(FileRecord {
+                id: row.get(0)?,
+                patient_id: row.get(1)?,
+                filename: row.get(2)?,
+                vault_path: row.get(3)?,
+                mime_type: row.get(4)?,
+                size_bytes: row.get(5)?,
+                created_at: row.get(6)?,
+            })
         })
-    })?;
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("File record with id {} not found", id))
+            }
+            _ => e.into(),
+        })?;
 
     Ok(record)
 }
@@ -62,17 +69,24 @@ pub fn get_file_record_by_vault_path(conn: &Connection, vault_path: &str) -> Res
          FROM files WHERE vault_path = ?1"
     )?;
 
-    let record = stmt.query_row([vault_path], |row| {
-        Ok(FileRecord {
-            id: row.get(0)?,
-            patient_id: row.get(1)?,
-            filename: row.get(2)?,
-            vault_path: row.get(3)?,
-            mime_type: row.get(4)?,
-            size_bytes: row.get(5)?,
-            created_at: row.get(6)?,
+    let record = stmt
+        .query_row([vault_path], |row| {
+            Ok(FileRecord {
+                id: row.get(0)?,
+                patient_id: row.get(1)?,
+                filename: row.get(2)?,
+                vault_path: row.get(3)?,
+                mime_type: row.get(4)?,
+                size_bytes: row.get(5)?,
+                created_at: row.get(6)?,
+            })
         })
-    })?;
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound(format!("File record with vault path {} not found", vault_path))
+            }
+            _ => e.into(),
+        })?;
 
     Ok(record)
 }

@@ -34,7 +34,6 @@ pub async fn upload_file(
         &state.data_dir,
         &fs_key,
         &patient_id,
-        &filename,
         &data,
     )?;
 
@@ -43,14 +42,22 @@ pub async fn upload_file(
     let conn = db.conn()?;
     let size_bytes = data.len() as u64;
 
-    let file_record = file_record::create_file_record(
+    // If DB insert fails, clean up the vault file
+    let file_record = match file_record::create_file_record(
         &conn,
         &patient_id,
         &filename,
         &vault_path,
         &mime_type,
         size_bytes,
-    )?;
+    ) {
+        Ok(record) => record,
+        Err(e) => {
+            // Best-effort cleanup: remove the vault file if the DB insert fails
+            let _ = filesystem::delete_file(&state.data_dir, &vault_path);
+            return Err(e);
+        }
+    };
 
     Ok(file_record)
 }
@@ -58,8 +65,17 @@ pub async fn upload_file(
 #[tauri::command]
 pub async fn download_file(
     state: State<'_, AppState>,
-    vault_path: String,
+    file_id: String,
 ) -> Result<Vec<u8>, AppError> {
+    // Get file record from database to validate access and get vault_path
+    let db = state.get_db()?;
+    let conn = db.conn()?;
+    let file = file_record::get_file_record(&conn, &file_id)?;
+
+    // Release DB connection before filesystem I/O
+    drop(conn);
+    drop(db);
+
     // Get fs_key from auth state
     let auth = state.auth.lock().map_err(|_| {
         AppError::Database(rusqlite::Error::SqliteFailure(
@@ -75,7 +91,7 @@ pub async fn download_file(
     drop(auth);
 
     // Read and decrypt file from vault
-    let plaintext = filesystem::read_file(&state.data_dir, &fs_key, &vault_path)?;
+    let plaintext = filesystem::read_file(&state.data_dir, &fs_key, &file.vault_path)?;
 
     Ok(plaintext)
 }
@@ -103,13 +119,19 @@ pub async fn delete_file(
     let conn = db.conn()?;
 
     let file = file_record::get_file_record(&conn, &file_id)?;
+    let vault_path = file.vault_path.clone();
+
+    // Release DB connection before performing filesystem I/O
+    drop(conn);
+    drop(db);
 
     // Delete from vault
-    filesystem::delete_file(&state.data_dir, &file.vault_path)?;
+    filesystem::delete_file(&state.data_dir, &vault_path)?;
 
-    // Delete database record
+    // Reacquire DB connection and delete database record
+    let db = state.get_db()?;
+    let conn = db.conn()?;
     file_record::delete_file_record(&conn, &file_id)?;
 
     Ok(())
 }
-

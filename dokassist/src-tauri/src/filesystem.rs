@@ -2,12 +2,67 @@ use crate::crypto;
 use crate::error::AppError;
 use crate::spotlight;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf, Component};
 use std::time::{Duration, SystemTime};
 use uuid::Uuid;
 
 const VAULT_DIR: &str = "vault";
 const TEMP_DIR: &str = "temp";
+
+/// Validate that a path component is safe (no path traversal)
+fn validate_path_component(component: &str) -> Result<(), AppError> {
+    // Check for empty
+    if component.is_empty() {
+        return Err(AppError::Validation("Path component cannot be empty".to_string()));
+    }
+
+    // Check for absolute paths or parent directory references
+    if component.starts_with('/') || component.starts_with('\\') || component == ".." || component.contains("..") {
+        return Err(AppError::Validation(format!("Invalid path component: {}", component)));
+    }
+
+    // Validate UUID format for patient_id
+    if uuid::Uuid::parse_str(component).is_err() && !component.ends_with(".enc") {
+        return Err(AppError::Validation(format!("Invalid path component format: {}", component)));
+    }
+
+    Ok(())
+}
+
+/// Validate that a vault-relative path is safe
+fn validate_vault_path(vault_path: &str) -> Result<(), AppError> {
+    if vault_path.is_empty() {
+        return Err(AppError::Validation("Vault path cannot be empty".to_string()));
+    }
+
+    // Split into components and validate each
+    let parts: Vec<&str> = vault_path.split('/').collect();
+
+    if parts.len() != 2 {
+        return Err(AppError::Validation("Vault path must be in format patient-id/file.enc".to_string()));
+    }
+
+    // Validate patient ID component
+    if uuid::Uuid::parse_str(parts[0]).is_err() {
+        return Err(AppError::Validation(format!("Invalid patient ID in vault path: {}", parts[0])));
+    }
+
+    // Validate file component (must end with .enc)
+    if !parts[1].ends_with(".enc") {
+        return Err(AppError::Validation("File must have .enc extension".to_string()));
+    }
+
+    // Check that the path doesn't contain any dangerous components
+    let path = Path::new(vault_path);
+    for component in path.components() {
+        match component {
+            Component::Normal(_) => {},
+            _ => return Err(AppError::Validation(format!("Invalid path component in vault path: {}", vault_path))),
+        }
+    }
+
+    Ok(())
+}
 
 /// Initialize the vault directory structure. Creates ~/DokAssist/vault/ if needed.
 /// Sets .metadata_never_index and adds to Spotlight privacy list.
@@ -25,8 +80,17 @@ pub fn init_vault(base_dir: &Path) -> Result<(), AppError> {
         fs::create_dir_all(&temp_path)?;
     }
 
-    // Exclude vault from Spotlight indexing
-    spotlight::exclude_from_spotlight(&vault_path)?;
+    // Exclude both vault and temp from Spotlight indexing
+    // Check if already excluded to avoid repeated mdutil calls
+    let vault_marker = vault_path.join(".metadata_never_index");
+    if !vault_marker.exists() {
+        spotlight::exclude_from_spotlight(&vault_path)?;
+    }
+
+    let temp_marker = temp_path.join(".metadata_never_index");
+    if !temp_marker.exists() {
+        spotlight::exclude_from_spotlight(&temp_path)?;
+    }
 
     Ok(())
 }
@@ -37,9 +101,11 @@ pub fn store_file(
     base_dir: &Path,
     fs_key: &[u8; 32],
     patient_id: &str,
-    original_filename: &str,
     plaintext: &[u8],
 ) -> Result<String, AppError> {
+    // Validate patient_id to prevent path traversal
+    validate_path_component(patient_id)?;
+
     // Create patient subdirectory in vault
     let patient_vault = base_dir.join(VAULT_DIR).join(patient_id);
     if !patient_vault.exists() {
@@ -67,6 +133,9 @@ pub fn read_file(
     fs_key: &[u8; 32],
     vault_path: &str,
 ) -> Result<Vec<u8>, AppError> {
+    // Validate vault path to prevent path traversal
+    validate_vault_path(vault_path)?;
+
     let full_path = base_dir.join(VAULT_DIR).join(vault_path);
 
     // Read encrypted file
@@ -86,6 +155,9 @@ pub fn read_file(
 
 /// Delete an encrypted file from the vault.
 pub fn delete_file(base_dir: &Path, vault_path: &str) -> Result<(), AppError> {
+    // Validate vault path to prevent path traversal
+    validate_vault_path(vault_path)?;
+
     let full_path = base_dir.join(VAULT_DIR).join(vault_path);
 
     if !full_path.exists() {
@@ -212,13 +284,12 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-123";
-        let filename = "test.pdf";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let plaintext = b"This is a test file with some content.";
 
         // Store file
-        let vault_path = store_file(base_dir, &fs_key, patient_id, filename, plaintext).unwrap();
-        assert!(vault_path.contains(patient_id));
+        let vault_path = store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
+        assert!(vault_path.contains(&patient_id));
         assert!(vault_path.ends_with(".enc"));
 
         // Read file back
@@ -234,11 +305,11 @@ mod tests {
 
         let fs_key1 = crypto::generate_key();
         let fs_key2 = crypto::generate_key();
-        let patient_id = "patient-123";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let plaintext = b"Secret data";
 
         // Store with key1
-        let vault_path = store_file(base_dir, &fs_key1, patient_id, "test.txt", plaintext).unwrap();
+        let vault_path = store_file(base_dir, &fs_key1, &patient_id, plaintext).unwrap();
 
         // Try to read with key2 - should fail
         let result = read_file(base_dir, &fs_key2, &vault_path);
@@ -252,13 +323,13 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-456";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let plaintext = b"Test content";
 
-        store_file(base_dir, &fs_key, patient_id, "test.txt", plaintext).unwrap();
+        store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
 
         // Verify patient directory was created
-        assert!(base_dir.join(VAULT_DIR).join(patient_id).exists());
+        assert!(base_dir.join(VAULT_DIR).join(&patient_id).exists());
     }
 
     #[test]
@@ -268,11 +339,11 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-789";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let plaintext = b"Data to be deleted";
 
         // Store file
-        let vault_path = store_file(base_dir, &fs_key, patient_id, "delete.txt", plaintext).unwrap();
+        let vault_path = store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
         let full_path = base_dir.join(VAULT_DIR).join(&vault_path);
         assert!(full_path.exists());
 
@@ -292,7 +363,7 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let result = read_file(base_dir, &fs_key, "patient-999/nonexistent.enc");
+        let result = read_file(base_dir, &fs_key, &format!("{}/nonexistent.enc", uuid::Uuid::now_v7()));
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
     }
@@ -304,12 +375,12 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-export";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let filename = "export_test.pdf";
         let plaintext = b"Content to export";
 
         // Store file
-        let vault_path = store_file(base_dir, &fs_key, patient_id, filename, plaintext).unwrap();
+        let vault_path = store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
 
         // Export to temp
         let temp_path = export_temp(base_dir, &fs_key, &vault_path, filename).unwrap();
@@ -343,22 +414,22 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-size-test";
+        let patient_id = uuid::Uuid::now_v7().to_string();
 
         // Initially, vault size should be 0
-        let initial_size = patient_vault_size(base_dir, patient_id).unwrap();
+        let initial_size = patient_vault_size(base_dir, &patient_id).unwrap();
         assert_eq!(initial_size, 0);
 
         // Store a file
         let plaintext = b"Test data for size calculation";
-        store_file(base_dir, &fs_key, patient_id, "file1.txt", plaintext).unwrap();
+        store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
 
         // Size should be > 0 now (encrypted size may be larger due to nonce + tag)
-        let size_after_first = patient_vault_size(base_dir, patient_id).unwrap();
+        let size_after_first = patient_vault_size(base_dir, &patient_id).unwrap();
         assert!(size_after_first > 0);
 
         // Store another file
-        store_file(base_dir, &fs_key, patient_id, "file2.txt", plaintext).unwrap();
+        store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
 
         // Size should increase
         let size_after_second = patient_vault_size(base_dir, patient_id).unwrap();
@@ -372,11 +443,11 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-large";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let large_data = vec![42u8; 10 * 1024 * 1024]; // 10 MB
 
         // Store large file
-        let vault_path = store_file(base_dir, &fs_key, patient_id, "large.bin", &large_data).unwrap();
+        let vault_path = store_file(base_dir, &fs_key, &patient_id, &large_data).unwrap();
 
         // Read it back
         let decrypted = read_file(base_dir, &fs_key, &vault_path).unwrap();
@@ -398,10 +469,10 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-header-test";
+        let patient_id = uuid::Uuid::now_v7().to_string();
         let plaintext = b"This text should not be readable in the encrypted file";
 
-        let vault_path = store_file(base_dir, &fs_key, patient_id, "secret.txt", plaintext).unwrap();
+        let vault_path = store_file(base_dir, &fs_key, &patient_id, plaintext).unwrap();
         let full_path = base_dir.join(VAULT_DIR).join(&vault_path);
 
         // Read the encrypted file directly
@@ -419,12 +490,11 @@ mod tests {
         init_vault(base_dir).unwrap();
 
         let fs_key = crypto::generate_key();
-        let patient_id = "patient-dup";
-        let filename = "document.pdf";
+        let patient_id = uuid::Uuid::now_v7().to_string();
 
         // Store same filename twice
-        let path1 = store_file(base_dir, &fs_key, patient_id, filename, b"content1").unwrap();
-        let path2 = store_file(base_dir, &fs_key, patient_id, filename, b"content2").unwrap();
+        let path1 = store_file(base_dir, &fs_key, &patient_id, b"content1").unwrap();
+        let path2 = store_file(base_dir, &fs_key, &patient_id, b"content2").unwrap();
 
         // Paths should be different (UUID-based)
         assert_ne!(path1, path2);
