@@ -11,7 +11,7 @@ pub struct DbPool {
 
 impl DbPool {
     /// Get a connection from the pool
-    pub fn conn(&self) -> Result<std::sync::MutexGuard<Connection>, AppError> {
+    pub fn conn(&self) -> Result<std::sync::MutexGuard<'_, Connection>, AppError> {
         self.conn.lock().map_err(|_| {
             AppError::Database(rusqlite::Error::SqliteFailure(
                 rusqlite::ffi::Error::new(1),
