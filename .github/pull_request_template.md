@@ -17,6 +17,10 @@ Fixes # (issue)
 <!-- - feat: → minor -->
 <!-- - fix:, chore:, docs: → patch -->
 
+<!-- Automation labels: -->
+<!-- - `merge when ready` - Auto-merge PR when all checks pass -->
+<!-- - `autorelease` - Explicit marker that release is intended (informational) -->
+
 - [ ] Breaking change (major version bump)
 - [ ] New feature (minor version bump)
 - [ ] Bug fix or minor change (patch version bump)
