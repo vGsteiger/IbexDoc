@@ -33,8 +33,7 @@
   }
 
   function handleSessionClick(sessionId: string) {
-    // Navigate to session detail page (to be implemented)
-    console.log('View session:', sessionId);
+    goto(`/patients/${patientId}/sessions/${sessionId}`);
   }
 </script>
 

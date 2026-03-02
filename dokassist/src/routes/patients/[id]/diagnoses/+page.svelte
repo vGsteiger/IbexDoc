@@ -148,7 +148,13 @@
     <h1 class="text-2xl font-bold text-gray-100">Diagnosen</h1>
     <button
       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-      onclick={() => (showAddForm = !showAddForm)}
+      onclick={() => {
+        if (showAddForm) {
+          resetForm();
+        } else {
+          showAddForm = true;
+        }
+      }}
     >
       {showAddForm ? 'Abbrechen' : '+ Neue Diagnose'}
     </button>
