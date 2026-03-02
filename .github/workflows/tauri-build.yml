@@ -17,12 +17,15 @@ jobs:
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
             rust-targets: 'aarch64-apple-darwin'
+            features: '--features metal'
           - platform: 'macos-14'
             args: '--target x86_64-apple-darwin'
             rust-targets: 'x86_64-apple-darwin'
+            features: ''
           - platform: 'ubuntu-22.04'
             args: ''
             rust-targets: ''
+            features: ''
 
     runs-on: ${{ matrix.platform }}
 
@@ -80,7 +83,7 @@ jobs:
 
     - name: Build Tauri app
       working-directory: ./dokassist
-      run: pnpm tauri build ${{ matrix.args }}
+      run: pnpm tauri build ${{ matrix.args }} ${{ matrix.features }}
       env:
         TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
