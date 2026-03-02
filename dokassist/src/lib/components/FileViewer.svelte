@@ -56,12 +56,6 @@
     onClose?.();
   }
 
-  onMount(() => {
-    if (file) {
-      loadFile();
-    }
-  });
-
   onDestroy(() => {
     if (blobUrl) {
       URL.revokeObjectURL(blobUrl);

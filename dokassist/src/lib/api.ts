@@ -49,23 +49,23 @@ export async function uploadFile(
   mimeType: string,
 ): Promise<FileRecord> {
   return await invoke<FileRecord>("upload_file", {
-    patientId,
+    patient_id: patientId,
     filename,
     data,
-    mimeType,
+    mime_type: mimeType,
   });
 }
 
 export async function downloadFile(fileId: string): Promise<number[]> {
-  return await invoke<number[]>("download_file", { fileId });
+  return await invoke<number[]>("download_file", { file_id: fileId });
 }
 
 export async function listFiles(patientId: string): Promise<FileRecord[]> {
-  return await invoke<FileRecord[]>("list_files", { patientId });
+  return await invoke<FileRecord[]>("list_files", { patient_id: patientId });
 }
 
 export async function deleteFile(fileId: string): Promise<void> {
-  return await invoke<void>("delete_file", { fileId });
+  return await invoke<void>("delete_file", { file_id: fileId });
 }
 
 export interface Patient {

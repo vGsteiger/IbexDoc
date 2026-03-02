@@ -69,10 +69,8 @@
           onUpload(record);
         }
 
-        setTimeout(() => {
-          isUploading = false;
-          uploadProgress = 0;
-        }, 500);
+        isUploading = false;
+        uploadProgress = 0;
       } catch (error) {
         console.error('Upload failed:', error);
         errorMessage = `Failed to upload ${file.name}: ${error}`;
@@ -95,7 +93,6 @@
   >
     <input
       type="file"
-      id="file-input"
       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       multiple
       accept=".pdf,.png,.jpg,.jpeg,.docx"

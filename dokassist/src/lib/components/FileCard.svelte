@@ -17,8 +17,23 @@
   }
 
   function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Normalize SQLite datetime('now') format "YYYY-MM-DD HH:MM:SS" to ISO-8601
+    let normalized = dateString.replace(' ', 'T');
+    if (!normalized.endsWith('Z')) {
+      normalized += 'Z';
+    }
+
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) {
+      // Fallback: return the original string if parsing fails
+      return dateString;
+    }
+
+    return (
+      date.toLocaleDateString() +
+      ' ' +
+      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
   }
 
   function getFileIcon(mimeType: string): string {
