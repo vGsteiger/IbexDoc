@@ -10,8 +10,8 @@ on:
     - cron: '0 0 * * *'
 
 jobs:
-  cargo-audit:
-    name: Cargo Audit
+  audit:
+    name: Dependency Audit
     runs-on: ubuntu-latest
 
     steps:
@@ -27,16 +27,6 @@ jobs:
       working-directory: ./dokassist/src-tauri
       run: cargo audit --deny warnings
       continue-on-error: true  # Don't fail on advisories initially
-
-  cargo-deny:
-    name: Cargo Deny
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
 
     - name: Install cargo-deny
       run: cargo install cargo-deny
