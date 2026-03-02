@@ -40,7 +40,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install
 
     - name: Build frontend
       working-directory: ./dokassist
@@ -75,7 +75,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install
 
     - name: Run svelte-check
       working-directory: ./dokassist

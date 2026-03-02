@@ -83,7 +83,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install
 
     - name: Check formatting (Prettier)
       working-directory: ./dokassist
@@ -114,7 +114,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install
 
     - name: Run ESLint
       working-directory: ./dokassist
