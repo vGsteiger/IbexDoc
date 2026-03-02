@@ -1,6 +1,4 @@
-use crate::error::AppError;
-use crate::models::patient::{CreatePatient, UpdatePatient};
-use crate::models::{diagnosis, file_record, medication, patient, report, session};
+use crate::models::patient::{self, CreatePatient, UpdatePatient};
 use crate::{ahv, audit, crypto, database, filesystem, recovery, search};
 use tempfile::TempDir;
 
@@ -442,7 +440,7 @@ fn test_pkg5_patient_search() {
 
     // Full token match
     let results = search::search(&conn, "Müller", 10).unwrap();
-    assert!(results.len() > 0);
+    assert!(!results.is_empty());
 }
 
 #[test]
@@ -635,8 +633,6 @@ fn test_pkg6_audit_no_phi() {
 fn test_pkg4_llm_module_exists() {
     // Verify LLM module structure is accessible
     // The actual engine tests require models which are too large for CI
-    use crate::llm;
-
     // These would require actual models:
     // - llm::Engine::new()
     // - llm::Engine::load_model()
@@ -672,8 +668,6 @@ fn test_pkg4_llm_module_exists() {
 #[test]
 fn test_pkg7_auth_state_module_exists() {
     // Verify auth state module is accessible
-    use crate::state;
-
     // AppState requires runtime context for full testing
     // Manual/E2E testing required for:
     // - check_auth command
