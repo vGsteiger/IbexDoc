@@ -238,10 +238,7 @@ pub fn cleanup_exports(base_dir: &Path, max_age: Duration) -> Result<u32, AppErr
         let entry = entry?;
         let metadata = entry.metadata()?;
 
-        let is_hidden = entry
-            .file_name()
-            .to_string_lossy()
-            .starts_with('.');
+        let is_hidden = entry.file_name().to_string_lossy().starts_with('.');
         if metadata.is_file() && !is_hidden {
             if let Ok(modified) = metadata.modified() {
                 if let Ok(age) = now.duration_since(modified) {

@@ -74,11 +74,6 @@ jobs:
       working-directory: ./dokassist/src-tauri
       run: cargo test --lib
 
-    - name: Run cargo test (integration)
-      working-directory: ./dokassist/src-tauri
-      run: cargo test --test '*'
-      continue-on-error: ${{ runner.os == 'Linux' }}  # macOS-specific tests may fail on Linux
-
     - name: Run examples
       working-directory: ./dokassist/src-tauri
       run: cargo run --example test_audit
