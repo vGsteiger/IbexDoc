@@ -33,9 +33,9 @@ pub fn search(conn: &Connection, query: &str, limit: u32) -> Result<Vec<SearchRe
             patient_id,
             patient_name,
             title,
-            snippet(search_index, 4, '<mark>', '</mark>', '...', 64) as snippet,
+            snippet(search_index, 5, '<mark>', '</mark>', '...', 64) as snippet,
             date,
-            rank
+            bm25(search_index) as rank
         FROM search_index
         WHERE search_index MATCH ?1
         ORDER BY rank

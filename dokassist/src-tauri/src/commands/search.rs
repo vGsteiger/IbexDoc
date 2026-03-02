@@ -9,9 +9,8 @@ pub async fn global_search(
     query: String,
     limit: Option<u32>,
 ) -> Result<Vec<SearchResult>, AppError> {
-    let db_guard = state.db.lock().map_err(|_| AppError::Database(rusqlite::Error::InvalidQuery))?;
-    let db = db_guard.as_ref().ok_or(AppError::AuthRequired)?;
-    let conn = db.conn()?;
+    let pool = state.get_db()?;
+    let conn = pool.conn()?;
 
     search::search(&conn, &query, limit.unwrap_or(50))
 }

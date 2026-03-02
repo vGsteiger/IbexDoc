@@ -11,7 +11,7 @@ pub async fn create_patient(
     input: CreatePatient,
 ) -> Result<Patient, AppError> {
     let pool = state.get_db()?;
-    let conn = pool.conn()?;
+    let mut conn = pool.conn()?;
 
     // Begin transaction to ensure atomicity
     let tx = conn.unchecked_transaction()?;
@@ -69,7 +69,7 @@ pub async fn update_patient(
     input: UpdatePatient,
 ) -> Result<Patient, AppError> {
     let pool = state.get_db()?;
-    let conn = pool.conn()?;
+    let mut conn = pool.conn()?;
 
     // Begin transaction to ensure atomicity
     let tx = conn.unchecked_transaction()?;
