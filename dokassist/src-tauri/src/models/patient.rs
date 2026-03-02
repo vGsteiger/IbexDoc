@@ -252,7 +252,7 @@ mod tests {
         // For testing, let's create a new connection directly
         let conn = Connection::open(&db_path).unwrap();
         let key_hex = hex::encode(key);
-        conn.execute(&format!("PRAGMA key = \"x'{}'\";", key_hex), [])
+        conn.execute_batch(&format!("PRAGMA key = \"x'{}'\";", key_hex))
             .unwrap();
         (dir, conn)
     }

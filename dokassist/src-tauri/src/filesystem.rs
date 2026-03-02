@@ -241,7 +241,7 @@ pub fn cleanup_exports(base_dir: &Path, max_age: Duration) -> Result<u32, AppErr
         if metadata.is_file() {
             if let Ok(modified) = metadata.modified() {
                 if let Ok(age) = now.duration_since(modified) {
-                    if age > max_age {
+                    if age >= max_age {
                         fs::remove_file(entry.path())?;
                         cleaned_count += 1;
                     }
