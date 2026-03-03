@@ -57,7 +57,7 @@ pub async fn add_to_compendium(
     let conn = db.conn()?;
 
     // Verify the file exists
-    let file = file_record::get_file_record(&conn, &file_id)?;
+    let _file = file_record::get_file_record(&conn, &file_id)?;
 
     // Mark file as compendium
     conn.execute(

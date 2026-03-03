@@ -92,7 +92,7 @@ pub fn create_recovery(
 ) -> Result<Vec<String>, AppError> {
     // Generate 256 bits of entropy for a 24-word mnemonic
     let mut entropy = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut entropy);
+    rand::rng().fill_bytes(&mut entropy);
 
     // Create mnemonic from entropy
     let mnemonic = Mnemonic::from_entropy(&entropy)
@@ -238,7 +238,7 @@ mod tests {
 
         // Try to recover with different mnemonic
         let mut wrong_entropy = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut wrong_entropy);
+        rand::rng().fill_bytes(&mut wrong_entropy);
         let wrong_mnemonic = Mnemonic::from_entropy(&wrong_entropy).unwrap();
         let wrong_words: Vec<String> = wrong_mnemonic
             .words()
@@ -275,7 +275,7 @@ mod tests {
 
         // Generate valid mnemonic
         let mut entropy = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut entropy);
+        rand::rng().fill_bytes(&mut entropy);
         let mnemonic = Mnemonic::from_entropy(&entropy).unwrap();
         let words: Vec<String> = mnemonic.words().map(|w: &str| w.to_string()).collect();
 
