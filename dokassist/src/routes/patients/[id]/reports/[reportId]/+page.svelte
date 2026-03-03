@@ -2,8 +2,9 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { getReport, updateReport, deleteReport, type Report, type UpdateReport } from '$lib/api';
+  import { getReport, updateReport, deleteReport, exportReportToPdf, type Report, type UpdateReport } from '$lib/api';
   import ReportEditor from '$lib/components/ReportEditor.svelte';
+  import { save } from '@tauri-apps/plugin-dialog';
 
   $: patientId = $page.params.id;
   $: reportId = $page.params.reportId;
@@ -48,6 +49,28 @@
     try {
       await deleteReport(reportId);
       await goto(`/patients/${patientId}/reports`);
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  async function handleExportToPdf() {
+    if (!report) return;
+
+    try {
+      error = '';
+      const filePath = await save({
+        defaultPath: `${formatReportType(report.report_type)}_${report.generated_at.split('T')[0]}.pdf`,
+        filters: [{
+          name: 'PDF',
+          extensions: ['pdf']
+        }]
+      });
+
+      if (filePath) {
+        await exportReportToPdf(reportId, filePath);
+        alert('Report successfully exported to PDF!');
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     }
@@ -136,6 +159,12 @@
               Cancel
             </button>
           {/if}
+          <button
+            on:click={handleExportToPdf}
+            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+          >
+            Export to PDF
+          </button>
           <button
             on:click={handleDeleteReport}
             class="px-4 py-2 bg-red-900/20 text-red-400 rounded hover:bg-red-900/40 transition-colors"

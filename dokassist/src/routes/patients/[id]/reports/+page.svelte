@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
-  import { listReports, deleteReport, type Report } from '$lib/api';
+  import { listReports, deleteReport, exportReportToPdf, type Report } from '$lib/api';
+  import { save } from '@tauri-apps/plugin-dialog';
 
   $: patientId = $page.params.id;
   let reports: Report[] = [];
@@ -27,6 +28,26 @@
     try {
       await deleteReport(reportId);
       await loadReports();
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  async function handleExportToPdf(report: Report) {
+    try {
+      error = '';
+      const filePath = await save({
+        defaultPath: `${formatReportType(report.report_type)}_${report.generated_at.split('T')[0]}.pdf`,
+        filters: [{
+          name: 'PDF',
+          extensions: ['pdf']
+        }]
+      });
+
+      if (filePath) {
+        await exportReportToPdf(report.id, filePath);
+        alert('Report successfully exported to PDF!');
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     }
@@ -110,6 +131,12 @@
               >
                 View
               </a>
+              <button
+                on:click={() => handleExportToPdf(report)}
+                class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              >
+                Export PDF
+              </button>
               <button
                 on:click={() => handleDeleteReport(report.id)}
                 class="px-3 py-1 text-sm bg-red-900/20 text-red-400 rounded hover:bg-red-900/40 transition-colors"

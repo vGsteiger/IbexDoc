@@ -38,6 +38,7 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .manage(AppState::new(data_dir))
         .invoke_handler(tauri::generate_handler![
@@ -89,6 +90,7 @@ pub fn run() {
             commands::reports::list_reports,
             commands::reports::update_report,
             commands::reports::delete_report,
+            commands::reports::export_report_to_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

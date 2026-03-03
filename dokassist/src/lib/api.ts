@@ -494,6 +494,10 @@ export async function deleteReport(id: string): Promise<void> {
   return await invoke<void>("delete_report", { id });
 }
 
+export async function exportReportToPdf(id: string, outputPath: string): Promise<void> {
+  return await invoke<void>("export_report_to_pdf", { id, output_path: outputPath });
+}
+
 export async function generateReport(
   patientContext: string,
   reportType: string,
