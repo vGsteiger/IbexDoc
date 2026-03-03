@@ -121,10 +121,10 @@ pub async fn export_report_to_pdf(
 
     // Load a standard font
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| {
-        AppError::Internal(format!("Failed to load font: {}", e))
+        std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to load font: {}", e))
     })?;
     let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).map_err(|e| {
-        AppError::Internal(format!("Failed to load font: {}", e))
+        std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to load font: {}", e))
     })?;
 
     // Set initial position
@@ -282,12 +282,10 @@ pub async fn export_report_to_pdf(
     }
 
     // Save PDF
-    let file = File::create(&output_path).map_err(|e| {
-        AppError::Internal(format!("Failed to create PDF file: {}", e))
-    })?;
+    let file = File::create(&output_path)?;
     let mut buf_writer = BufWriter::new(file);
     doc.save(&mut buf_writer).map_err(|e| {
-        AppError::Internal(format!("Failed to save PDF: {}", e))
+        std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to save PDF: {}", e))
     })?;
 
     // PKG-6: Audit logging
