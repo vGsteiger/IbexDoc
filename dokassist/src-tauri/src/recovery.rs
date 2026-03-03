@@ -1,7 +1,7 @@
 use crate::crypto;
 use crate::error::AppError;
 use bip39::{Language, Mnemonic};
-use rand::RngCore;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;

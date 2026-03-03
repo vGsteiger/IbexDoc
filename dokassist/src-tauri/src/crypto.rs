@@ -3,7 +3,7 @@ use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
 };
-use rand::RngCore;
+use rand::Rng;
 
 /// Generate a cryptographically random 256-bit key
 pub fn generate_key() -> [u8; 32] {
