@@ -2,7 +2,7 @@ use crate::constants::{KEYCHAIN_SERVICE, RECOVERY_ATTEMPTS_ACCOUNT};
 use crate::error::AppError;
 use crate::keychain;
 use bip39::{Language, Mnemonic};
-use rand::RngCore;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -119,7 +119,7 @@ pub fn create_recovery(
 ) -> Result<(Vec<String>, [u8; 32], [u8; 32]), AppError> {
     // Generate 256 bits of entropy for a 24-word mnemonic
     let mut entropy = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut entropy);
+    rand::rng().fill(&mut entropy);
 
     // Create mnemonic from entropy
     let mnemonic = Mnemonic::from_entropy(&entropy)
@@ -230,7 +230,7 @@ mod tests {
 
         // Build a different valid mnemonic
         let mut wrong_entropy = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut wrong_entropy);
+        rand::rng().fill(&mut wrong_entropy);
         let wrong_mnemonic = bip39::Mnemonic::from_entropy(&wrong_entropy).unwrap();
         let wrong_words: Vec<String> = wrong_mnemonic
             .words()
@@ -266,7 +266,7 @@ mod tests {
 
         // Generate valid mnemonic
         let mut entropy = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut entropy);
+        rand::rng().fill(&mut entropy);
         let mnemonic = bip39::Mnemonic::from_entropy(&entropy).unwrap();
         let words: Vec<String> = mnemonic.words().map(|w: &str| w.to_string()).collect();
 
@@ -286,7 +286,7 @@ mod tests {
 
         // Generate valid mnemonic
         let mut entropy = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut entropy);
+        rand::rng().fill(&mut entropy);
         let mnemonic = bip39::Mnemonic::from_entropy(&entropy).unwrap();
         let words: Vec<String> = mnemonic.words().map(|w: &str| w.to_string()).collect();
 

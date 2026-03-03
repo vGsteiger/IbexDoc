@@ -20,7 +20,7 @@ extern "C" {
     static kSecAttrAccessible: core_foundation_sys::string::CFStringRef;
 }
 #[cfg(target_os = "macos")]
-use security_framework_sys::keychain_item::{SecItemAdd, SecItemCopyMatching};
+use security_framework_sys::keychain_item::{SecItemAdd, SecItemCopyMatching, SecItemDelete};
 #[cfg(target_os = "macos")]
 use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
 #[cfg(target_os = "macos")]
@@ -43,8 +43,25 @@ use core_foundation::string::CFString;
 /// Apple Developer ID signing identity is in place.
 #[cfg(target_os = "macos")]
 pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppError> {
-    // Delete any existing item first.
-    let _ = delete_generic_password(service, account);
+    // Delete any existing item first using a raw SecItemDelete query so we match
+    // items regardless of how they were originally stored (the high-level
+    // delete_generic_password builds a different query and can miss items stored
+    // via SecItemAdd with kSecAttrAccessibleWhenUnlockedThisDeviceOnly).
+    let del_query = CFDictionary::<CFString, _>::from_CFType_pairs(&[
+        (
+            unsafe { CFString::wrap_under_get_rule(kSecClass) },
+            unsafe { CFString::wrap_under_get_rule(kSecClassGenericPassword) }.as_CFType(),
+        ),
+        (
+            unsafe { CFString::wrap_under_get_rule(kSecAttrService) },
+            CFString::new(service).as_CFType(),
+        ),
+        (
+            unsafe { CFString::wrap_under_get_rule(kSecAttrAccount) },
+            CFString::new(account).as_CFType(),
+        ),
+    ]);
+    unsafe { SecItemDelete(del_query.as_concrete_TypeRef()) };
 
     let dict = CFDictionary::<CFString, _>::from_CFType_pairs(&[
         (
