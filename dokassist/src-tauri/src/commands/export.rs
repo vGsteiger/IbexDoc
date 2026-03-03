@@ -103,7 +103,10 @@ fn export_patient_to_zip<W: Write + std::io::Seek>(
     patient: &patient::Patient,
     options: SimpleFileOptions,
 ) -> Result<(), AppError> {
-    let patient_dir = format!("patient_{}_{}", patient.last_name, patient.first_name);
+    // Sanitize patient name for directory name
+    let safe_last_name = sanitize_filename(&patient.last_name);
+    let safe_first_name = sanitize_filename(&patient.first_name);
+    let patient_dir = format!("patient_{}_{}", safe_last_name, safe_first_name);
     let patient_id = &patient.id;
 
     // Gather all related data (using large limits to get all records)
@@ -157,4 +160,15 @@ fn export_patient_to_zip<W: Write + std::io::Seek>(
     }
 
     Ok(())
+}
+
+/// Sanitize a filename to make it safe for ZIP paths
+fn sanitize_filename(filename: &str) -> String {
+    filename
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            _ => c,
+        })
+        .collect()
 }

@@ -13,8 +13,6 @@
     type LlmEngineStatus,
     type ModelChoice,
   } from '$lib/api';
-  import { save } from '@tauri-apps/plugin-dialog';
-  import { writeFile } from '@tauri-apps/plugin-fs';
 
   let status = $state<LlmEngineStatus | null>(null);
   let recommended = $state<ModelChoice | null>(null);
@@ -95,23 +93,20 @@
     try {
       const zipData = await exportAllPatientData();
 
-      // Prompt user to save the file
+      // Create a blob and trigger download
+      const blob = new Blob([new Uint8Array(zipData)], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
       const timestamp = new Date().toISOString().split('T')[0];
-      const filePath = await save({
-        filters: [{
-          name: 'ZIP Archive',
-          extensions: ['zip']
-        }],
-        defaultPath: `dokassist_export_${timestamp}.zip`
-      });
+      a.download = `dokassist_export_${timestamp}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-      if (filePath) {
-        // Convert number[] to Uint8Array
-        const uint8Array = new Uint8Array(zipData);
-        await writeFile(filePath, uint8Array);
-        exportSuccess = true;
-        showExportConfirm = false;
-      }
+      exportSuccess = true;
+      showExportConfirm = false;
     } catch (e) {
       exportError = parseError(e).message;
     } finally {
