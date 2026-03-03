@@ -220,6 +220,9 @@ pub async fn export_report_to_pdf(
     let max_chars_per_line = 90;
     let content_lines: Vec<&str> = report.content.lines().collect();
 
+    let mut current_page = page1;
+    let mut current_page_layer = layer1;
+
     for line in content_lines {
         if line.trim().is_empty() {
             current_y = current_y - line_height * 0.5;
@@ -233,26 +236,20 @@ pub async fn export_report_to_pdf(
                 // Print current line and start new one
                 if current_y < Mm(30.0) {
                     // Need new page
-                    let (page, layer) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
-                    let current_layer = doc.get_page(page).get_layer(layer);
+                    let (new_page, new_layer) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
+                    current_page = new_page;
+                    current_page_layer = new_layer;
                     current_y = Mm(270.0);
-
-                    current_layer.use_text(
-                        &current_line,
-                        10.0,
-                        left_margin,
-                        current_y,
-                        &font
-                    );
-                } else {
-                    current_layer.use_text(
-                        &current_line,
-                        10.0,
-                        left_margin,
-                        current_y,
-                        &font
-                    );
                 }
+
+                let layer_ref = doc.get_page(current_page).get_layer(current_page_layer);
+                layer_ref.use_text(
+                    &current_line,
+                    10.0,
+                    left_margin,
+                    current_y,
+                    &font
+                );
                 current_y = current_y - line_height;
                 current_line = word.to_string();
             } else {
@@ -266,26 +263,20 @@ pub async fn export_report_to_pdf(
         // Print remaining text
         if !current_line.is_empty() {
             if current_y < Mm(30.0) {
-                let (page, layer) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
-                let current_layer = doc.get_page(page).get_layer(layer);
+                let (new_page, new_layer) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
+                current_page = new_page;
+                current_page_layer = new_layer;
                 current_y = Mm(270.0);
-
-                current_layer.use_text(
-                    &current_line,
-                    10.0,
-                    left_margin,
-                    current_y,
-                    &font
-                );
-            } else {
-                current_layer.use_text(
-                    &current_line,
-                    10.0,
-                    left_margin,
-                    current_y,
-                    &font
-                );
             }
+
+            let layer_ref = doc.get_page(current_page).get_layer(current_page_layer);
+            layer_ref.use_text(
+                &current_line,
+                10.0,
+                left_margin,
+                current_y,
+                &font
+            );
             current_y = current_y - line_height;
         }
     }
@@ -294,7 +285,7 @@ pub async fn export_report_to_pdf(
     let file = File::create(&output_path).map_err(|e| {
         AppError::Internal(format!("Failed to create PDF file: {}", e))
     })?;
-    let buf_writer = BufWriter::new(file);
+    let mut buf_writer = BufWriter::new(file);
     doc.save(&mut buf_writer).map_err(|e| {
         AppError::Internal(format!("Failed to save PDF: {}", e))
     })?;
