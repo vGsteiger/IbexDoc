@@ -542,3 +542,11 @@ export async function installUpdate(): Promise<void> {
 export async function getAppVersion(): Promise<string> {
   return await invoke<string>("get_app_version");
 }
+
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
+
+export async function exportAllPatientData(): Promise<number[]> {
+  return await invoke<number[]>("export_all_patient_data");
+}

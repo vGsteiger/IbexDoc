@@ -94,6 +94,7 @@ pub fn run() {
             commands::updater::check_for_updates,
             commands::updater::install_update,
             commands::updater::get_app_version,
+            commands::export::export_all_patient_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
