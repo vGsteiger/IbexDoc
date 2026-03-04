@@ -177,6 +177,75 @@ impl LlmEngine {
         }
     }
 
+    /// Run blocking inference from a pre-formatted prompt string (full ChatML).
+    /// Like `generate_streaming` but bypasses `format_chatml` so callers can
+    /// pass multi-turn history they have built themselves.
+    pub fn generate_streaming_raw(
+        &self,
+        prompt: &str,
+        max_tokens: usize,
+        temperature: f32,
+        mut on_token: impl FnMut(&str) -> bool,
+    ) -> Result<(), AppError> {
+        let model = self
+            .model
+            .as_ref()
+            .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
+
+        let tokens = model
+            .str_to_token(prompt, AddBos::Always)
+            .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
+
+        let ctx_params = LlamaContextParams::default().with_n_ctx(NonZeroU32::new(4096));
+        let mut ctx = model
+            .new_context(&self.backend, ctx_params)
+            .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
+
+        let n_prompt = tokens.len();
+        let mut batch = LlamaBatch::new(4096, 1);
+        batch
+            .add_sequence(&tokens, 0, false)
+            .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
+        ctx.decode(&mut batch)
+            .map_err(|e| AppError::Llm(format!("Failed to decode prompt: {e}")))?;
+
+        let mut sampler = LlamaSampler::chain_simple([
+            LlamaSampler::temp(temperature),
+            LlamaSampler::top_k(40),
+            LlamaSampler::top_p(0.9, 1),
+            LlamaSampler::dist(0),
+        ]);
+
+        let mut utf8_dec = UTF_8.new_decoder();
+        let mut n_cur = n_prompt as i32;
+
+        for _ in 0..max_tokens {
+            let token = sampler.sample(&ctx, -1);
+            sampler.accept(token);
+
+            if model.is_eog_token(token) {
+                break;
+            }
+
+            let piece = model
+                .token_to_piece(token, &mut utf8_dec, false, None)
+                .map_err(|e| AppError::Llm(format!("Token decode failed: {e}")))?;
+
+            if !on_token(&piece) {
+                break;
+            }
+
+            batch.clear();
+            batch
+                .add(token, n_cur, &[0], true)
+                .map_err(|e| AppError::Llm(format!("Failed to add token: {e}")))?;
+            ctx.decode(&mut batch)
+                .map_err(|e| AppError::Llm(format!("Failed to decode token: {e}")))?;
+            n_cur += 1;
+        }
+        Ok(())
+    }
+
     pub fn is_ready(&self) -> bool {
         self.model.is_some()
     }
@@ -240,4 +309,31 @@ fn format_chatml(system_prompt: &str, user_message: &str) -> String {
         "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
         system_prompt, user_message,
     )
+}
+
+/// A message in an agent conversation history.
+#[derive(Debug, Clone)]
+pub struct AgentMessage {
+    pub role: String,
+    pub content: String,
+}
+
+/// Format a multi-turn conversation as a ChatML prompt.
+/// `role` values: "user", "assistant", "tool_call", "tool_result"
+/// Tool call/result messages are rendered as assistant/user turns.
+pub fn format_chatml_history(system_prompt: &str, messages: &[AgentMessage]) -> String {
+    let mut out = format!("<|im_start|>system\n{}<|im_end|>\n", system_prompt);
+    for msg in messages {
+        let chatml_role = match msg.role.as_str() {
+            "tool_call" => "assistant",
+            "tool_result" => "user",
+            other => other,
+        };
+        out.push_str(&format!(
+            "<|im_start|>{}\n{}<|im_end|>\n",
+            chatml_role, msg.content
+        ));
+    }
+    out.push_str("<|im_start|>assistant\n");
+    out
 }

@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod auth;
+pub mod chat;
 pub mod diagnoses;
 pub mod files;
 pub mod llm;
