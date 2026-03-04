@@ -43,10 +43,30 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, AppError> {
                 })
             }
             Err(e) => {
-                log::error!("Failed to check for updates: {}", e);
+                let msg = e.to_string();
+                // A 404 / missing manifest means no release has been published yet.
+                // Treat it as "up to date" rather than surfacing a confusing error.
+                if msg.contains("fetch")
+                    || msg.contains("404")
+                    || msg.contains("release JSON")
+                    || msg.contains("status code")
+                {
+                    log::info!(
+                        "Updater manifest not available ({}), treating as up to date",
+                        msg
+                    );
+                    return Ok(UpdateInfo {
+                        current_version,
+                        latest_version: None,
+                        update_available: false,
+                        body: None,
+                        date: None,
+                    });
+                }
+                log::error!("Failed to check for updates: {}", msg);
                 Err(AppError::Update(format!(
                     "Failed to check for updates: {}",
-                    e
+                    msg
                 )))
             }
         },

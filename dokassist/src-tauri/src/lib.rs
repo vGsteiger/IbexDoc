@@ -97,6 +97,13 @@ pub fn run() {
             commands::updater::check_for_updates,
             commands::updater::install_update,
             commands::updater::get_app_version,
+            commands::chat::run_agent_turn,
+            commands::chat::create_chat_session,
+            commands::chat::get_or_create_patient_chat_session,
+            commands::chat::list_chat_sessions,
+            commands::chat::delete_chat_session,
+            commands::chat::get_chat_messages,
+            commands::chat::rename_chat_session,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
