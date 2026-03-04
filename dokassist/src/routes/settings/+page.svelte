@@ -29,7 +29,6 @@
   let appVersion = $state("");
 
   // Update state
-  let appVersion = $state<string>("");
   let updateInfo = $state<UpdateInfo | null>(null);
   let checkingUpdate = $state(false);
   let installingUpdate = $state(false);
