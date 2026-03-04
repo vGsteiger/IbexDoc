@@ -92,6 +92,13 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute("PRAGMA user_version = 3;", [])?;
     }
 
+    // Migration 4: Chat sessions and messages tables
+    if version < 4 {
+        log::info!("Running migration 004: Chat sessions");
+        conn.execute_batch(include_str!("migrations/004_chat.sql"))?;
+        conn.execute("PRAGMA user_version = 4;", [])?;
+    }
+
     log::info!("Database migrations complete");
     Ok(())
 }
@@ -150,6 +157,6 @@ mod tests {
         let version: i32 = conn
             .query_row("PRAGMA user_version;", [], |row| row.get(0))
             .unwrap();
-        assert_eq!(version, 3);
+        assert_eq!(version, 4);
     }
 }

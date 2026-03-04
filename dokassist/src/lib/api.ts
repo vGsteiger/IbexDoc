@@ -599,3 +599,95 @@ export async function getAppVersion(): Promise<string> {
 export async function exportAllPatientData(): Promise<number[]> {
   return await invoke<number[]>("export_all_patient_data");
 }
+
+// Chat / Agent API
+// ---------------------------------------------------------------------------
+
+export interface ChatSession {
+  id: string;
+  scope: string;
+  patient_id: string | null;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessageRow {
+  id: string;
+  session_id: string;
+  role: string; // 'user' | 'assistant' | 'tool_call' | 'tool_result'
+  content: string;
+  tool_name: string | null;
+  tool_args_json: string | null;
+  tool_result_for: string | null;
+  created_at: string;
+}
+
+export interface AgentToolCall {
+  name: string;
+  args_json: string;
+  result_json: string;
+}
+
+export interface AgentTurnResult {
+  session_id: string;
+  final_answer: string;
+  tool_calls_made: AgentToolCall[];
+}
+
+export async function runAgentTurn(
+  sessionId: string,
+  userMessage: string,
+): Promise<AgentTurnResult> {
+  return await invoke<AgentTurnResult>("run_agent_turn", {
+    sessionId,
+    userMessage,
+  });
+}
+
+export async function createChatSession(
+  scope: string,
+  patientId?: string,
+  title?: string,
+): Promise<ChatSession> {
+  return await invoke<ChatSession>("create_chat_session", {
+    scope,
+    patientId,
+    title,
+  });
+}
+
+export async function getOrCreatePatientChatSession(
+  patientId: string,
+): Promise<ChatSession> {
+  return await invoke<ChatSession>("get_or_create_patient_chat_session", {
+    patientId,
+  });
+}
+
+export async function listChatSessions(
+  scope: string,
+  patientId?: string,
+): Promise<ChatSession[]> {
+  return await invoke<ChatSession[]>("list_chat_sessions", {
+    scope,
+    patientId,
+  });
+}
+
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  return await invoke<void>("delete_chat_session", { sessionId });
+}
+
+export async function getChatMessages(
+  sessionId: string,
+): Promise<ChatMessageRow[]> {
+  return await invoke<ChatMessageRow[]>("get_chat_messages", { sessionId });
+}
+
+export async function renameChatSession(
+  sessionId: string,
+  title: string,
+): Promise<ChatSession> {
+  return await invoke<ChatSession>("rename_chat_session", { sessionId, title });
+}
