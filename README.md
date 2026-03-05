@@ -144,3 +144,4 @@ Conventional commit prefixes (`feat:`, `fix:`, `feat!:`) are also recognised whe
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
