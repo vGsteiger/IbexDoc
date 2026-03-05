@@ -56,13 +56,7 @@ pub fn improve_text_streaming(
     text: &str,
     instruction: &str,
 ) -> Result<String, AppError> {
-    improve_text_streaming_with_prompt(
-        app,
-        engine,
-        text,
-        instruction,
-        prompts::SYSTEM_PROMPT_DE,
-    )
+    improve_text_streaming_with_prompt(app, engine, text, instruction, prompts::SYSTEM_PROMPT_DE)
 }
 
 /// Improve text based on provided instruction using a caller-supplied system prompt.

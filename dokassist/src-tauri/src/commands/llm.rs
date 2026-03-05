@@ -253,13 +253,7 @@ pub async fn improve_text(
     // Run the potentially long-running text improvement on a blocking thread.
     let app_clone = app.clone();
     let improved = tokio::task::spawn_blocking(move || {
-        llm::improve_text_streaming_with_prompt(
-            &app_clone,
-            &engine,
-            &text,
-            &instruction,
-            &prompt,
-        )
+        llm::improve_text_streaming_with_prompt(&app_clone, &engine, &text, &instruction, &prompt)
     })
     .await
     .map_err(|e| AppError::Llm(format!("spawn_blocking error: {e}")))??;
