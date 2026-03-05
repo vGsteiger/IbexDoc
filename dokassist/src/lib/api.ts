@@ -691,3 +691,102 @@ export async function renameChatSession(
 ): Promise<ChatSession> {
   return await invoke<ChatSession>("rename_chat_session", { sessionId, title });
 }
+
+// ---------------------------------------------------------------------------
+// Literature API
+// ---------------------------------------------------------------------------
+
+export interface Literature {
+  id: string;
+  filename: string;
+  vault_path: string;
+  mime_type: string;
+  size_bytes: number;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LiteratureChunkResult {
+  chunk_id: string;
+  literature_id: string;
+  filename: string;
+  chunk_index: number;
+  content: string;
+  similarity: number;
+}
+
+export interface DocumentChunk {
+  id: string;
+  file_id: string | null;
+  literature_id: string | null;
+  chunk_index: number;
+  content: string;
+  word_count: number;
+  created_at: string;
+}
+
+export async function uploadLiterature(
+  filename: string,
+  data: Uint8Array,
+  mimeType: string,
+  description: string | null = null,
+): Promise<Literature> {
+  return await invoke<Literature>("upload_literature", {
+    filename,
+    data: Array.from(data),
+    mimeType,
+    description,
+  });
+}
+
+export async function getLiteratureById(id: string): Promise<Literature> {
+  return await invoke<Literature>("get_literature_by_id", { id });
+}
+
+export async function listAllLiterature(
+  limit: number = 100,
+  offset: number = 0,
+): Promise<Literature[]> {
+  return await invoke<Literature[]>("list_all_literature", { limit, offset });
+}
+
+export async function updateLiteratureMetadata(
+  id: string,
+  description: string | null,
+): Promise<Literature> {
+  return await invoke<Literature>("update_literature_metadata", {
+    id,
+    description,
+  });
+}
+
+export async function deleteLiteratureDocument(id: string): Promise<void> {
+  return await invoke<void>("delete_literature_document", { id });
+}
+
+export async function downloadLiterature(id: string): Promise<Uint8Array> {
+  const data = await invoke<number[]>("download_literature", { id });
+  return new Uint8Array(data);
+}
+
+export async function processLiterature(id: string): Promise<void> {
+  return await invoke<void>("process_literature", { id });
+}
+
+export async function searchLiterature(
+  query: string,
+  limit: number = 5,
+): Promise<LiteratureChunkResult[]> {
+  return await invoke<LiteratureChunkResult[]>("search_literature", {
+    query,
+    limit,
+  });
+}
+
+export async function getLiteratureDocumentChunks(
+  id: string,
+): Promise<DocumentChunk[]> {
+  return await invoke<DocumentChunk[]>("get_literature_document_chunks", { id });
+}
+

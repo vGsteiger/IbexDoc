@@ -7,6 +7,7 @@
   const navItems = [
     { path: '/patients', label: 'Patients', icon: '👥' },
     { path: '/calendar', label: 'Calendar', icon: '📅' },
+    { path: '/literature', label: 'Literature', icon: '📚' },
     { path: '/chat', label: 'Chat', icon: '💬' },
     { path: '/settings', label: 'Settings', icon: '⚙️' }
   ];
@@ -26,7 +27,7 @@
 
 <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col h-screen">
   <div class="p-6 border-b border-gray-800">
-    <h1 class="text-xl font-bold text-gray-100">DokAssist</h1>
+    <h1 class="text-xl font-bold text-gray-100">RamDoc</h1>
   </div>
 
   <nav class="flex-1 p-4">
