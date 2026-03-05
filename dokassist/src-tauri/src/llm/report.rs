@@ -78,11 +78,6 @@ pub fn improve_text_streaming_with_prompt(
     let safe_text = sanitize_for_prompt(text);
     let safe_instruction = sanitize_for_prompt(instruction);
 
-    let combined_instruction = format!(
-        "{}\n\nText to improve:\n{}",
-        safe_instruction, safe_text
-    );
-
     let user_message = build_delimited_prompt(&safe_instruction, &safe_text);
 
     let mut improved_text = String::new();
