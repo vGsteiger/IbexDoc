@@ -7,6 +7,7 @@
   const navItems = [
     { path: '/patients', label: 'Patients', icon: '👥' },
     { path: '/calendar', label: 'Calendar', icon: '📅' },
+    { path: '/literature', label: 'Literature', icon: '📚' },
     { path: '/chat', label: 'Chat', icon: '💬' },
     { path: '/settings', label: 'Settings', icon: '⚙️' }
   ];
