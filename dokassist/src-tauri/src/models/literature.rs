@@ -16,6 +16,7 @@ pub struct Literature {
     pub description: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    pub chunk_count: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,7 +65,8 @@ pub fn create_literature(
 pub fn get_literature(conn: &Connection, id: &str) -> Result<Literature, AppError> {
     let literature = conn.query_row(
         r#"
-        SELECT id, filename, vault_path, mime_type, size_bytes, description, created_at, updated_at
+        SELECT id, filename, vault_path, mime_type, size_bytes, description, created_at, updated_at,
+               (SELECT COUNT(*) FROM document_chunks WHERE literature_id = literature.id) AS chunk_count
         FROM literature
         WHERE id = ?1
         "#,
@@ -79,6 +81,7 @@ pub fn get_literature(conn: &Connection, id: &str) -> Result<Literature, AppErro
                 description: row.get(5)?,
                 created_at: row.get(6)?,
                 updated_at: row.get(7)?,
+                chunk_count: row.get(8)?,
             })
         },
     )?;
@@ -94,7 +97,8 @@ pub fn list_literature(
 ) -> Result<Vec<Literature>, AppError> {
     let mut stmt = conn.prepare(
         r#"
-        SELECT id, filename, vault_path, mime_type, size_bytes, description, created_at, updated_at
+        SELECT id, filename, vault_path, mime_type, size_bytes, description, created_at, updated_at,
+               (SELECT COUNT(*) FROM document_chunks WHERE literature_id = literature.id) AS chunk_count
         FROM literature
         ORDER BY created_at DESC
         LIMIT ?1 OFFSET ?2
@@ -112,6 +116,7 @@ pub fn list_literature(
                 description: row.get(5)?,
                 created_at: row.get(6)?,
                 updated_at: row.get(7)?,
+                chunk_count: row.get(8)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;

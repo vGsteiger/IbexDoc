@@ -718,6 +718,7 @@ export interface Literature {
   description: string | null;
   created_at: string;
   updated_at: string;
+  chunk_count: number;
 }
 
 export interface LiteratureChunkResult {
