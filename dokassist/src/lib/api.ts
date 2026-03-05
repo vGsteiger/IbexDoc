@@ -115,6 +115,19 @@ export interface LlmEngineStatus {
   downloaded_filename: string | null;
 }
 
+export interface EmbedStatus {
+  is_loaded: boolean;
+  is_downloaded: boolean;
+}
+
+export async function getEmbedStatus(): Promise<EmbedStatus> {
+  return await invoke<EmbedStatus>("get_embed_status");
+}
+
+export async function initializeEmbedEngine(): Promise<void> {
+  return await invoke<void>("initialize_embed_engine");
+}
+
 export interface ModelChoice {
   name: string;
   filename: string;
