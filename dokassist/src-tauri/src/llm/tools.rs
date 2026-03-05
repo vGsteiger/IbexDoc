@@ -28,7 +28,7 @@ pub fn dispatch_tool(
         "get_calendar_events" => tool_get_calendar_events(conn, scope, &call.args),
         "create_calendar_event" => tool_create_calendar_event(conn, scope, &call.args),
         "search" => tool_search(conn, &call.args),
-        "search_literature" => tool_search_literature(conn, engine, &call.args),
+        "search_literature" => tool_search_literature(conn, app, &call.args),
         "write_report" => tool_write_report(conn, app, engine, scope, &call.args),
         unknown => Err(AppError::Validation(format!("Unknown tool: {}", unknown))),
     }
@@ -176,29 +176,23 @@ fn tool_search(conn: &Connection, args: &Value) -> Result<Value, AppError> {
 
 fn tool_search_literature(
     conn: &Connection,
-    engine: &Arc<LlmEngine>,
+    app: &tauri::AppHandle,
     args: &Value,
 ) -> Result<Value, AppError> {
     let raw_query = str_arg(args, "query")?;
     let safe_query = sanitize_for_prompt(raw_query);
 
-    // Get embed engine (async operation in sync context - use blocking)
-    let embed_engine = engine.embed_engine();
+    // Get embed engine from app state
+    let state = app.state::<crate::state::AppState>();
+    let embed_engine = state.try_get_embed()
+        .ok_or_else(|| AppError::Validation(
+            "Embedding engine not yet loaded. Literature search is unavailable.".to_string()
+        ))?;
 
-    // Check if embed engine is ready
-    let is_ready = tokio::runtime::Handle::current()
-        .block_on(async { embed_engine.is_ready().await });
-
-    if !is_ready {
-        return Ok(json!({
-            "error": "Embedding engine not yet loaded. Literature search is unavailable."
-        }));
-    }
-
-    // Embed the query
-    let query_vec = tokio::runtime::Handle::current()
-        .block_on(async { embed_engine.embed(&safe_query).await })
-        .map_err(|e| AppError::Internal(format!("Failed to embed query: {}", e)))?;
+    // Embed the query (CPU-bound operation)
+    let query_vec = embed_engine
+        .embed_one(&safe_query)
+        .map_err(|e| AppError::Llm(format!("Failed to embed query: {}", e)))?;
 
     // Search literature chunks
     let results = search::search_literature_chunks(conn, &query_vec, 5)?;

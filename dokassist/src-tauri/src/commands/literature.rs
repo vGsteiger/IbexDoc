@@ -162,22 +162,25 @@ pub async fn process_literature(
     let config = ChunkConfig::default();
     let chunks = create_literature_chunks(&conn, &id, &extracted_text, &config)?;
 
-    // Wait for embed engine to be ready
-    if !embed.is_ready().await {
-        return Err(AppError::Validation(
-            "Embedding engine not ready".to_string(),
-        ));
-    }
-
     // Generate and save embeddings for each chunk
+    // EmbedEngine operations are CPU-bound, run in blocking task
+    let embed_engine = embed.inner().clone();
     for chunk in chunks {
-        let embedding = embed.embed(&chunk.content).await?;
-        save_chunk_embedding(&conn, &chunk.id, &embedding)?;
+        let content = chunk.content.clone();
+        let chunk_id = chunk.id.clone();
+
+        let embedding = tokio::task::spawn_blocking(move || {
+            embed_engine.embed_one(&content)
+        })
+        .await
+        .map_err(|e| AppError::Llm(format!("Task join error: {}", e)))??;
+
+        save_chunk_embedding(&conn, &chunk_id, &embedding)?;
     }
 
     // Emit event that processing is complete
     app.emit("literature-processed", &id)
-        .map_err(|e| AppError::Internal(format!("Failed to emit event: {}", e)))?;
+        .map_err(|e| AppError::Llm(format!("Failed to emit event: {}", e)))?;
 
     Ok(())
 }
@@ -194,15 +197,14 @@ pub async fn search_literature(
         return Ok(vec![]);
     }
 
-    // Wait for embed engine to be ready
-    if !embed.is_ready().await {
-        return Err(AppError::Validation(
-            "Embedding engine not ready".to_string(),
-        ));
-    }
-
-    // Embed the query
-    let query_vec = embed.embed(&query).await?;
+    // Embed the query (CPU-bound operation, run in blocking task)
+    let embed_engine = embed.inner().clone();
+    let query_clone = query.clone();
+    let query_vec = tokio::task::spawn_blocking(move || {
+        embed_engine.embed_one(&query_clone)
+    })
+    .await
+    .map_err(|e| AppError::Llm(format!("Task join error: {}", e)))??;
 
     // Search literature chunks
     let conn = db.conn()?;
