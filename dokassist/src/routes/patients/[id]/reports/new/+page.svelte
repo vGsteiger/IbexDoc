@@ -74,7 +74,7 @@
 
       unlistenDone = await listen('report-done', () => {
         isGenerating = false;
-        editableContent = generatedContent;
+        editableContent = stripThinkTags(generatedContent);
         isEditing = true;
         // Unlisten after completion
         if (unlistenChunk) {
@@ -134,6 +134,19 @@
     editableContent = '';
     isEditing = false;
     error = null;
+  }
+
+  function stripThinkTags(content: string): string {
+    const THINK_START = '<think>';
+    const THINK_END = '</think>';
+
+    if (content.startsWith(THINK_START)) {
+      const endIdx = content.indexOf(THINK_END);
+      if (endIdx !== -1) {
+        return content.slice(endIdx + THINK_END.length).trim();
+      }
+    }
+    return content;
   }
 
   function formatPatientContext(p: Patient): string {
