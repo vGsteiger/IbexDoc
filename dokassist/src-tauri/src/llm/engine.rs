@@ -14,10 +14,14 @@ use std::path::PathBuf;
 const ALL_GPU_LAYERS: u32 = 999;
 
 pub struct LlmEngine {
-    backend: LlamaBackend,
+    // IMPORTANT: field declaration order controls drop order in Rust.
+    // `model` must be dropped before `backend` — the LlamaModel holds a
+    // raw pointer into the LlamaBackend, so freeing the backend first
+    // causes a use-after-free crash in the llama.cpp C code at shutdown.
     model: Option<LlamaModel>,
     model_path: PathBuf,
     model_name: String,
+    backend: LlamaBackend,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
