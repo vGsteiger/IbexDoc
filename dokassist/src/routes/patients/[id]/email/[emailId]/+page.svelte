@@ -94,12 +94,12 @@
         email = await updateEmail(emailId, input);
       }
 
-      // Open the email in the local mail program using mailto: link
-      const mailtoLink = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailtoLink;
-
-      // Mark the email as sent
+      // Mark the email as sent before opening mail client
       await markEmailAsSent(emailId);
+
+      // Open the email in the local mail program using mailto: link
+      const mailtoLink = encodeURI(`mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+      window.location.href = mailtoLink;
 
       // Navigate back to the email list after opening mail client
       setTimeout(() => {
@@ -228,7 +228,7 @@
         {:else}
           <button
             on:click={() => {
-              const mailtoLink = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+              const mailtoLink = encodeURI(`mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
               window.location.href = mailtoLink;
             }}
             class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"

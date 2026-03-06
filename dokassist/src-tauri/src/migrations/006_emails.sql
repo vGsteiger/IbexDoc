@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS emails (
     recipient_email TEXT NOT NULL,
     subject TEXT NOT NULL,
     body TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'draft',
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent')),
     sent_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),

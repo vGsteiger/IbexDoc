@@ -87,10 +87,13 @@
         body: body,
       };
 
-      await createEmail(input);
+      const email = await createEmail(input);
+
+      // Mark the email as sent before opening mail client
+      await markEmailAsSent(email.id);
 
       // Open the email in the local mail program using mailto: link
-      const mailtoLink = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const mailtoLink = encodeURI(`mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
       window.location.href = mailtoLink;
 
       // Navigate back to the email list after opening mail client
