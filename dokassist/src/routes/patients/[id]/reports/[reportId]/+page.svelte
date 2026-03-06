@@ -191,13 +191,17 @@
           {/if}
           <button
             on:click={handleExportPdf}
-            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            disabled={editMode}
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={editMode ? 'Save changes before exporting PDF' : undefined}
           >
             Export PDF
           </button>
           <button
             on:click={handleExportDocx}
-            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            disabled={editMode}
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={editMode ? 'Save changes before exporting DOCX' : undefined}
           >
             Export DOCX
           </button>

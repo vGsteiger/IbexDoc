@@ -1,9 +1,9 @@
 use crate::audit::{self, AuditAction};
 use crate::error::AppError;
-use crate::models::patient;
+use crate::models::patient::{self, Patient};
 use crate::models::report::{self, CreateReport, Report, UpdateReport};
 use crate::state::AppState;
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use docx_rs::*;
 use printpdf::*;
 use tauri::State;
@@ -101,12 +101,38 @@ pub async fn export_report_to_pdf(
     report_id: String,
 ) -> Result<Vec<u8>, AppError> {
     let pool = state.get_db()?;
-    let conn = pool.conn()?;
 
-    // Get report and patient data
-    let report = report::get_report(&conn, &report_id)?;
-    let patient = patient::get_patient(&conn, &report.patient_id)?;
+    // Get report and patient data under a short-lived DB connection
+    let (report, patient) = {
+        let conn = pool.conn()?;
+        let report = report::get_report(&conn, &report_id)?;
+        let patient = patient::get_patient(&conn, &report.patient_id)?;
+        (report, patient)
+    };
 
+    // Generate PDF in a blocking task to avoid blocking Tokio runtime
+    let pdf_bytes = tokio::task::spawn_blocking(move || {
+        generate_pdf_bytes(report, patient)
+    })
+    .await
+    .map_err(|e| AppError::Validation(format!("PDF generation task failed: {}", e)))??;
+
+    // Audit log with a fresh connection
+    {
+        let conn = pool.conn()?;
+        audit::log(
+            &conn,
+            AuditAction::Export,
+            "report",
+            Some(&report_id),
+            Some("Exported to PDF"),
+        )?;
+    }
+
+    Ok(pdf_bytes)
+}
+
+fn generate_pdf_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppError> {
     // Create PDF document
     let (doc, page1, layer1) = PdfDocument::new(
         "Report",
@@ -115,7 +141,7 @@ pub async fn export_report_to_pdf(
         "Layer 1",
     );
 
-    let current_layer = doc.get_page(page1).get_layer(layer1);
+    let mut current_layer = doc.get_page(page1).get_layer(layer1);
 
     // Add built-in fonts
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| {
@@ -131,8 +157,8 @@ pub async fn export_report_to_pdf(
         .map(|dt| dt.format("%d.%m.%Y %H:%M").to_string())
         .unwrap_or_else(|_| report.generated_at.clone());
 
-    let dob = NaiveDateTime::parse_from_str(&patient.date_of_birth, "%Y-%m-%d")
-        .map(|dt| dt.format("%d.%m.%Y").to_string())
+    let dob = NaiveDate::parse_from_str(&patient.date_of_birth, "%Y-%m-%d")
+        .map(|d| d.format("%d.%m.%Y").to_string())
         .unwrap_or_else(|_| patient.date_of_birth.clone());
 
     // Start writing content
@@ -202,7 +228,6 @@ pub async fn export_report_to_pdf(
     y_position = y_position - line_height;
 
     // Split content into lines and add to PDF
-    let max_width = Mm(170.0); // A4 width minus margins
     let max_chars_per_line = 90; // Approximate characters per line
 
     for paragraph in report.content.split('\n') {
@@ -211,30 +236,51 @@ pub async fn export_report_to_pdf(
             continue;
         }
 
-        // Wrap long lines
-        let mut remaining = paragraph;
-        while !remaining.is_empty() {
-            let chunk = if remaining.len() <= max_chars_per_line {
-                remaining
+        // Wrap long lines using char-aware slicing
+        let mut char_indices: Vec<(usize, char)> = paragraph.char_indices().collect();
+        let mut start_idx = 0;
+
+        while start_idx < char_indices.len() {
+            // Calculate chunk size
+            let end_idx = (start_idx + max_chars_per_line).min(char_indices.len());
+
+            // Find word boundary if we're not at the end
+            let break_idx = if end_idx < char_indices.len() {
+                // Look for last space within the chunk
+                char_indices[start_idx..end_idx]
+                    .iter()
+                    .rposition(|(_, c)| *c == ' ')
+                    .map(|pos| start_idx + pos)
+                    .unwrap_or(end_idx)
             } else {
-                // Try to break at word boundary
-                let break_point = remaining[..max_chars_per_line]
-                    .rfind(' ')
-                    .unwrap_or(max_chars_per_line);
-                &remaining[..break_point]
+                end_idx
             };
+
+            // Get the byte positions for slicing
+            let byte_start = if start_idx == 0 { 0 } else { char_indices[start_idx].0 };
+            let byte_end = if break_idx < char_indices.len() {
+                char_indices[break_idx].0
+            } else {
+                paragraph.len()
+            };
+
+            let chunk = &paragraph[byte_start..byte_end];
 
             // Check if we need a new page
             if y_position.0 < 30.0 {
                 let (page, layer) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
-                let current_layer = doc.get_page(page).get_layer(layer);
+                current_layer = doc.get_page(page).get_layer(layer);
                 y_position = Mm(270.0);
             }
 
             current_layer.use_text(chunk.trim(), 10.0, left_margin, y_position, &font);
             y_position = y_position - line_height;
 
-            remaining = &remaining[chunk.len()..].trim_start();
+            start_idx = break_idx;
+            // Skip whitespace at the start of next chunk
+            while start_idx < char_indices.len() && char_indices[start_idx].1.is_whitespace() {
+                start_idx += 1;
+            }
         }
     }
 
@@ -242,15 +288,6 @@ pub async fn export_report_to_pdf(
     let pdf_bytes = doc.save_to_bytes().map_err(|e| {
         AppError::Validation(format!("Failed to generate PDF: {}", e))
     })?;
-
-    // Audit log
-    audit::log(
-        &conn,
-        AuditAction::Export,
-        "report",
-        Some(&report_id),
-        Some("Exported to PDF"),
-    )?;
 
     Ok(pdf_bytes)
 }
@@ -262,20 +299,46 @@ pub async fn export_report_to_docx(
     report_id: String,
 ) -> Result<Vec<u8>, AppError> {
     let pool = state.get_db()?;
-    let conn = pool.conn()?;
 
-    // Get report and patient data
-    let report = report::get_report(&conn, &report_id)?;
-    let patient = patient::get_patient(&conn, &report.patient_id)?;
+    // Get report and patient data under a short-lived DB connection
+    let (report, patient) = {
+        let conn = pool.conn()?;
+        let report = report::get_report(&conn, &report_id)?;
+        let patient = patient::get_patient(&conn, &report.patient_id)?;
+        (report, patient)
+    };
 
+    // Generate DOCX in a blocking task to avoid blocking Tokio runtime
+    let docx_bytes = tokio::task::spawn_blocking(move || {
+        generate_docx_bytes(report, patient)
+    })
+    .await
+    .map_err(|e| AppError::Validation(format!("DOCX generation task failed: {}", e)))??;
+
+    // Audit log with a fresh connection
+    {
+        let conn = pool.conn()?;
+        audit::log(
+            &conn,
+            AuditAction::Export,
+            "report",
+            Some(&report_id),
+            Some("Exported to DOCX"),
+        )?;
+    }
+
+    Ok(docx_bytes)
+}
+
+fn generate_docx_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppError> {
     // Format dates
     let generated_at = NaiveDateTime::parse_from_str(&report.generated_at, "%Y-%m-%d %H:%M:%S%.f")
         .or_else(|_| NaiveDateTime::parse_from_str(&report.generated_at, "%Y-%m-%dT%H:%M:%S%.f"))
         .map(|dt| dt.format("%d.%m.%Y %H:%M").to_string())
         .unwrap_or_else(|_| report.generated_at.clone());
 
-    let dob = NaiveDateTime::parse_from_str(&patient.date_of_birth, "%Y-%m-%d")
-        .map(|dt| dt.format("%d.%m.%Y").to_string())
+    let dob = NaiveDate::parse_from_str(&patient.date_of_birth, "%Y-%m-%d")
+        .map(|d| d.format("%d.%m.%Y").to_string())
         .unwrap_or_else(|_| patient.date_of_birth.clone());
 
     // Create DOCX document
@@ -339,15 +402,6 @@ pub async fn export_report_to_docx(
     docx.build()
         .pack(&mut docx_bytes)
         .map_err(|e| AppError::Validation(format!("Failed to generate DOCX: {}", e)))?;
-
-    // Audit log
-    audit::log(
-        &conn,
-        AuditAction::Export,
-        "report",
-        Some(&report_id),
-        Some("Exported to DOCX"),
-    )?;
 
     Ok(docx_bytes)
 }
