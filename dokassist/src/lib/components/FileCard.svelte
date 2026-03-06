@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { FileRecord } from '$lib/api';
+  import { ImageIcon, FileText, FileType, Paperclip } from 'lucide-svelte';
+  import type { ComponentType } from 'svelte';
 
   interface Props {
     file: FileRecord;
@@ -36,11 +38,11 @@
     );
   }
 
-  function getFileIcon(mimeType: string): string {
-    if (mimeType.startsWith('image/')) return '🖼️';
-    if (mimeType === 'application/pdf') return '📄';
-    if (mimeType.includes('word')) return '📝';
-    return '📎';
+  function getFileIcon(mimeType: string): ComponentType {
+    if (mimeType.startsWith('image/')) return ImageIcon;
+    if (mimeType === 'application/pdf') return FileText;
+    if (mimeType.includes('word')) return FileType;
+    return Paperclip;
   }
 
   function getFileExtension(filename: string): string {
@@ -51,8 +53,8 @@
 
 <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
   <div class="flex items-start gap-4">
-    <div class="text-3xl flex-shrink-0">
-      {getFileIcon(file.mime_type)}
+    <div class="flex-shrink-0">
+      <svelte:component this={getFileIcon(file.mime_type)} size={32} class="text-gray-400" />
     </div>
 
     <div class="flex-1 min-w-0">
