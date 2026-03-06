@@ -590,6 +590,71 @@ export async function exportReportToDocx(reportId: string): Promise<number[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Email
+// ---------------------------------------------------------------------------
+
+export interface Email {
+  id: string;
+  patient_id: string;
+  recipient_email: string;
+  subject: string;
+  body: string;
+  status: string;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateEmail {
+  patient_id: string;
+  recipient_email: string;
+  subject: string;
+  body: string;
+}
+
+export interface UpdateEmail {
+  recipient_email?: string;
+  subject?: string;
+  body?: string;
+  status?: string;
+}
+
+export async function createEmail(input: CreateEmail): Promise<Email> {
+  return await invoke<Email>("create_email", { input });
+}
+
+export async function getEmail(id: string): Promise<Email> {
+  return await invoke<Email>("get_email", { id });
+}
+
+export async function listEmails(
+  patientId: string,
+  limit?: number,
+  offset?: number,
+): Promise<Email[]> {
+  return await invoke<Email[]>("list_emails", {
+    patientId,
+    limit,
+    offset,
+  });
+}
+
+export async function updateEmail(
+  id: string,
+  input: UpdateEmail,
+): Promise<Email> {
+  return await invoke<Email>("update_email", { id, input });
+}
+
+export async function deleteEmail(id: string): Promise<void> {
+  return await invoke<void>("delete_email", { id });
+}
+
+export async function markEmailAsSent(id: string): Promise<Email> {
+  return await invoke<Email>("mark_email_as_sent", { id });
+}
+
+// ---------------------------------------------------------------------------
 // Updater
 // ---------------------------------------------------------------------------
 

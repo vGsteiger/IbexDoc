@@ -106,6 +106,13 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute("PRAGMA user_version = 5;", [])?;
     }
 
+    // Migration 6: Email drafts table
+    if version < 6 {
+        log::info!("Running migration 006: Email drafts");
+        conn.execute_batch(include_str!("migrations/006_emails.sql"))?;
+        conn.execute("PRAGMA user_version = 6;", [])?;
+    }
+
     log::info!("Database migrations complete");
     Ok(())
 }
