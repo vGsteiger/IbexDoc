@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+@theme {
+  /* Configure dark mode using class strategy */
+  --color-scheme: light dark;
+}

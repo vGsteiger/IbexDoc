@@ -4,6 +4,7 @@
   import { page } from '$app/stores';
   import { checkAuth } from '$lib/api';
   import { authStatus } from '$lib/stores/auth';
+  import { themePreference, resolveTheme } from '$lib/stores/theme';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import TopBar from '$lib/components/TopBar.svelte';
   import '../app.css';
@@ -12,6 +13,27 @@
 
   const authPaths = ['/', '/setup', '/unlock', '/recover'];
   let showLayout = $derived(!authPaths.includes(currentPath));
+
+  // Reactive theme resolution
+  let actualTheme = $derived(resolveTheme($themePreference));
+
+  // Apply theme to document element
+  $effect(() => {
+    if (typeof document !== 'undefined') {
+      const html = document.documentElement;
+      const body = document.body;
+
+      if (actualTheme === 'dark') {
+        html.classList.add('dark');
+        body.classList.add('bg-gray-950', 'text-gray-100');
+        body.classList.remove('bg-white', 'text-gray-900');
+      } else {
+        html.classList.remove('dark');
+        body.classList.add('bg-white', 'text-gray-900');
+        body.classList.remove('bg-gray-950', 'text-gray-100');
+      }
+    }
+  });
 
   onMount(async () => {
     // Only enforce auth on protected routes
@@ -39,7 +61,7 @@
 </script>
 
 {#if showLayout}
-  <div class="flex h-screen bg-gray-950">
+  <div class="flex h-screen bg-white dark:bg-gray-950">
     <Sidebar />
     <div class="flex-1 flex flex-col overflow-hidden">
       <TopBar />
