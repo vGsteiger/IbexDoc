@@ -229,11 +229,22 @@ pub async fn search_literature(
         return Ok(vec![]);
     }
 
-    let embed_engine = state.try_get_embed().ok_or_else(|| {
-        AppError::Validation(
-            "Embedding engine not yet loaded. Literature search is unavailable.".to_string(),
-        )
-    })?;
+    // Lazy-init: load embed engine if not already in state (downloads ~130 MB on first use)
+    let embed_engine = if let Some(engine) = state.try_get_embed() {
+        engine
+    } else {
+        let embed_cache_dir = state.data_dir.join("models").join("embed");
+        let (engine,) = tokio::task::spawn_blocking(move || -> Result<(EmbedEngine,), AppError> {
+            std::fs::create_dir_all(&embed_cache_dir)?;
+            Ok((EmbedEngine::new(&embed_cache_dir)?,))
+        })
+        .await
+        .map_err(|e| AppError::Llm(format!("Task join error: {}", e)))??;
+        state.set_embed(engine)?;
+        state
+            .try_get_embed()
+            .ok_or_else(|| AppError::Llm("Embed engine unavailable".to_string()))?
+    };
 
     let query_clone = query.clone();
     let query_vec = tokio::task::spawn_blocking(move || embed_engine.embed_one(&query_clone))

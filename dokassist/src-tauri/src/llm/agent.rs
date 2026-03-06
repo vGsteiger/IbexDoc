@@ -20,6 +20,17 @@ const PROBE_TEMP: f32 = 0.1;
 const ANSWER_TEMP: f32 = 0.7;
 /// Maximum chars of a tool result that are fed back into the LLM.
 const TOOL_RESULT_TRIM: usize = 8_000;
+/// Token context window (must match engine.rs N_CTX).
+const N_CTX: usize = 4096;
+/// Trigger summarization when estimated prompt tokens exceed this threshold.
+/// Leaves headroom for PROBE_MAX_TOKENS + ANSWER_MAX_TOKENS.
+const SUMMARIZE_THRESHOLD: usize = N_CTX - ANSWER_MAX_TOKENS - 256;
+/// Tokens budget for the summarization call itself.
+const SUMMARY_MAX_TOKENS: usize = 512;
+/// Rough estimate: 1 token ≈ 4 UTF-8 bytes.
+fn estimate_tokens(s: &str) -> usize {
+    (s.len() / 4).max(1)
+}
 
 /// Whether the agent is scoped to a single patient or has global access.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -141,6 +152,68 @@ fn parse_tool_call(output: &str) -> Option<ToolCallRequest> {
     serde_json::from_str(json).ok()
 }
 
+/// Summarize the middle of the history to keep prompt size manageable.
+///
+/// Keeps the first message (original user request) and the last two messages
+/// (most recent context), replacing everything in between with an LLM-generated
+/// summary.  Returns `history` unchanged on any error.
+fn summarize_history(
+    engine: &Arc<LlmEngine>,
+    system_prompt: &str,
+    mut history: Vec<AgentMessage>,
+) -> Vec<AgentMessage> {
+    if history.len() <= 3 {
+        return history;
+    }
+
+    // Build a plain-text digest of the middle messages to summarize
+    let middle: Vec<_> = history[1..history.len() - 2].iter().collect();
+    let digest = middle
+        .iter()
+        .map(|m| format!("[{}]: {}", m.role, m.content))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let summary_prompt = format!(
+        "{system_prompt}\n\n\
+         Fasse die folgende Gesprächshistorie in maximal 3 Sätzen auf Deutsch zusammen. \
+         Antworte NUR mit der Zusammenfassung, ohne Einleitung:\n\n{digest}"
+    );
+
+    let mut summary = String::new();
+    if engine
+        .generate_streaming_raw(
+            &format!("<|im_start|>system\n{summary_prompt}<|im_end|>\n<|im_start|>assistant\n"),
+            SUMMARY_MAX_TOKENS,
+            0.3,
+            |token| {
+                summary.push_str(token);
+                true
+            },
+        )
+        .is_err()
+    {
+        return history;
+    }
+
+    let summary = summary.trim().to_string();
+    if summary.is_empty() {
+        return history;
+    }
+
+    log::info!("Agent: summarized {} history messages", middle.len());
+
+    // Rebuild: first message + summary placeholder + last 2 messages
+    let last_two = history.split_off(history.len() - 2);
+    history.truncate(1);
+    history.push(AgentMessage {
+        role: "assistant".to_string(),
+        content: format!("[Zusammenfassung vorheriger Schritte]: {summary}"),
+    });
+    history.extend(last_two);
+    history
+}
+
 /// Run a full agent turn: append user message, loop until final answer.
 /// Streams the final answer token-by-token via `agent-chunk` events.
 ///
@@ -167,6 +240,15 @@ pub fn run_agent_loop(
     let mut tool_calls_made: Vec<ExecutedToolCall> = Vec::new();
 
     for iteration in 0..MAX_ITERATIONS {
+        // Summarize history if it is getting too large to fit in the context window
+        let estimated_tokens = estimate_tokens(&format_chatml_history(&system_prompt, &history));
+        if estimated_tokens > SUMMARIZE_THRESHOLD {
+            log::warn!(
+                "Agent: prompt ~{estimated_tokens} tokens nears context limit, summarizing history"
+            );
+            history = summarize_history(engine, &system_prompt, history);
+        }
+
         let prompt = format_chatml_history(&system_prompt, &history);
 
         // Probe: collect output to check for tool call

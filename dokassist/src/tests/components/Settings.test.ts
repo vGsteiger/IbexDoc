@@ -42,12 +42,18 @@ const RECOMMENDED = {
   reason: 'Unter 16 GB RAM: Phi-4 Mini für minimale Ressourcen',
 };
 
-// Helper: mock the two onMount invoke calls for a "not loaded" machine.
+const EMBED_NOT_LOADED = {
+  is_loaded: false,
+  is_downloaded: false,
+};
+
+// Helper: mock the three onMount invoke calls for a "not loaded" machine.
 // getVersion() is called via @tauri-apps/api/app (not invoke) and is mocked above.
 function setupNotLoaded() {
   mockInvoke
-    .mockResolvedValueOnce(NOT_LOADED)   // get_engine_status
-    .mockResolvedValueOnce(RECOMMENDED); // get_recommended_model
+    .mockResolvedValueOnce(NOT_LOADED)        // get_engine_status
+    .mockResolvedValueOnce(RECOMMENDED)       // get_recommended_model
+    .mockResolvedValueOnce(EMBED_NOT_LOADED); // get_embed_status
 }
 
 beforeEach(() => {
@@ -117,7 +123,7 @@ describe('Settings — model not loaded', () => {
 
 describe('Settings — model already loaded', () => {
   it('shows the loaded model name', async () => {
-    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED);
+    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED).mockResolvedValueOnce(EMBED_NOT_LOADED);
     render(Settings);
     await waitFor(() => {
       expect(screen.getByText('Phi-4 Mini Q4_K_M')).toBeInTheDocument();
@@ -125,7 +131,7 @@ describe('Settings — model already loaded', () => {
   });
 
   it('shows "Loaded" in the status line', async () => {
-    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED);
+    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED).mockResolvedValueOnce(EMBED_NOT_LOADED);
     render(Settings);
     await waitFor(() => {
       expect(screen.getByText(/Loaded/)).toBeInTheDocument();
@@ -133,7 +139,7 @@ describe('Settings — model already loaded', () => {
   });
 
   it('hides the download/load buttons', async () => {
-    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED);
+    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED).mockResolvedValueOnce(EMBED_NOT_LOADED);
     render(Settings);
     await waitFor(() => screen.getByText(/Loaded/));
     expect(screen.queryByRole('button', { name: /download & load/i })).not.toBeInTheDocument();
@@ -141,7 +147,7 @@ describe('Settings — model already loaded', () => {
   });
 
   it('shows the "Model ready" success message', async () => {
-    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED);
+    mockInvoke.mockResolvedValueOnce(LOADED).mockResolvedValueOnce(RECOMMENDED).mockResolvedValueOnce(EMBED_NOT_LOADED);
     render(Settings);
     await waitFor(() => {
       expect(screen.getByText(/Model ready/i)).toBeInTheDocument();
@@ -156,10 +162,11 @@ describe('Settings — model already loaded', () => {
 describe('Settings — "Load existing" button', () => {
   it('calls load_model with the recommended filename', async () => {
     mockInvoke
-      .mockResolvedValueOnce(NOT_LOADED)  // onMount: getEngineStatus
-      .mockResolvedValueOnce(RECOMMENDED) // onMount: getRecommendedModel
-      .mockResolvedValueOnce(undefined)   // load_model
-      .mockResolvedValueOnce(LOADED);     // getEngineStatus after load
+      .mockResolvedValueOnce(NOT_LOADED)        // onMount: getEngineStatus
+      .mockResolvedValueOnce(RECOMMENDED)       // onMount: getRecommendedModel
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)  // onMount: getEmbedStatus
+      .mockResolvedValueOnce(undefined)         // load_model
+      .mockResolvedValueOnce(LOADED);           // getEngineStatus after load
 
     render(Settings);
     await waitFor(() => screen.getByRole('button', { name: /load existing/i }));
@@ -176,6 +183,7 @@ describe('Settings — "Load existing" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(LOADED);
 
@@ -192,6 +200,7 @@ describe('Settings — "Load existing" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockRejectedValueOnce(new Error('File not found'));
 
     render(Settings);
@@ -207,6 +216,7 @@ describe('Settings — "Load existing" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockRejectedValueOnce({ code: 'LLM_ERROR', message: 'Model binary missing' });
 
     render(Settings);
@@ -223,6 +233,7 @@ describe('Settings — "Load existing" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockReturnValueOnce(new Promise((res) => { resolveLoad = () => res(undefined); }));
 
     render(Settings);
@@ -247,9 +258,10 @@ describe('Settings — "Download & Load" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
-      .mockResolvedValueOnce(undefined)   // download_model
-      .mockResolvedValueOnce(undefined)   // load_model
-      .mockResolvedValueOnce(LOADED);     // getEngineStatus after load
+      .mockResolvedValueOnce(EMBED_NOT_LOADED) // get_embed_status
+      .mockResolvedValueOnce(undefined)        // download_model
+      .mockResolvedValueOnce(undefined)        // load_model
+      .mockResolvedValueOnce(LOADED);          // getEngineStatus after load
 
     render(Settings);
     await waitFor(() => screen.getByRole('button', { name: /download & load/i }));
@@ -264,6 +276,7 @@ describe('Settings — "Download & Load" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(LOADED);
@@ -283,6 +296,7 @@ describe('Settings — "Download & Load" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(LOADED);
@@ -301,6 +315,7 @@ describe('Settings — "Download & Load" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockReturnValueOnce(new Promise((res) => { resolveDownload = () => res(undefined); }));
 
     render(Settings);
@@ -318,6 +333,7 @@ describe('Settings — "Download & Load" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(LOADED);
@@ -336,6 +352,7 @@ describe('Settings — "Download & Load" button', () => {
     mockInvoke
       .mockResolvedValueOnce(NOT_LOADED)
       .mockResolvedValueOnce(RECOMMENDED)
+      .mockResolvedValueOnce(EMBED_NOT_LOADED)
       .mockRejectedValueOnce(new Error('Network error'));
 
     render(Settings);

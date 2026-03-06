@@ -12,12 +12,18 @@ use std::path::PathBuf;
 
 /// Sentinel value for n_gpu_layers that offloads all layers to Metal GPU.
 const ALL_GPU_LAYERS: u32 = 999;
+/// Token context window size used for all inference calls.
+const N_CTX: usize = 4096;
 
 pub struct LlmEngine {
-    backend: LlamaBackend,
+    // IMPORTANT: field declaration order controls drop order in Rust.
+    // `model` must be dropped before `backend` — the LlamaModel holds a
+    // raw pointer into the LlamaBackend, so freeing the backend first
+    // causes a use-after-free crash in the llama.cpp C code at shutdown.
     model: Option<LlamaModel>,
     model_path: PathBuf,
     model_name: String,
+    backend: LlamaBackend,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,14 +114,19 @@ impl LlmEngine {
             .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
 
         // 2. Context (4 096-token window)
-        let ctx_params = LlamaContextParams::default().with_n_ctx(NonZeroU32::new(4096));
+        let ctx_params = LlamaContextParams::default().with_n_ctx(NonZeroU32::new(N_CTX as u32));
         let mut ctx = model
             .new_context(&self.backend, ctx_params)
             .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
 
         // 3. Decode prompt in one batch
         let n_prompt = tokens.len();
-        let mut batch = LlamaBatch::new(4096, 1);
+        if n_prompt >= N_CTX {
+            return Err(AppError::Llm(format!(
+                "Prompt too long ({n_prompt} tokens), exceeds context window ({N_CTX})"
+            )));
+        }
+        let mut batch = LlamaBatch::new(N_CTX, 1);
         batch
             .add_sequence(&tokens, 0, false)
             .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
@@ -151,6 +162,9 @@ impl LlmEngine {
             }
 
             // Advance context with the new token
+            if n_cur + 1 >= N_CTX as i32 {
+                break;
+            }
             batch.clear();
             batch
                 .add(token, n_cur, &[0], true)
@@ -196,13 +210,18 @@ impl LlmEngine {
             .str_to_token(prompt, AddBos::Always)
             .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
 
-        let ctx_params = LlamaContextParams::default().with_n_ctx(NonZeroU32::new(4096));
+        let ctx_params = LlamaContextParams::default().with_n_ctx(NonZeroU32::new(N_CTX as u32));
         let mut ctx = model
             .new_context(&self.backend, ctx_params)
             .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
 
         let n_prompt = tokens.len();
-        let mut batch = LlamaBatch::new(4096, 1);
+        if n_prompt >= N_CTX {
+            return Err(AppError::Llm(format!(
+                "Prompt too long ({n_prompt} tokens), exceeds context window ({N_CTX})"
+            )));
+        }
+        let mut batch = LlamaBatch::new(N_CTX, 1);
         batch
             .add_sequence(&tokens, 0, false)
             .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
@@ -235,6 +254,9 @@ impl LlmEngine {
                 break;
             }
 
+            if n_cur + 1 >= N_CTX as i32 {
+                break;
+            }
             batch.clear();
             batch
                 .add(token, n_cur, &[0], true)

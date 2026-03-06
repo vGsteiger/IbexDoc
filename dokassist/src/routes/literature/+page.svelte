@@ -268,9 +268,14 @@
               </div>
 
               {#if processingFiles.has(lit.id)}
-                <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+                <div
+                  class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"
+                  title="Processing…"
+                />
+              {:else if lit.chunk_count > 0}
+                <span class="text-green-500 text-sm" title="Extracted and embedded ({lit.chunk_count} chunks)">✓</span>
               {:else}
-                <span class="text-green-500 text-sm">✓</span>
+                <span class="text-yellow-500 text-sm" title="Not yet processed">⚠</span>
               {/if}
             </div>
 

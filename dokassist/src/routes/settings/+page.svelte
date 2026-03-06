@@ -14,9 +14,12 @@
     installUpdate,
     getAppVersion,
     exportAllPatientData,
+    getEmbedStatus,
+    initializeEmbedEngine,
     type LlmEngineStatus,
     type ModelChoice,
     type UpdateInfo,
+    type EmbedStatus,
   } from "$lib/api";
 
   let status = $state<LlmEngineStatus | null>(null);
@@ -29,6 +32,11 @@
   let unlisten: UnlistenFn | null = null;
   let appVersion = $state("");
 
+  // Embedding model state
+  let embedStatus = $state<EmbedStatus | null>(null);
+  let embedPhase = $state<"idle" | "loading" | "done" | "error">("idle");
+  let embedError = $state("");
+
   // Update state
   let updateInfo = $state<UpdateInfo | null>(null);
   let checkingUpdate = $state(false);
@@ -38,13 +46,28 @@
   let updateUnlisten: UnlistenFn | null = null;
 
   onMount(async () => {
-    [status, recommended, appVersion] = await Promise.all([
+    [status, recommended, appVersion, embedStatus] = await Promise.all([
       getEngineStatus(),
       getRecommendedModel(),
       getVersion().catch(() => "Unknown"),
+      getEmbedStatus(),
     ]);
     if (status.is_loaded) phase = "done";
+    if (embedStatus.is_loaded) embedPhase = "done";
   });
+
+  async function handleInitEmbed() {
+    embedPhase = "loading";
+    embedError = "";
+    try {
+      await initializeEmbedEngine();
+      embedStatus = await getEmbedStatus();
+      embedPhase = "done";
+    } catch (e) {
+      embedPhase = "error";
+      embedError = parseError(e).message;
+    }
+  }
 
   onDestroy(() => {
     unlisten?.();
@@ -397,6 +420,63 @@
       <p class="text-sm text-green-400">
         Model ready. Reports and metadata extraction are available.
       </p>
+    {/if}
+  </section>
+
+  <section class="mt-10">
+    <h2 class="text-lg font-semibold text-gray-200 mb-4">Embedding Model</h2>
+    <p class="text-xs text-gray-400 mb-4">
+      Required for literature semantic search (~130 MB, downloaded once and
+      cached locally).
+    </p>
+
+    <div class="bg-gray-800 rounded-lg p-4 mb-4 flex items-center gap-3">
+      <div
+        class="w-3 h-3 rounded-full shrink-0 {embedStatus?.is_loaded
+          ? 'bg-green-500'
+          : embedStatus?.is_downloaded
+            ? 'bg-amber-400'
+            : 'bg-red-500'}"
+      ></div>
+      <div class="flex-1">
+        {#if embedStatus?.is_loaded}
+          <p class="text-sm text-gray-100 font-medium">
+            nomic-embed-text-v1.5
+          </p>
+          <p class="text-xs text-gray-400">Loaded · literature search ready</p>
+        {:else if embedStatus?.is_downloaded}
+          <p class="text-sm text-gray-100 font-medium">
+            Model cached, not loaded
+          </p>
+          <p class="text-xs text-gray-400">
+            Will load automatically on first search
+          </p>
+        {:else}
+          <p class="text-sm text-gray-100 font-medium">Not downloaded</p>
+          <p class="text-xs text-gray-400">
+            Will download automatically on first literature search
+          </p>
+        {/if}
+      </div>
+
+      {#if embedPhase !== "done"}
+        <button
+          onclick={handleInitEmbed}
+          disabled={embedPhase === "loading"}
+          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+        >
+          {embedPhase === "loading" ? "Loading…" : "Load now"}
+        </button>
+      {/if}
+    </div>
+
+    {#if embedPhase === "loading"}
+      <p class="text-xs text-blue-400">
+        Downloading and initialising embedding model…
+      </p>
+    {/if}
+    {#if embedPhase === "error"}
+      <p class="text-xs text-red-400">{embedError}</p>
     {/if}
   </section>
 

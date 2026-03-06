@@ -6,6 +6,7 @@
 use super::agent::{AgentScope, ToolCallRequest};
 use super::sanitize::sanitize_for_prompt;
 use crate::error::AppError;
+use crate::llm::embed::EmbedEngine;
 use crate::llm::LlmEngine;
 use crate::models::patient;
 use crate::models::session::{self, CreateSession};
@@ -183,13 +184,20 @@ fn tool_search_literature(
     let raw_query = str_arg(args, "query")?;
     let safe_query = sanitize_for_prompt(raw_query);
 
-    // Get embed engine from app state
+    // Lazy-init: this fn runs inside spawn_blocking so direct blocking I/O is safe
     let state = app.state::<crate::state::AppState>();
-    let embed_engine = state.try_get_embed().ok_or_else(|| {
-        AppError::Validation(
-            "Embedding engine not yet loaded. Literature search is unavailable.".to_string(),
-        )
-    })?;
+    let embed_engine = if let Some(engine) = state.try_get_embed() {
+        engine
+    } else {
+        let embed_cache_dir = state.data_dir.join("models").join("embed");
+        std::fs::create_dir_all(&embed_cache_dir)
+            .map_err(|e| AppError::Llm(format!("Failed to create embed cache dir: {e}")))?;
+        let engine = EmbedEngine::new(&embed_cache_dir)?;
+        state.set_embed(engine)?;
+        state
+            .try_get_embed()
+            .ok_or_else(|| AppError::Llm("Embed engine unavailable".to_string()))?
+    };
 
     // Embed the query (CPU-bound operation)
     let query_vec = embed_engine

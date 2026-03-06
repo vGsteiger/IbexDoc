@@ -1,8 +1,10 @@
 use crate::error::AppError;
 use crate::llm::{
-    self, download, EngineStatus, LlmEngine, ModelChoice, ReportType, SYSTEM_PROMPT_DE,
+    self, download, embed::EmbedEngine, EngineStatus, LlmEngine, ModelChoice, ReportType,
+    SYSTEM_PROMPT_DE,
 };
 use crate::state::{AppState, AuthState};
+use serde::Serialize;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 
@@ -221,4 +223,86 @@ pub async fn generate_report(
 
     let _ = app.emit("report-done", ());
     Ok(report)
+}
+
+/// Status of the embedding model (used for literature semantic search).
+#[derive(Debug, Serialize)]
+pub struct EmbedStatus {
+    /// Whether the engine is initialised in memory and ready to use.
+    pub is_loaded: bool,
+    /// Whether the ONNX model files exist on disk (cached from a previous run).
+    pub is_downloaded: bool,
+}
+
+/// Return the current embed-engine status.
+#[tauri::command]
+pub async fn get_embed_status(state: State<'_, AppState>) -> Result<EmbedStatus, AppError> {
+    let is_loaded = state.try_get_embed().is_some();
+    let embed_cache_dir = state.data_dir.join("models").join("embed");
+    let is_downloaded = embed_cache_dir
+        .exists()
+        .then(|| std::fs::read_dir(&embed_cache_dir).map(|mut d| d.next().is_some()))
+        .and_then(|r| r.ok())
+        .unwrap_or(false);
+    Ok(EmbedStatus {
+        is_loaded,
+        is_downloaded,
+    })
+}
+
+/// Download and initialise the embedding engine (idempotent — no-op if already loaded).
+/// This is a long blocking operation; progress is not streamed.
+#[tauri::command]
+pub async fn initialize_embed_engine(state: State<'_, AppState>) -> Result<(), AppError> {
+    if state.try_get_embed().is_some() {
+        return Ok(());
+    }
+    let embed_cache_dir = state.data_dir.join("models").join("embed");
+    let engine = tokio::task::spawn_blocking(move || -> Result<EmbedEngine, AppError> {
+        std::fs::create_dir_all(&embed_cache_dir)?;
+        EmbedEngine::new(&embed_cache_dir)
+    })
+    .await
+    .map_err(|e| AppError::Llm(format!("spawn_blocking error: {e}")))??;
+    state.set_embed(engine)?;
+    Ok(())
+}
+
+/// Improve or provide suggestions for a piece of text with streaming output.
+/// Emits `"text-improvement-chunk"` events for each token and `"text-improvement-done"` on completion.
+/// `system_prompt`: optional override; falls back to the built-in German prompt.
+#[tauri::command]
+pub async fn improve_text(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    text: String,
+    instruction: String,
+    system_prompt: Option<String>,
+) -> Result<String, AppError> {
+    // Check authentication before processing patient data
+    check_auth(&state)?;
+
+    // Acquire the engine handle under the mutex, but do not run inference while holding the lock.
+    let engine = {
+        let llm = state.llm.lock().unwrap();
+        let engine = llm
+            .as_ref()
+            .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
+        // Clone the Arc so we can release the lock before inference.
+        Arc::clone(engine)
+    };
+
+    // Resolve the system prompt into an owned String we can move into the blocking task.
+    let prompt: String = system_prompt.unwrap_or_else(|| SYSTEM_PROMPT_DE.to_string());
+
+    // Run the potentially long-running text improvement on a blocking thread.
+    let app_clone = app.clone();
+    let improved = tokio::task::spawn_blocking(move || {
+        llm::improve_text_streaming_with_prompt(&app_clone, &engine, &text, &instruction, &prompt)
+    })
+    .await
+    .map_err(|e| AppError::Llm(format!("spawn_blocking error: {e}")))??;
+
+    let _ = app.emit("text-improvement-done", ());
+    Ok(improved)
 }
