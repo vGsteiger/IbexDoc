@@ -625,7 +625,7 @@ export async function listEmails(
   offset?: number,
 ): Promise<Email[]> {
   return await invoke<Email[]>("list_emails", {
-    patientId,
+    patient_id: patientId,
     limit,
     offset,
   });

@@ -21,8 +21,12 @@
     }
   }
 
-  async function handleDeleteEmail(emailId: string) {
-    if (!confirm('Are you sure you want to delete this email draft?')) {
+  async function handleDeleteEmail(emailId: string, status: string) {
+    const confirmMessage = status === 'draft'
+      ? 'Are you sure you want to delete this email draft?'
+      : 'Are you sure you want to delete this email?';
+
+    if (!confirm(confirmMessage)) {
       return;
     }
     try {
@@ -116,12 +120,14 @@
               >
                 {email.status === 'draft' ? 'Edit' : 'View'}
               </a>
-              <button
-                on:click={() => handleDeleteEmail(email.id)}
-                class="px-3 py-1 text-sm bg-red-900/20 text-red-400 rounded hover:bg-red-900/40 transition-colors"
-              >
-                Delete
-              </button>
+              {#if email.status === 'draft'}
+                <button
+                  on:click={() => handleDeleteEmail(email.id, email.status)}
+                  class="px-3 py-1 text-sm bg-red-900/20 text-red-400 rounded hover:bg-red-900/40 transition-colors"
+                >
+                  Delete
+                </button>
+              {/if}
             </div>
           </div>
           <div class="text-sm text-gray-400 line-clamp-3">

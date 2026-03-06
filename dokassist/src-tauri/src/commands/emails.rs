@@ -49,6 +49,9 @@ pub async fn list_emails(
     let offset = offset.unwrap_or(0);
     let emails = email::list_emails_for_patient(&conn, &patient_id, limit, offset)?;
 
+    // Audit logging for list access
+    audit::log(&conn, AuditAction::View, "email", None, Some(&format!("list emails for patient {}", patient_id)))?;
+
     Ok(emails)
 }
 
