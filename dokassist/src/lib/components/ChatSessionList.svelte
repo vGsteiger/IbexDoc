@@ -91,10 +91,12 @@
                 <button
                   onclick={() => confirmRename(session.id)}
                   class="text-xs text-green-400 hover:text-green-300 px-1"
+                  aria-label="Bestätigen"
                 ><Check size={14} /></button>
                 <button
                   onclick={() => (renamingId = null)}
                   class="text-xs text-gray-500 hover:text-gray-400 px-1"
+                  aria-label="Abbrechen"
                 ><X size={14} /></button>
               </div>
             {:else}

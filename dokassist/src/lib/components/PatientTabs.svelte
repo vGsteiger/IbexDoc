@@ -23,13 +23,14 @@
 <nav class="border-b border-gray-700">
   <div class="flex overflow-x-auto">
     {#each tabs as tab}
+      {@const Icon = tab.icon}
       <a
         href={tab.path}
         class="flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap {currentPath === tab.path
           ? 'text-blue-400 border-b-2 border-blue-400'
           : 'text-gray-400 hover:text-gray-300'}"
       >
-        <svelte:component this={tab.icon} size={16} />
+        <Icon size={16} />
         <span>{tab.label}</span>
       </a>
     {/each}

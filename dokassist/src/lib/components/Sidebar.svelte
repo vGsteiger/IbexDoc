@@ -34,6 +34,7 @@
   <nav class="flex-1 p-4">
     <ul class="space-y-2">
       {#each navItems as item}
+        {@const Icon = item.icon}
         <li>
           <a
             href={item.path}
@@ -41,7 +42,7 @@
               ? 'bg-blue-600 text-white'
               : 'text-gray-300 hover:bg-gray-800'}"
           >
-            <svelte:component this={item.icon} size={20} />
+            <Icon size={20} />
             <span class="font-medium">{item.label}</span>
           </a>
         </li>
