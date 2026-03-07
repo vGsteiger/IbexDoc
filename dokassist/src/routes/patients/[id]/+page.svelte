@@ -122,12 +122,20 @@
         <div class="bg-gray-800 rounded-lg p-6">
           <!-- Action Buttons -->
           <div class="flex justify-between mb-6">
-            <button
-              onclick={() => (isEditing = true)}
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Edit Patient
-            </button>
+            <div class="flex gap-3">
+              <button
+                onclick={() => (isEditing = true)}
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Edit Patient
+              </button>
+              <a
+                href={`/patients/${patientId}/email/new`}
+                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center"
+              >
+                Send Email
+              </a>
+            </div>
             <button
               onclick={() => (showDeleteConfirm = true)}
               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
