@@ -19,16 +19,21 @@ jobs:
       with:
         components: llvm-tools-preview
 
-    - name: Cache cargo build
+    - name: Cache cargo registry
       uses: actions/cache@v5
       with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          dokassist/src-tauri/target
-        key: ${{ runner.os }}-stable-cargo-coverage-${{ hashFiles('**/Cargo.lock') }}
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-stable-cargo-coverage-
+          ${{ runner.os }}-cargo-registry-
+
+    - name: Cache cargo index
+      uses: actions/cache@v5
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-index-
 
     - name: Install cargo-llvm-cov
       uses: taiki-e/install-action@cargo-llvm-cov
