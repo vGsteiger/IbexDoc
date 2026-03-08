@@ -15,6 +15,7 @@
     { path: `/patients/${patientId}`, label: 'Overview' },
     { path: `/patients/${patientId}/files`, label: 'Files' },
     { path: `/patients/${patientId}/reports`, label: 'Reports' },
+    { path: `/patients/${patientId}/email`, label: 'Email' },
     { path: `/patients/${patientId}/chat`, label: 'Chat' },
   ]);
 

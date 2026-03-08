@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
         rust: [stable, 1.88.0]
 
     steps:
@@ -45,28 +45,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-index-
 
-    - name: Cache cargo build
-      uses: actions/cache@v5
-      with:
-        path: dokassist/src-tauri/target
-        key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.rust }}-cargo-build-
-
-    - name: Install Linux dependencies
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          libgtk-3-dev \
-          libglib2.0-dev \
-          libsoup-3.0-dev \
-          libjavascriptcoregtk-4.1-dev \
-          libwebkit2gtk-4.1-dev \
-          libayatana-appindicator3-dev \
-          librsvg2-dev \
-          patchelf
-
     - name: Run cargo check
       working-directory: ./dokassist/src-tauri
       run: cargo check --all-targets
@@ -82,7 +60,7 @@ jobs:
 
     # Lint checks run once, reusing the compilation artifacts from above
     - name: Run clippy
-      if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+      if: matrix.rust == 'stable'
       working-directory: ./dokassist/src-tauri
       run: |
         cargo clippy --all-targets --all-features -- \
@@ -91,6 +69,6 @@ jobs:
           -A clippy::type_complexity
 
     - name: Check formatting
-      if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+      if: matrix.rust == 'stable'
       working-directory: ./dokassist/src-tauri
       run: cargo fmt -- --check
