@@ -375,7 +375,7 @@
         {$t('settings.language')}
       </p>
       <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
-        Choose your preferred language
+        {$t('settings.languageDescription')}
       </p>
 
       <div class="space-y-2">
