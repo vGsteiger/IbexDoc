@@ -111,11 +111,9 @@ pub async fn export_report_to_pdf(
     };
 
     // Generate PDF in a blocking task to avoid blocking Tokio runtime
-    let pdf_bytes = tokio::task::spawn_blocking(move || {
-        generate_pdf_bytes(report, patient)
-    })
-    .await
-    .map_err(|e| AppError::Validation(format!("PDF generation task failed: {}", e)))??;
+    let pdf_bytes = tokio::task::spawn_blocking(move || generate_pdf_bytes(report, patient))
+        .await
+        .map_err(|e| AppError::Validation(format!("PDF generation task failed: {}", e)))??;
 
     // Audit log with a fresh connection
     {
@@ -133,23 +131,7 @@ pub async fn export_report_to_pdf(
 }
 
 fn generate_pdf_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppError> {
-    // Create PDF document
-    let (doc, page1, layer1) = PdfDocument::new(
-        "Report",
-        Mm(210.0), // A4 width
-        Mm(297.0), // A4 height
-        "Layer 1",
-    );
-
-    let mut current_layer = doc.get_page(page1).get_layer(layer1);
-
-    // Add built-in fonts
-    let font = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| {
-        AppError::Validation(format!("Failed to add font: {}", e))
-    })?;
-    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).map_err(|e| {
-        AppError::Validation(format!("Failed to add font: {}", e))
-    })?;
+    use printpdf::{Op, PdfFontHandle, PdfPage, PdfSaveOptions, Point, Pt, TextItem};
 
     // Format dates
     let generated_at = NaiveDateTime::parse_from_str(&report.generated_at, "%Y-%m-%d %H:%M:%S%.f")
@@ -161,92 +143,122 @@ fn generate_pdf_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppEr
         .map(|d| d.format("%d.%m.%Y").to_string())
         .unwrap_or_else(|_| patient.date_of_birth.clone());
 
-    // Start writing content
-    let mut y_position = Mm(270.0); // Start near top of page
-    let left_margin = Mm(20.0);
-    let line_height = Mm(5.0);
+    let font = PdfFontHandle::Builtin(BuiltinFont::Helvetica);
+    let font_bold = PdfFontHandle::Builtin(BuiltinFont::HelveticaBold);
+
+    // Helper: emit a single line of text at (x_mm, y_mm) with given font & size
+    let text_op = |text: String, size: f32, x: Mm, y: Mm, fh: &PdfFontHandle| -> Vec<Op> {
+        vec![
+            Op::StartTextSection,
+            Op::SetFont {
+                font: fh.clone(),
+                size: Pt(size),
+            },
+            Op::SetTextCursor {
+                pos: Point::new(x, y),
+            },
+            Op::ShowText {
+                items: vec![TextItem::Text(text)],
+            },
+            Op::EndTextSection,
+        ]
+    };
+
+    let mut doc = PdfDocument::new("Report");
+    let page_w = Mm(210.0);
+    let page_h = Mm(297.0);
+    let left = Mm(20.0);
+    let lh = Mm(5.0);
+
+    let mut all_ops: Vec<Op> = Vec::new();
+    let mut pages: Vec<PdfPage> = Vec::new();
+    let mut y = Mm(270.0);
+
+    let flush_page = |ops: Vec<Op>, pages: &mut Vec<PdfPage>| {
+        pages.push(PdfPage::new(page_w, page_h, ops));
+    };
 
     // Title
-    current_layer.use_text(
+    all_ops.extend(text_op(
         format_report_type(&report.report_type),
         24.0,
-        left_margin,
-        y_position,
+        left,
+        y,
         &font_bold,
-    );
-    y_position = y_position - line_height * 2.0;
+    ));
+    y -= lh * 2.0;
 
-    // Patient information
-    current_layer.use_text(
-        "Patient Information",
+    // Patient information header
+    all_ops.extend(text_op(
+        "Patient Information".to_string(),
         14.0,
-        left_margin,
-        y_position,
+        left,
+        y,
         &font_bold,
-    );
-    y_position = y_position - line_height;
+    ));
+    y -= lh;
 
-    current_layer.use_text(
+    all_ops.extend(text_op(
         format!("Name: {} {}", patient.first_name, patient.last_name),
         11.0,
-        left_margin,
-        y_position,
+        left,
+        y,
         &font,
-    );
-    y_position = y_position - line_height;
+    ));
+    y -= lh;
 
-    current_layer.use_text(
+    all_ops.extend(text_op(
         format!("Date of Birth: {}", dob),
         11.0,
-        left_margin,
-        y_position,
+        left,
+        y,
         &font,
-    );
-    y_position = y_position - line_height;
+    ));
+    y -= lh;
 
-    current_layer.use_text(
+    all_ops.extend(text_op(
         format!("AHV Number: {}", patient.ahv_number),
         11.0,
-        left_margin,
-        y_position,
+        left,
+        y,
         &font,
-    );
-    y_position = y_position - line_height * 2.0;
+    ));
+    y -= lh * 2.0;
 
     // Report metadata
-    current_layer.use_text(
+    all_ops.extend(text_op(
         format!("Generated: {}", generated_at),
         10.0,
-        left_margin,
-        y_position,
+        left,
+        y,
         &font,
-    );
-    y_position = y_position - line_height * 2.0;
+    ));
+    y -= lh * 2.0;
 
-    // Report content
-    current_layer.use_text("Report Content", 14.0, left_margin, y_position, &font_bold);
-    y_position = y_position - line_height;
+    // Report content header
+    all_ops.extend(text_op(
+        "Report Content".to_string(),
+        14.0,
+        left,
+        y,
+        &font_bold,
+    ));
+    y -= lh;
 
-    // Split content into lines and add to PDF
-    let max_chars_per_line = 90; // Approximate characters per line
-
+    // Content lines
+    let max_chars = 90usize;
     for paragraph in report.content.split('\n') {
         if paragraph.is_empty() {
-            y_position = y_position - line_height * 0.5;
+            y -= lh * 0.5;
             continue;
         }
 
-        // Wrap long lines using char-aware slicing
-        let mut char_indices: Vec<(usize, char)> = paragraph.char_indices().collect();
+        let char_indices: Vec<(usize, char)> = paragraph.char_indices().collect();
         let mut start_idx = 0;
 
         while start_idx < char_indices.len() {
-            // Calculate chunk size
-            let end_idx = (start_idx + max_chars_per_line).min(char_indices.len());
-
-            // Find word boundary if we're not at the end
+            let end_idx = (start_idx + max_chars).min(char_indices.len());
             let break_idx = if end_idx < char_indices.len() {
-                // Look for last space within the chunk
                 char_indices[start_idx..end_idx]
                     .iter()
                     .rposition(|(_, c)| *c == ' ')
@@ -256,39 +268,39 @@ fn generate_pdf_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppEr
                 end_idx
             };
 
-            // Get the byte positions for slicing
-            let byte_start = if start_idx == 0 { 0 } else { char_indices[start_idx].0 };
+            let byte_start = if start_idx == 0 {
+                0
+            } else {
+                char_indices[start_idx].0
+            };
             let byte_end = if break_idx < char_indices.len() {
                 char_indices[break_idx].0
             } else {
                 paragraph.len()
             };
+            let chunk = paragraph[byte_start..byte_end].trim().to_string();
 
-            let chunk = &paragraph[byte_start..byte_end];
-
-            // Check if we need a new page
-            if y_position.0 < 30.0 {
-                let (page, layer) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
-                current_layer = doc.get_page(page).get_layer(layer);
-                y_position = Mm(270.0);
+            // New page if needed
+            if y.0 < 30.0 {
+                flush_page(std::mem::take(&mut all_ops), &mut pages);
+                y = Mm(270.0);
             }
 
-            current_layer.use_text(chunk.trim(), 10.0, left_margin, y_position, &font);
-            y_position = y_position - line_height;
+            all_ops.extend(text_op(chunk, 10.0, left, y, &font));
+            y -= lh;
 
             start_idx = break_idx;
-            // Skip whitespace at the start of next chunk
             while start_idx < char_indices.len() && char_indices[start_idx].1.is_whitespace() {
                 start_idx += 1;
             }
         }
     }
 
-    // Convert PDF to bytes
-    let pdf_bytes = doc.save_to_bytes().map_err(|e| {
-        AppError::Validation(format!("Failed to generate PDF: {}", e))
-    })?;
+    // Flush last page
+    flush_page(all_ops, &mut pages);
+    doc.pages = pages;
 
+    let pdf_bytes = doc.save(&PdfSaveOptions::default(), &mut Vec::new());
     Ok(pdf_bytes)
 }
 
@@ -309,11 +321,9 @@ pub async fn export_report_to_docx(
     };
 
     // Generate DOCX in a blocking task to avoid blocking Tokio runtime
-    let docx_bytes = tokio::task::spawn_blocking(move || {
-        generate_docx_bytes(report, patient)
-    })
-    .await
-    .map_err(|e| AppError::Validation(format!("DOCX generation task failed: {}", e)))??;
+    let docx_bytes = tokio::task::spawn_blocking(move || generate_docx_bytes(report, patient))
+        .await
+        .map_err(|e| AppError::Validation(format!("DOCX generation task failed: {}", e)))??;
 
     // Audit log with a fresh connection
     {
@@ -346,8 +356,12 @@ fn generate_docx_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppE
 
     // Title
     docx = docx.add_paragraph(
-        Paragraph::new()
-            .add_run(Run::new().add_text(format_report_type(&report.report_type)).bold().size(48)),
+        Paragraph::new().add_run(
+            Run::new()
+                .add_text(format_report_type(&report.report_type))
+                .bold()
+                .size(48),
+        ),
     );
 
     // Empty line
@@ -358,18 +372,18 @@ fn generate_docx_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppE
         Paragraph::new().add_run(Run::new().add_text("Patient Information").bold().size(28)),
     );
 
-    docx = docx.add_paragraph(
-        Paragraph::new().add_run(
-            Run::new().add_text(format!("Name: {} {}", patient.first_name, patient.last_name)),
-        ),
-    );
+    docx = docx.add_paragraph(Paragraph::new().add_run(Run::new().add_text(format!(
+        "Name: {} {}",
+        patient.first_name, patient.last_name
+    ))));
 
     docx = docx.add_paragraph(
         Paragraph::new().add_run(Run::new().add_text(format!("Date of Birth: {}", dob))),
     );
 
     docx = docx.add_paragraph(
-        Paragraph::new().add_run(Run::new().add_text(format!("AHV Number: {}", patient.ahv_number))),
+        Paragraph::new()
+            .add_run(Run::new().add_text(format!("AHV Number: {}", patient.ahv_number))),
     );
 
     // Empty line
@@ -393,17 +407,18 @@ fn generate_docx_bytes(report: Report, patient: Patient) -> Result<Vec<u8>, AppE
         if paragraph_text.trim().is_empty() {
             docx = docx.add_paragraph(Paragraph::new());
         } else {
-            docx = docx.add_paragraph(Paragraph::new().add_run(Run::new().add_text(paragraph_text)));
+            docx =
+                docx.add_paragraph(Paragraph::new().add_run(Run::new().add_text(paragraph_text)));
         }
     }
 
-    // Convert DOCX to bytes
-    let mut docx_bytes = Vec::new();
+    // Convert DOCX to bytes (pack requires Write + Seek, so use Cursor)
+    let mut cursor = std::io::Cursor::new(Vec::new());
     docx.build()
-        .pack(&mut docx_bytes)
+        .pack(&mut cursor)
         .map_err(|e| AppError::Validation(format!("Failed to generate DOCX: {}", e)))?;
 
-    Ok(docx_bytes)
+    Ok(cursor.into_inner())
 }
 
 fn format_report_type(report_type: &str) -> String {
