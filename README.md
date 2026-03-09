@@ -8,7 +8,7 @@
 [![Frontend CI](https://github.com/vGsteiger/RamDoc/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/vGsteiger/RamDoc/actions/workflows/frontend-ci.yml)
 [![Security Audit](https://github.com/vGsteiger/RamDoc/actions/workflows/security.yml/badge.svg)](https://github.com/vGsteiger/RamDoc/actions/workflows/security.yml)
 [![Lint & Format](https://github.com/vGsteiger/RamDoc/actions/workflows/lint.yml/badge.svg)](https://github.com/vGsteiger/RamDoc/actions/workflows/lint.yml)
-[![Tauri Build](https://github.com/vGsteiger/RamDoc/actions/workflows/release.yml/badge.svg)](https://github.com/vGsteiger/RamDoc/actions/workflows/release.yml)
+[![Tauri Build](https://github.com/vGsteiger/RamDoc/actions/workflows/tauri-build.yml/badge.svg)](https://github.com/vGsteiger/RamDoc/actions/workflows/tauri-build.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **DokAssist** is a 100% local, encrypted macOS application for Swiss patient record management.

@@ -13,17 +13,17 @@ The project uses GitHub Actions for continuous integration and deployment with m
 **Triggers:** Push to main/develop/claude branches, PRs to main/develop
 
 **Jobs:**
-- **Test Suite** - Runs on macOS with stable and MSRV (1.88.0)
-  - Unit tests (`cargo test --lib`)
-  - Example runs
-- **Build Check** - Verifies release builds work on macOS
-- **Clippy** - Runs linter with strict warnings
-- **Rustfmt** - Checks code formatting
+- **Test Suite** - Single job running on macOS with stable and MSRV (1.88.0)
+  - `cargo check --all-targets` - Build check
+  - `cargo test --lib` - Unit tests
+  - Example run (`cargo run --example test_audit`, continue-on-error)
+  - `cargo clippy` - Linting with strict warnings (stable only)
+  - `cargo fmt -- --check` - Format checking (stable only)
 
 **Key Features:**
 - Matrix testing across Rust versions (stable and MSRV 1.88.0)
 - Comprehensive caching for faster builds
-- Example tests validated
+- All checks run in a single job for efficiency
 - macOS-specific testing environment
 
 ### 2. Frontend CI (`frontend-ci.yml`)
@@ -31,8 +31,8 @@ The project uses GitHub Actions for continuous integration and deployment with m
 **Triggers:** Push to main/develop/claude branches, PRs to main/develop
 
 **Jobs:**
-- **Frontend Build** - Builds the Svelte/TypeScript frontend
-- **Type Check** - Type checking for TypeScript and Svelte components
+- **Frontend Build & Check** - Builds the Svelte/TypeScript frontend and runs tests
+- **Svelte Type Check** - Runs `svelte-check` for TypeScript and Svelte components (continue-on-error if not installed)
 
 **Key Features:**
 - pnpm dependency management
@@ -74,17 +74,19 @@ The project uses GitHub Actions for continuous integration and deployment with m
 **Triggers:** Push to main/develop/claude branches, PRs to main/develop
 
 **Jobs:**
-- **Rustfmt** - Rust code formatting check
-- **Clippy** - Rust linting with custom rules
-- **Typos** - Spell checking across codebase
+- **Frontend Formatting (Prettier)** - Checks frontend code formatting (continue-on-error if not installed)
+- **Frontend Linting (ESLint)** - Lints JavaScript/TypeScript/Svelte code (continue-on-error if not installed)
+- **Typo Check** - Spell checking across codebase
 
 **Key Features:**
-- Strict Clippy warnings with allowances for common patterns
-- Automated typo detection
+- Frontend tooling checks are best-effort (continue on error when tools not present)
+- Automated typo detection across source files and documentation
 
 ### 6. Tauri Build (`tauri-build.yml`)
 
-**Triggers:** Version tags (v*), after successful Release workflow completion
+**Triggers:**
+1. Direct push of version tags (v*)
+2. Successful completion of Release workflow (workflow_run event)
 
 **Jobs:**
 - **Tauri Build** - Cross-platform Tauri app builds
@@ -96,7 +98,7 @@ The project uses GitHub Actions for continuous integration and deployment with m
 **Key Features:**
 - Multi-platform build matrix
 - Artifact uploads (DMG, AppImage, Deb packages)
-- Triggered by Release workflow
+- Dual trigger paths for flexibility
 - Signing support (when keys are configured)
 
 ## Caching Strategy
