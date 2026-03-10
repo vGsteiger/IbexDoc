@@ -93,7 +93,7 @@
   <div
     class="relative border-2 border-dashed rounded-lg p-8 transition-colors {isDragging
       ? 'border-blue-500 bg-blue-500/10'
-      : 'border-gray-700 bg-gray-900'}"
+      : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'}"
     ondragover={handleDragOver}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
@@ -110,22 +110,22 @@
       <div class="mb-4 flex justify-center text-gray-400">
         <Paperclip size={48} />
       </div>
-      <p class="text-gray-300 font-medium mb-2">
+      <p class="text-gray-600 dark:text-gray-300 font-medium mb-2">
         Drop files here or click to browse
       </p>
-      <p class="text-sm text-gray-500">
+      <p class="text-sm text-gray-400 dark:text-gray-500">
         Supports PDF, PNG, JPG, DOCX
       </p>
     </div>
   </div>
 
   {#if isUploading}
-    <div class="bg-gray-900 rounded-lg p-4">
+    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm text-gray-300">Uploading...</span>
-        <span class="text-sm text-gray-400">{uploadProgress}%</span>
+        <span class="text-sm text-gray-600 dark:text-gray-300">Uploading...</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">{uploadProgress}%</span>
       </div>
-      <div class="w-full bg-gray-800 rounded-full h-2">
+      <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
         <div
           class="bg-blue-600 h-2 rounded-full transition-all duration-300"
           style="width: {uploadProgress}%"
@@ -135,8 +135,8 @@
   {/if}
 
   {#if errorMessage}
-    <div class="bg-red-900/20 border border-red-800 rounded-lg p-4">
-      <p class="text-sm text-red-400">{errorMessage}</p>
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <p class="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
     </div>
   {/if}
 </div>

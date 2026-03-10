@@ -101,7 +101,7 @@
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold text-gray-100">{$t('patients.title')}</h1>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">{$t('patients.title')}</h1>
       <button
         onclick={handleNewPatient}
         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -118,12 +118,12 @@
           placeholder={$t('patients.search')}
           bind:value={searchQuery}
           oninput={(e) => handleSearch(e.currentTarget.value)}
-          class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
         />
       </div>
       <select
         bind:value={sortBy}
-        class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+        class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
       >
         <option value="name">{$t('patients.sortByName')}</option>
         <option value="created">{$t('patients.sortByCreated')}</option>
@@ -132,7 +132,7 @@
 
     <!-- Patient Count -->
     {#if !isLoading}
-      <div class="mb-4 text-sm text-gray-400">
+      <div class="mb-4 text-sm text-gray-500 dark:text-gray-400">
         {sortedPatients.length} {sortedPatients.length === 1 ? $t('patients.patient') : $t('patients.patients')}
         {#if searchQuery}
           {$t('patients.matching')} "{searchQuery}"
@@ -143,15 +143,15 @@
     <!-- Loading State -->
     {#if isLoading}
       <div class="flex justify-center items-center py-12">
-        <div class="text-gray-400">{$t('common.loading')}</div>
+        <div class="text-gray-500 dark:text-gray-400">{$t('common.loading')}</div>
       </div>
     {:else if error}
-      <div class="bg-red-900/20 border border-red-800 rounded-lg p-4 text-red-400">
+      <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
         {error}
       </div>
     {:else if sortedPatients.length === 0}
       <div class="text-center py-12">
-        <p class="text-gray-400 mb-4">
+        <p class="text-gray-500 dark:text-gray-400 mb-4">
           {searchQuery ? $t('patients.noSearchResults') : $t('patients.noPatients')}
         </p>
         {#if !searchQuery}

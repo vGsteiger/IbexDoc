@@ -38,9 +38,9 @@
 
 <div class="flex h-full">
   <!-- Sidebar: session list -->
-  <div class="w-56 border-r border-gray-700 flex flex-col shrink-0">
-    <div class="p-4 border-b border-gray-700">
-      <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Chats</h2>
+  <div class="w-56 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wide">Chats</h2>
     </div>
     {#if !isLoading}
       <ChatSessionList
@@ -60,12 +60,12 @@
         <ChatThread sessionId={activeSessionId} scope="patient" {patientId} />
       {/key}
     {:else if !isLoading}
-      <div class="flex-1 flex items-center justify-center text-gray-500">
+      <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
         <div class="text-center">
           <p class="text-lg mb-2">Kein Chat ausgewählt</p>
           <button
             onclick={handleNewSession}
-            class="text-blue-400 hover:text-blue-300 underline text-sm"
+            class="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 underline text-sm"
           >
             Neuen Chat starten
           </button>

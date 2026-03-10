@@ -144,21 +144,21 @@
 
 <div class="flex h-full gap-4">
   <!-- Main editor panel -->
-  <div class="flex-1 flex flex-col border border-gray-700 rounded-lg overflow-hidden">
-    <div class="flex border-b border-gray-700 bg-gray-800">
+  <div class="flex-1 flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
       <button
         on:click={() => (showPreview = false)}
         class="flex-1 px-4 py-2 text-sm font-medium transition-colors {!showPreview
-          ? 'bg-gray-900 text-gray-100'
-          : 'text-gray-400 hover:text-gray-300'}"
+          ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'
+          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
       >
         Edit
       </button>
       <button
         on:click={() => (showPreview = true)}
         class="flex-1 px-4 py-2 text-sm font-medium transition-colors {showPreview
-          ? 'bg-gray-900 text-gray-100'
-          : 'text-gray-400 hover:text-gray-300'}"
+          ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'
+          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
       >
         Preview
       </button>
@@ -166,11 +166,11 @@
 
     <div class="flex-1 overflow-auto">
       {#if showPreview}
-        <div class="p-6 prose prose-invert max-w-none">
+        <div class="p-6 prose dark:prose-invert max-w-none">
           {#if content}
-            <pre class="whitespace-pre-wrap font-sans text-gray-100">{content}</pre>
+            <pre class="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">{content}</pre>
           {:else}
-            <p class="text-gray-500 italic">Kein Inhalt zur Vorschau</p>
+            <p class="text-gray-400 dark:text-gray-500 italic">Kein Inhalt zur Vorschau</p>
           {/if}
         </div>
       {:else}
@@ -180,14 +180,14 @@
           on:select={handleTextSelection}
           on:mouseup={handleTextSelection}
           {readonly}
-          class="w-full h-full p-6 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
+          class="w-full h-full p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm resize-none focus:outline-none"
           placeholder="Berichtinhalt wird hier angezeigt..."
         />
       {/if}
     </div>
 
     {#if !readonly && !showPreview}
-      <div class="border-t border-gray-700 bg-gray-800 p-4">
+      <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-4">
         <div class="flex items-center gap-4">
           <button
             on:click={() => (showSuggestions = !showSuggestions)}
@@ -197,7 +197,7 @@
             {showSuggestions ? 'Vorschläge ausblenden' : 'LLM-Vorschläge'}
           </button>
           {#if selectedText}
-            <span class="text-xs text-gray-400">
+            <span class="text-xs text-gray-500 dark:text-gray-400">
               {selectedText.length} Zeichen ausgewählt
             </span>
           {/if}
@@ -208,22 +208,22 @@
 
   <!-- Suggestions panel -->
   {#if showSuggestions && !readonly}
-    <div class="w-1/3 flex flex-col border border-gray-700 rounded-lg overflow-hidden bg-gray-800">
-      <div class="p-4 border-b border-gray-700">
-        <h3 class="text-sm font-semibold text-gray-100 mb-2">LLM-Vorschläge</h3>
+    <div class="w-1/3 flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">LLM-Vorschläge</h3>
         {#if error}
-          <div class="p-2 bg-red-900/20 border border-red-500 rounded text-xs text-red-400 mb-2">
+          <div class="p-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-500 rounded text-xs text-red-600 dark:text-red-400 mb-2">
             {error.message}
           </div>
         {/if}
         {#if !llmStatus?.is_loaded}
-          <div class="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-xs text-yellow-400">
+          <div class="p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-500 rounded text-xs text-yellow-700 dark:text-yellow-400">
             LLM nicht geladen. Bitte konfigurieren Sie das Modell in den Einstellungen.
           </div>
         {:else}
           <textarea
             bind:value={suggestionInstruction}
-            class="w-full h-16 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 text-xs focus:outline-none focus:border-blue-500"
+            class="w-full h-16 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 text-xs focus:outline-none focus:border-blue-500"
             placeholder="Anweisung für Textverbesserung..."
           />
           <button
@@ -238,18 +238,18 @@
 
       <div class="flex-1 overflow-auto p-4">
         {#if isGeneratingSuggestion}
-          <div class="text-sm text-gray-400">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
             <div class="flex items-center gap-2">
               <div class="animate-pulse h-2 w-2 bg-blue-500 rounded-full"></div>
               <span>Generiere Vorschlag...</span>
             </div>
             {#if generatedSuggestion}
-              <pre class="mt-4 whitespace-pre-wrap font-sans text-gray-100 text-sm">{generatedSuggestion}</pre>
+              <pre class="mt-4 whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100 text-sm">{generatedSuggestion}</pre>
             {/if}
           </div>
         {:else if generatedSuggestion}
           <div>
-            <pre class="whitespace-pre-wrap font-sans text-gray-100 text-sm">{generatedSuggestion}</pre>
+            <pre class="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100 text-sm">{generatedSuggestion}</pre>
             <div class="flex gap-2 mt-4">
               <button
                 on:click={applySuggestion}
@@ -259,14 +259,14 @@
               </button>
               <button
                 on:click={clearSuggestion}
-                class="flex-1 px-3 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors text-sm"
+                class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
               >
                 Verwerfen
               </button>
             </div>
           </div>
         {:else}
-          <p class="text-sm text-gray-500 italic">
+          <p class="text-sm text-gray-400 dark:text-gray-500 italic">
             Wählen Sie Text aus oder generieren Sie einen Vorschlag für den gesamten Inhalt.
           </p>
         {/if}
