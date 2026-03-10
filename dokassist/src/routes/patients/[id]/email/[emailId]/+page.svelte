@@ -129,24 +129,24 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   {#if isLoading}
-    <div class="text-gray-400">Loading email...</div>
+    <div class="text-gray-500 dark:text-gray-400">Loading email...</div>
   {:else if error}
     <ErrorDisplay {error} showDetails={true} />
   {:else if email}
     <div class="mb-6">
       <div class="flex justify-between items-start mb-2">
-        <h2 class="text-2xl font-bold text-gray-100">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {email.status === "draft" ? "Edit Email Draft" : "View Email"}
         </h2>
         <span
           class="px-3 py-1 text-sm rounded {email.status === 'sent'
-            ? 'bg-green-900/30 text-green-400'
-            : 'bg-yellow-900/30 text-yellow-400'}"
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'}"
         >
           {email.status === "draft" ? "Draft" : "Sent"}
         </span>
       </div>
-      <p class="text-gray-400 text-sm">
+      <p class="text-gray-500 dark:text-gray-400 text-sm">
         {#if email.status === "sent" && email.sent_at}
           Sent: {formatDate(email.sent_at)}
         {:else}
@@ -161,9 +161,9 @@
       </div>
     {/if}
 
-    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-4">
+    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-4">
       <div>
-        <label for="recipient" class="block text-sm font-medium text-gray-300 mb-2">
+        <label for="recipient" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           To:
         </label>
         <input
@@ -171,12 +171,12 @@
           type="email"
           bind:value={recipientEmail}
           disabled={!isEditing}
-          class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
       <div>
-        <label for="subject" class="block text-sm font-medium text-gray-300 mb-2">
+        <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Subject:
         </label>
         <input
@@ -184,12 +184,12 @@
           type="text"
           bind:value={subject}
           disabled={!isEditing}
-          class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
       <div>
-        <label for="body" class="block text-sm font-medium text-gray-300 mb-2">
+        <label for="body" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Message:
         </label>
         <textarea
@@ -197,14 +197,14 @@
           bind:value={body}
           disabled={!isEditing}
           rows="15"
-          class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
         ></textarea>
       </div>
 
-      <div class="flex justify-between items-center pt-4 border-t border-gray-700">
+      <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
         <a
           href={`/patients/${patientId}/email`}
-          class="px-4 py-2 text-gray-400 hover:text-gray-300 transition-colors"
+          class="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
           Back to Emails
         </a>
@@ -213,7 +213,7 @@
             <button
               on:click={handleSaveChanges}
               disabled={isSaving}
-              class="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? "Saving..." : "Save Changes"}
             </button>
@@ -240,7 +240,7 @@
     </div>
 
     {#if isEditing}
-      <div class="mt-4 text-sm text-gray-500">
+      <div class="mt-4 text-sm text-gray-400 dark:text-gray-500">
         <p>
           Clicking "Open in Mail Client" will save your changes and open your default
           email application with the email pre-filled. You can then review and send it

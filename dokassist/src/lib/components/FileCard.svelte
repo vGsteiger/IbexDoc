@@ -53,7 +53,7 @@
   let Icon = $derived(getFileIcon(file.mime_type));
 </script>
 
-<div class="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
   <div class="flex items-start gap-4">
     <div class="flex-shrink-0">
       <Icon size={32} class="text-gray-400" />
@@ -62,10 +62,10 @@
     <div class="flex-1 min-w-0">
       <div class="flex items-start justify-between gap-2">
         <div class="flex-1 min-w-0">
-          <h3 class="text-gray-100 font-medium truncate" title={file.filename}>
+          <h3 class="text-gray-900 dark:text-gray-100 font-medium truncate" title={file.filename}>
             {file.filename}
           </h3>
-          <div class="flex items-center gap-3 mt-1 text-sm text-gray-400">
+          <div class="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
             <span>{formatFileSize(file.size_bytes)}</span>
             <span>•</span>
             <span>{getFileExtension(file.filename)}</span>
@@ -88,7 +88,7 @@
         {#if onDownload}
           <button
             onclick={() => onDownload?.(file)}
-            class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm rounded transition-colors"
+            class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
           >
             Download
           </button>
@@ -97,7 +97,7 @@
         {#if onDelete}
           <button
             onclick={() => onDelete?.(file)}
-            class="px-3 py-1.5 bg-red-900/20 hover:bg-red-900/30 text-red-400 text-sm rounded transition-colors ml-auto"
+            class="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded transition-colors ml-auto"
           >
             Delete
           </button>

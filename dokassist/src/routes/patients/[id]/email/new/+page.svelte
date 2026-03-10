@@ -114,9 +114,9 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-100 mb-2">Compose Email</h2>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Compose Email</h2>
     {#if patient}
-      <p class="text-gray-400">
+      <p class="text-gray-500 dark:text-gray-400">
         For patient: {patient.first_name} {patient.last_name}
       </p>
     {/if}
@@ -128,9 +128,9 @@
     </div>
   {/if}
 
-  <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-4">
+  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-4">
     <div>
-      <label for="recipient" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="recipient" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         To:
       </label>
       <input
@@ -138,12 +138,12 @@
         type="email"
         bind:value={recipientEmail}
         placeholder="recipient@example.com"
-        class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
 
     <div>
-      <label for="subject" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Subject:
       </label>
       <input
@@ -151,12 +151,12 @@
         type="text"
         bind:value={subject}
         placeholder="Email subject"
-        class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
 
     <div>
-      <label for="body" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="body" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Message:
       </label>
       <textarea
@@ -164,14 +164,14 @@
         bind:value={body}
         placeholder="Email body"
         rows="15"
-        class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+        class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
       ></textarea>
     </div>
 
-    <div class="flex justify-between items-center pt-4 border-t border-gray-700">
+    <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
       <a
         href={`/patients/${patientId}/email`}
-        class="px-4 py-2 text-gray-400 hover:text-gray-300 transition-colors"
+        class="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
       >
         Cancel
       </a>
@@ -179,7 +179,7 @@
         <button
           on:click={handleSaveDraft}
           disabled={isSaving}
-          class="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? "Saving..." : "Save Draft"}
         </button>
@@ -194,7 +194,7 @@
     </div>
   </div>
 
-  <div class="mt-4 text-sm text-gray-500">
+  <div class="mt-4 text-sm text-gray-400 dark:text-gray-500">
     <p>
       Clicking "Open in Mail Client" will save the draft and open your default email
       application with the email pre-filled. You can then review and send it from there.
