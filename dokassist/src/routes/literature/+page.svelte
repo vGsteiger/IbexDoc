@@ -23,6 +23,7 @@
   let processingFiles: Set<string> = $state(new Set());
   let editingDescription: string | null = $state(null);
   let descriptionText = $state('');
+  let confirmingDelete: string | null = $state(null);
 
   let unlisten: UnlistenFn | null = null;
 
@@ -96,13 +97,10 @@
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this literature document?')) {
-      return;
-    }
-
     error = null;
     try {
       await deleteLiteratureDocument(id);
+      confirmingDelete = null;
       await loadLiterature();
     } catch (err) {
       error = parseError(err);
@@ -168,10 +166,10 @@
   }
 </script>
 
-<div class="h-full flex flex-col bg-gray-950">
-  <div class="border-b border-gray-800 p-6">
-    <h1 class="text-2xl font-bold text-gray-100">Literature</h1>
-    <p class="text-gray-400 mt-2">
+<div class="h-full flex flex-col bg-white dark:bg-gray-950">
+  <div class="border-b border-gray-200 dark:border-gray-800 p-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Literature</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-2">
       Upload reference documents, medication guidelines, and treatment protocols for AI-powered search.
     </p>
   </div>
@@ -186,7 +184,7 @@
     <!-- Upload Section -->
     <div class="mb-6">
       <label
-        class="flex items-center justify-center w-full h-32 px-4 transition bg-gray-900 border-2 border-gray-700 border-dashed rounded-lg hover:border-blue-500 cursor-pointer"
+        class="flex items-center justify-center w-full h-32 px-4 transition bg-gray-50 dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg hover:border-blue-500 cursor-pointer"
       >
         <div class="flex flex-col items-center space-y-2">
           <svg
@@ -202,10 +200,10 @@
               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
             />
           </svg>
-          <span class="text-sm text-gray-400">
+          <span class="text-sm text-gray-500 dark:text-gray-400">
             Click to upload PDF or text files
           </span>
-          <span class="text-xs text-gray-500">Max 500 MB per file</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">Max 500 MB per file</span>
         </div>
         <input
           type="file"
@@ -221,13 +219,13 @@
     {#if loading}
       <div class="text-center py-8">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-        <p class="text-gray-400 mt-2">Loading literature...</p>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">Loading literature...</p>
       </div>
     {:else if literature.length === 0}
       <!-- Empty State -->
       <div class="text-center py-12">
         <svg
-          class="mx-auto h-12 w-12 text-gray-600"
+          class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -239,7 +237,7 @@
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-300">No literature documents</h3>
+        <h3 class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">No literature documents</h3>
         <p class="mt-1 text-sm text-gray-500">
           Upload reference documents to enable AI-powered search in chat and reports.
         </p>
@@ -248,10 +246,10 @@
       <!-- Literature List -->
       <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {#each literature as lit}
-          <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="text-gray-400">
+                <span class="text-gray-500 dark:text-gray-400">
                   {#if lit.mime_type === 'application/pdf'}
                     <FileText size={24} />
                   {:else}
@@ -259,10 +257,10 @@
                   {/if}
                 </span>
                 <div class="min-w-0">
-                  <h3 class="text-sm font-medium text-gray-100 truncate">
+                  <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                     {lit.filename}
                   </h3>
-                  <p class="text-xs text-gray-500">
+                  <p class="text-xs text-gray-400 dark:text-gray-500">
                     {formatFileSize(lit.size_bytes)} · {formatDate(lit.created_at)}
                   </p>
                 </div>
@@ -290,7 +288,7 @@
                 <div class="space-y-2">
                   <textarea
                     bind:value={descriptionText}
-                    class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-100"
+                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-100"
                     rows="3"
                     placeholder="Add a description..."
                   />
@@ -303,16 +301,16 @@
                     </button>
                     <button
                       onclick={cancelEditingDescription}
-                      class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded"
+                      class="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
               {:else if lit.description}
-                <p class="text-xs text-gray-400">{lit.description}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{lit.description}</p>
               {:else}
-                <p class="text-xs text-gray-600 italic">No description</p>
+                <p class="text-xs text-gray-400 dark:text-gray-600 italic">No description</p>
               {/if}
             </div>
 
@@ -320,24 +318,39 @@
             <div class="flex gap-2">
               <button
                 onclick={() => handleDownload(lit)}
-                class="flex-1 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded transition-colors"
+                class="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
               >
                 Download
               </button>
               {#if editingDescription !== lit.id}
                 <button
                   onclick={() => startEditingDescription(lit)}
-                  class="flex-1 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded transition-colors"
+                  class="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
                 >
                   Edit
                 </button>
               {/if}
-              <button
-                onclick={() => handleDelete(lit.id)}
-                class="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs rounded transition-colors"
-              >
-                Delete
-              </button>
+              {#if confirmingDelete === lit.id}
+                <button
+                  onclick={() => handleDelete(lit.id)}
+                  class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                >
+                  Confirm
+                </button>
+                <button
+                  onclick={() => (confirmingDelete = null)}
+                  class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                >
+                  Cancel
+                </button>
+              {:else}
+                <button
+                  onclick={() => (confirmingDelete = lit.id)}
+                  class="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-xs rounded transition-colors"
+                >
+                  Delete
+                </button>
+              {/if}
             </div>
           </div>
         {/each}

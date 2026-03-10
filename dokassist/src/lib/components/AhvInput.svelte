@@ -110,11 +110,11 @@
     oninput={handleInput}
     onblur={handleBlur}
     placeholder="756.____.____.__ "
-    class="w-full px-4 py-2 bg-gray-800 border rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 {!isValid && displayValue
+    class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 {!isValid && displayValue
       ? 'border-red-500'
       : error
         ? 'border-red-500'
-        : 'border-gray-700'}"
+        : 'border-gray-300 dark:border-gray-700'}"
     maxlength="16"
   />
   {#if validationError && displayValue}
