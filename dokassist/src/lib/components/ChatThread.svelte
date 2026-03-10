@@ -141,14 +141,14 @@
 
 <div class="flex flex-col h-full">
   {#if !isModelLoaded}
-    <div class="bg-amber-900/30 border-b border-amber-700 px-4 py-3 flex items-center gap-3">
-      <AlertTriangle size={18} class="text-amber-400" />
-      <p class="text-sm text-amber-300 flex-1">
+    <div class="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700 px-4 py-3 flex items-center gap-3">
+      <AlertTriangle size={18} class="text-amber-600 dark:text-amber-400" />
+      <p class="text-sm text-amber-700 dark:text-amber-300 flex-1">
         Kein Modell geladen. Bitte laden Sie ein Modell in den Einstellungen.
       </p>
       <button
         onclick={() => goto('/settings')}
-        class="text-xs text-amber-400 underline hover:text-amber-300"
+        class="text-xs text-amber-600 dark:text-amber-400 underline hover:text-amber-700 dark:hover:text-amber-300"
       >
         Einstellungen öffnen
       </button>
@@ -178,14 +178,14 @@
       />
     {:else if isStreaming && !streamingContent}
       <div class="flex justify-start mb-3">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl rounded-bl-sm px-4 py-2">
+        <div class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-2">
           <span class="animate-pulse text-gray-500 text-sm">●</span>
         </div>
       </div>
     {/if}
 
     {#if errorMessage}
-      <div class="bg-red-900/20 border border-red-800 rounded-lg px-4 py-3 text-sm text-red-400">
+      <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-600 dark:text-red-400">
         {errorMessage}
       </div>
     {/if}
@@ -194,7 +194,7 @@
   </div>
 
   <!-- Input area -->
-  <div class="border-t border-gray-700 p-4">
+  <div class="border-t border-gray-200 dark:border-gray-700 p-4">
     <div class="flex gap-2">
       <textarea
         bind:value={inputText}
@@ -202,8 +202,8 @@
         disabled={!isModelLoaded || isStreaming}
         placeholder={isModelLoaded ? 'Nachricht eingeben (Enter zum Senden)…' : 'Modell nicht geladen'}
         rows={2}
-        class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100
-               placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500
+        class="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100
+               placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500
                disabled:opacity-50 disabled:cursor-not-allowed"
       ></textarea>
       <button
