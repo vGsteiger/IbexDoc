@@ -176,6 +176,7 @@ jobs:
         ARM_SIG_CONTENT=""
         X86_SIG_CONTENT=""
 
+        # Upload DMGs as release assets for fresh installs
         if [ -f "$ARM_DMG" ]; then
           echo "Uploading ARM64 DMG: $(basename "$ARM_DMG")"
           gh release upload "$TAG" "$ARM_DMG" --clobber
@@ -212,6 +213,7 @@ jobs:
 
         # Generate and upload latest.json for Tauri updater
         # NOTE: Tauri v2 requires plain semver (no "v" prefix)
+        # URL must point to .app.tar.gz (not .dmg) — that is what the updater downloads
         RELEASE_NOTES=$(gh release view "$TAG" --json body -q .body 2>/dev/null || echo "")
         RELEASE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
