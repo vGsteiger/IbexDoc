@@ -96,22 +96,23 @@
       if (filteredResults.length > 0) showDropdown = true;
     }}
     {placeholder}
-    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
   />
 
   {#if showDropdown && filteredResults.length > 0}
     <div
-      class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+      class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-64 overflow-y-auto"
     >
       {#each filteredResults as entry, index}
         <button
           type="button"
-          class="w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors flex gap-2"
-          class:bg-gray-700={index === selectedIndex}
+          class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex gap-2"
+          class:bg-gray-100={index === selectedIndex}
+          class:dark:bg-gray-700={index === selectedIndex}
           onclick={() => handleSelect(entry)}
         >
-          <span class="font-mono text-sm text-blue-400 shrink-0">{entry.code}</span>
-          <span class="text-sm text-gray-300">{entry.description}</span>
+          <span class="font-mono text-sm text-blue-600 dark:text-blue-400 shrink-0">{entry.code}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{entry.description}</span>
         </button>
       {/each}
     </div>

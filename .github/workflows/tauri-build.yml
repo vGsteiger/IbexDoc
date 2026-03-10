@@ -25,9 +25,6 @@ jobs:
           - platform: 'macos-14'
             args: '--target x86_64-apple-darwin'
             rust-targets: 'x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-            rust-targets: ''
 
     runs-on: ${{ matrix.platform }}
 
@@ -78,20 +75,6 @@ jobs:
         toolchain: stable
         target: ${{ matrix.rust-targets }}
 
-    - name: Install Linux dependencies
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          libgtk-3-dev \
-          libglib2.0-dev \
-          libsoup-3.0-dev \
-          libjavascriptcoregtk-4.1-dev \
-          libwebkit2gtk-4.1-dev \
-          libayatana-appindicator3-dev \
-          librsvg2-dev \
-          patchelf
-
     - name: Cache pnpm store
       uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
@@ -120,7 +103,6 @@ jobs:
         TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
     - name: Upload macOS artifacts
-      if: runner.os == 'macOS'
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: dokassist-${{ matrix.platform }}
@@ -128,17 +110,6 @@ jobs:
           dokassist/src-tauri/target/*/release/bundle/dmg/*.dmg
           dokassist/src-tauri/target/*/release/bundle/macos/*.app.tar.gz
           dokassist/src-tauri/target/*/release/bundle/macos/*.app.tar.gz.sig
-        retention-days: 7
-        if-no-files-found: warn
-
-    - name: Upload Linux artifacts
-      if: runner.os == 'Linux'
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-      with:
-        name: dokassist-linux
-        path: |
-          dokassist/src-tauri/target/release/bundle/appimage/*.AppImage
-          dokassist/src-tauri/target/release/bundle/deb/*.deb
         retention-days: 7
         if-no-files-found: warn
 
@@ -192,8 +163,7 @@ jobs:
         REPO="${{ github.repository }}"
         BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
 
-        # Locate DMGs (for manual download) and .app.tar.gz + .sig (for auto-updater)
-        # Tauri v2 macOS updater uses .app.tar.gz, NOT .dmg
+        # Locate platform-specific DMGs (distribution) and .app.tar.gz + .sig (updater)
         ARM_DMG=$(find ./artifacts -name "*aarch64*.dmg" | head -n1)
         X86_DMG=$(find ./artifacts -name "*x86_64*.dmg" | head -n1)
         ARM_TAR=$(find ./artifacts -name "*aarch64*.app.tar.gz" | head -n1)
@@ -221,7 +191,7 @@ jobs:
           echo "Warning: No x86_64 DMG found in artifacts"
         fi
 
-        # Upload .app.tar.gz bundles for auto-updater
+        # Upload .app.tar.gz bundles (used by Tauri updater)
         if [ -f "$ARM_TAR" ]; then
           echo "Uploading ARM64 app.tar.gz: $(basename "$ARM_TAR")"
           gh release upload "$TAG" "$ARM_TAR" --clobber
