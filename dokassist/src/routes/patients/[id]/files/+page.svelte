@@ -84,15 +84,15 @@
 </script>
 
 <div class="p-8">
-  <h2 class="text-xl font-bold text-gray-100 mb-6">Files</h2>
+  <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">Files</h2>
 
   <div class="mb-8">
     <FileUploader patientId={patientId} onUpload={handleUpload} />
   </div>
 
   {#if errorMessage}
-    <div class="bg-red-900/20 border border-red-800 rounded-lg p-4 mb-6">
-      <p class="text-sm text-red-400">{errorMessage}</p>
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+      <p class="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
     </div>
   {/if}
 
@@ -102,16 +102,16 @@
         <div class="mb-4 flex justify-center text-gray-400">
           <Hourglass size={48} />
         </div>
-        <p class="text-gray-400">Loading files...</p>
+        <p class="text-gray-500 dark:text-gray-400">Loading files...</p>
       </div>
     </div>
   {:else if files.length === 0}
-    <div class="text-center py-12 bg-gray-900 rounded-lg border border-gray-800">
+    <div class="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
       <div class="mb-4 flex justify-center text-gray-400">
         <FolderOpen size={48} />
       </div>
-      <p class="text-gray-400">No files uploaded yet</p>
-      <p class="text-sm text-gray-500 mt-2">Upload files using the area above</p>
+      <p class="text-gray-500 dark:text-gray-400">No files uploaded yet</p>
+      <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Upload files using the area above</p>
     </div>
   {:else}
     <div class="space-y-4">

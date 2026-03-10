@@ -219,9 +219,9 @@
           <EnhancedReportEditor bind:content={editableContent} />
         </div>
       {:else}
-        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div class="prose prose-invert max-w-none">
-            <pre class="whitespace-pre-wrap font-sans text-gray-100">{report.content}</pre>
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div class="prose dark:prose-invert max-w-none">
+            <pre class="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">{report.content}</pre>
           </div>
         </div>
       {/if}
