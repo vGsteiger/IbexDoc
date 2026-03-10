@@ -19,12 +19,12 @@ const PROBE_TEMP: f32 = 0.1;
 /// Temperature for the final answer (more creative).
 const ANSWER_TEMP: f32 = 0.7;
 /// Maximum chars of a tool result that are fed back into the LLM.
-const TOOL_RESULT_TRIM: usize = 8_000;
+const TOOL_RESULT_TRIM: usize = 4_000;
 /// Token context window (must match engine.rs N_CTX).
 const N_CTX: usize = 4096;
 /// Trigger summarization when estimated prompt tokens exceed this threshold.
 /// Leaves headroom for PROBE_MAX_TOKENS + ANSWER_MAX_TOKENS.
-const SUMMARIZE_THRESHOLD: usize = N_CTX - ANSWER_MAX_TOKENS - 256;
+const SUMMARIZE_THRESHOLD: usize = 1024;
 /// Tokens budget for the summarization call itself.
 const SUMMARY_MAX_TOKENS: usize = 512;
 /// Rough estimate: 1 token ≈ 4 UTF-8 bytes.

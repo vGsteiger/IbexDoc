@@ -145,7 +145,7 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-100">Diagnosen</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Diagnosen</h1>
     <button
       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
       onclick={() => {
@@ -167,27 +167,27 @@
   {/if}
 
   {#if showAddForm}
-    <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-100 mb-4">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {editingId ? 'Diagnose bearbeiten' : 'Neue Diagnose hinzufügen'}
       </h2>
       <form onsubmit={handleSubmit} class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">
+          <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
             ICD-10 Code *
           </label>
           <IcdSearch onSelect={handleIcdSelect} />
           {#if selectedCode}
             <div class="mt-2 p-3 bg-gray-700 rounded border border-gray-600">
-              <span class="font-mono text-sm text-blue-400">{selectedCode}</span>
-              <span class="text-sm text-gray-300 ml-2">— {selectedDescription}</span>
+              <span class="font-mono text-sm text-blue-500 dark:text-blue-400">{selectedCode}</span>
+              <span class="text-sm text-gray-600 dark:text-gray-300 ml-2">— {selectedDescription}</span>
             </div>
           {/if}
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label for="diagnosed-date" class="block text-sm font-medium text-gray-300 mb-1">
+            <label for="diagnosed-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               Diagnosedatum *
             </label>
             <input
@@ -200,7 +200,7 @@
           </div>
 
           <div>
-            <label for="status" class="block text-sm font-medium text-gray-300 mb-1">
+            <label for="status" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               Status *
             </label>
             <select
@@ -218,7 +218,7 @@
 
         {#if status === 'resolved'}
           <div>
-            <label for="resolved-date" class="block text-sm font-medium text-gray-300 mb-1">
+            <label for="resolved-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               Auflösungsdatum
             </label>
             <input
@@ -231,7 +231,7 @@
         {/if}
 
         <div>
-          <label for="notes" class="block text-sm font-medium text-gray-300 mb-1">
+          <label for="notes" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
             Notizen
           </label>
           <textarea
@@ -247,7 +247,7 @@
           <button
             type="button"
             onclick={resetForm}
-            class="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             disabled={saving}
           >
             Abbrechen
@@ -266,11 +266,11 @@
 
   {#if loading}
     <div class="flex justify-center items-center py-12">
-      <div class="text-gray-400">Lädt...</div>
+      <div class="text-gray-500 dark:text-gray-400">Lädt...</div>
     </div>
   {:else if diagnoses.length === 0}
     <div class="text-center py-12">
-      <p class="text-gray-400 mb-4">Noch keine Diagnosen erfasst</p>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">Noch keine Diagnosen erfasst</p>
       {#if !showAddForm}
         <button
           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

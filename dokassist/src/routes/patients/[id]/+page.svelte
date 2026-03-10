@@ -98,18 +98,18 @@
   <div class="max-w-4xl mx-auto">
     {#if isLoading}
       <div class="flex justify-center items-center py-12">
-        <div class="text-gray-400">Loading patient details...</div>
+        <div class="text-gray-500 dark:text-gray-400">Loading patient details...</div>
       </div>
     {:else if error}
       <div
-        class="bg-red-900/20 border border-red-800 rounded-lg p-4 text-red-400 mb-6"
+        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400 mb-6"
       >
         {error}
       </div>
     {:else if patient}
       <!-- Edit Mode -->
       {#if isEditing}
-        <div class="bg-gray-800 rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
           <PatientForm
             {patient}
             on:submit={handleUpdate}
@@ -119,7 +119,7 @@
         </div>
       {:else}
         <!-- View Mode -->
-        <div class="bg-gray-800 rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
           <!-- Action Buttons -->
           <div class="flex justify-between mb-6">
             <div class="flex gap-3">
@@ -149,47 +149,47 @@
             <!-- Basic Info -->
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >First Name</label
                 >
-                <p class="text-gray-100">{patient.first_name}</p>
+                <p class="text-gray-900 dark:text-gray-100">{patient.first_name}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >Last Name</label
                 >
-                <p class="text-gray-100">{patient.last_name}</p>
+                <p class="text-gray-900 dark:text-gray-100">{patient.last_name}</p>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >AHV Number</label
                 >
-                <p class="text-gray-100">{patient.ahv_number}</p>
+                <p class="text-gray-900 dark:text-gray-100">{patient.ahv_number}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >Date of Birth</label
                 >
-                <p class="text-gray-100">{formatDate(patient.date_of_birth)}</p>
+                <p class="text-gray-900 dark:text-gray-100">{formatDate(patient.date_of_birth)}</p>
               </div>
             </div>
 
             {#if patient.gender}
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >Gender</label
                 >
-                <p class="text-gray-100 capitalize">{patient.gender}</p>
+                <p class="text-gray-900 dark:text-gray-100 capitalize">{patient.gender}</p>
               </div>
             {/if}
 
             <!-- Contact Info -->
             {#if patient.phone || patient.email}
-              <div class="border-t border-gray-700 pt-6">
-                <h3 class="text-lg font-semibold text-gray-100 mb-4">
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                   Contact Information
                 </h3>
                 <div class="grid grid-cols-2 gap-6">
@@ -199,7 +199,7 @@
                         class="block text-sm font-medium text-gray-400 mb-1"
                         >Phone</label
                       >
-                      <p class="text-gray-100">{patient.phone}</p>
+                      <p class="text-gray-900 dark:text-gray-100">{patient.phone}</p>
                     </div>
                   {/if}
                   {#if patient.email}
@@ -208,7 +208,7 @@
                         class="block text-sm font-medium text-gray-400 mb-1"
                         >Email</label
                       >
-                      <p class="text-gray-100">{patient.email}</p>
+                      <p class="text-gray-900 dark:text-gray-100">{patient.email}</p>
                     </div>
                   {/if}
                 </div>
@@ -217,7 +217,7 @@
 
             {#if patient.address}
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >Address</label
                 >
                 <p class="text-gray-100 whitespace-pre-line">
@@ -228,17 +228,17 @@
 
             <!-- Insurance & GP -->
             {#if patient.insurance || patient.gp_name || patient.gp_address}
-              <div class="border-t border-gray-700 pt-6">
-                <h3 class="text-lg font-semibold text-gray-100 mb-4">
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                   Medical Information
                 </h3>
 
                 {#if patient.insurance}
                   <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-400 mb-1"
+                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                       >Insurance</label
                     >
-                    <p class="text-gray-100">{patient.insurance}</p>
+                    <p class="text-gray-900 dark:text-gray-100">{patient.insurance}</p>
                   </div>
                 {/if}
 
@@ -247,19 +247,19 @@
                     {#if patient.gp_name}
                       <div>
                         <label
-                          class="block text-sm font-medium text-gray-400 mb-1"
+                          class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                           >GP Name</label
                         >
-                        <p class="text-gray-100">{patient.gp_name}</p>
+                        <p class="text-gray-900 dark:text-gray-100">{patient.gp_name}</p>
                       </div>
                     {/if}
                     {#if patient.gp_address}
                       <div>
                         <label
-                          class="block text-sm font-medium text-gray-400 mb-1"
+                          class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                           >GP Address</label
                         >
-                        <p class="text-gray-100">{patient.gp_address}</p>
+                        <p class="text-gray-900 dark:text-gray-100">{patient.gp_address}</p>
                       </div>
                     {/if}
                   </div>
@@ -269,16 +269,16 @@
 
             <!-- Notes -->
             {#if patient.notes}
-              <div class="border-t border-gray-700 pt-6">
-                <label class="block text-sm font-medium text-gray-400 mb-1"
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
                   >Notes</label
                 >
-                <p class="text-gray-100 whitespace-pre-line">{patient.notes}</p>
+                <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line">{patient.notes}</p>
               </div>
             {/if}
 
             <!-- Metadata -->
-            <div class="border-t border-gray-700 pt-6 text-sm text-gray-500">
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6 text-sm text-gray-500">
               <div class="grid grid-cols-2 gap-4">
                 <div>Created: {formatDate(patient.created_at)}</div>
                 <div>Last Updated: {formatDate(patient.updated_at)}</div>
@@ -295,11 +295,11 @@
           onclick={() => (showDeleteConfirm = false)}
         >
           <div
-            class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
+            class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
             onclick={(e) => e.stopPropagation()}
           >
-            <h2 class="text-xl font-bold text-gray-100 mb-4">Delete Patient</h2>
-            <p class="text-gray-300 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Delete Patient</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to delete {patient.first_name}
               {patient.last_name}? This action cannot be undone and will also
               delete all associated sessions, files, diagnoses, medications, and
@@ -309,7 +309,7 @@
               <button
                 onclick={() => (showDeleteConfirm = false)}
                 disabled={isDeleting}
-                class="px-4 py-2 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>

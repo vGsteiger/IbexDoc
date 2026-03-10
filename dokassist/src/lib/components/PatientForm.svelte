@@ -113,7 +113,7 @@
 <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-6">
   <!-- AHV Number -->
   <div>
-    <label for="ahv_number" class="block text-sm font-medium text-gray-300 mb-2">
+    <label for="ahv_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
       AHV Number <span class="text-red-400">*</span>
     </label>
     <AhvInput bind:value={formData.ahv_number} error={errors.ahv_number} />
@@ -122,14 +122,14 @@
   <!-- Name Fields -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="first_name" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         First Name <span class="text-red-400">*</span>
       </label>
       <input
         type="text"
         id="first_name"
         bind:value={formData.first_name}
-        class="w-full px-4 py-2 bg-gray-800 border rounded-lg text-gray-100 focus:outline-none focus:border-blue-500 {errors.first_name
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 {errors.first_name
           ? 'border-red-500'
           : 'border-gray-700'}"
       />
@@ -139,14 +139,14 @@
     </div>
 
     <div>
-      <label for="last_name" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Last Name <span class="text-red-400">*</span>
       </label>
       <input
         type="text"
         id="last_name"
         bind:value={formData.last_name}
-        class="w-full px-4 py-2 bg-gray-800 border rounded-lg text-gray-100 focus:outline-none focus:border-blue-500 {errors.last_name
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 {errors.last_name
           ? 'border-red-500'
           : 'border-gray-700'}"
       />
@@ -159,14 +159,14 @@
   <!-- Date of Birth and Gender -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="date_of_birth" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="date_of_birth" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Date of Birth <span class="text-red-400">*</span>
       </label>
       <input
         type="date"
         id="date_of_birth"
         bind:value={formData.date_of_birth}
-        class="w-full px-4 py-2 bg-gray-800 border rounded-lg text-gray-100 focus:outline-none focus:border-blue-500 {errors.date_of_birth
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 {errors.date_of_birth
           ? 'border-red-500'
           : 'border-gray-700'}"
       />
@@ -176,11 +176,11 @@
     </div>
 
     <div>
-      <label for="gender" class="block text-sm font-medium text-gray-300 mb-2">Gender</label>
+      <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender</label>
       <select
         id="gender"
         bind:value={formData.gender}
-        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
       >
         <option value="">Select...</option>
         <option value="male">Male</option>
@@ -193,81 +193,81 @@
   <!-- Contact Information -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="phone" class="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+      <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
       <input
         type="tel"
         id="phone"
         bind:value={formData.phone}
-        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
       />
     </div>
 
     <div>
-      <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+      <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
       <input
         type="email"
         id="email"
         bind:value={formData.email}
-        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
       />
     </div>
   </div>
 
   <!-- Address -->
   <div>
-    <label for="address" class="block text-sm font-medium text-gray-300 mb-2">Address</label>
+    <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
     <textarea
       id="address"
       bind:value={formData.address}
       rows="2"
-      class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
     ></textarea>
   </div>
 
   <!-- Insurance -->
   <div>
-    <label for="insurance" class="block text-sm font-medium text-gray-300 mb-2">Insurance</label>
+    <label for="insurance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insurance</label>
     <input
       type="text"
       id="insurance"
       bind:value={formData.insurance}
-      class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
     />
   </div>
 
   <!-- GP Information -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="gp_name" class="block text-sm font-medium text-gray-300 mb-2">GP Name</label>
+      <label for="gp_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">GP Name</label>
       <input
         type="text"
         id="gp_name"
         bind:value={formData.gp_name}
-        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
       />
     </div>
 
     <div>
-      <label for="gp_address" class="block text-sm font-medium text-gray-300 mb-2">
+      <label for="gp_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         GP Address
       </label>
       <input
         type="text"
         id="gp_address"
         bind:value={formData.gp_address}
-        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
       />
     </div>
   </div>
 
   <!-- Notes -->
   <div>
-    <label for="notes" class="block text-sm font-medium text-gray-300 mb-2">Notes</label>
+    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
     <textarea
       id="notes"
       bind:value={formData.notes}
       rows="4"
-      class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
     ></textarea>
   </div>
 
@@ -277,7 +277,7 @@
       type="button"
       onclick={handleCancel}
       disabled={isSubmitting}
-      class="px-6 py-2 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       Cancel
     </button>

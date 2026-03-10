@@ -211,10 +211,10 @@
 <div class="p-8">
   <div class="max-w-5xl mx-auto">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-gray-100">Bericht erstellen</h2>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Bericht erstellen</h2>
       <a
         href={`/patients/${patientId}/reports`}
-        class="text-sm text-gray-400 hover:text-gray-300"
+        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
       >
         ← Zurück zu Berichten
       </a>
@@ -227,11 +227,11 @@
         <ReportTypeSelector bind:selectedType />
 
         {#if !llmStatus?.is_loaded && !error}
-          <div class="p-6 bg-yellow-900/20 border border-yellow-500 rounded">
-            <h3 class="text-lg font-semibold text-yellow-400 mb-2">
+          <div class="p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-500 rounded">
+            <h3 class="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
               LLM nicht konfiguriert
             </h3>
-            <p class="text-gray-300 mb-4">
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
               Um Berichte mit LLM zu generieren, müssen Sie ein Sprachmodell
               herunterladen und laden.
             </p>
@@ -246,8 +246,8 @@
 
         <!-- Creation mode selection -->
         {#if selectedType && !isGenerating}
-          <div class="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-100 mb-4">
+          <div class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Wie möchten Sie den Bericht erstellen?
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -256,11 +256,11 @@
                   createMode = "generate";
                 }}
                 disabled={!llmStatus?.is_loaded}
-                class="p-6 bg-gray-900 border-2 border-gray-700 rounded-lg hover:border-blue-500 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                class="p-6 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div class="flex items-center gap-3 mb-2">
                   <svg
-                    class="w-6 h-6 text-blue-400"
+                    class="w-6 h-6 text-blue-500 dark:text-blue-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -272,11 +272,11 @@
                       d="M13 10V3L4 14h7v7l9-11h-7z"
                     ></path>
                   </svg>
-                  <h4 class="text-lg font-semibold text-gray-100">
+                  <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Mit LLM generieren
                   </h4>
                 </div>
-                <p class="text-sm text-gray-400">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
                   Lassen Sie den Bericht vom KI-Modell basierend auf
                   Patientenkontext und Sitzungsnotizen generieren.
                 </p>
@@ -284,11 +284,11 @@
 
               <button
                 on:click={startDirectCreation}
-                class="p-6 bg-gray-900 border-2 border-gray-700 rounded-lg hover:border-green-500 transition-colors text-left"
+                class="p-6 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-green-500 transition-colors text-left"
               >
                 <div class="flex items-center gap-3 mb-2">
                   <svg
-                    class="w-6 h-6 text-green-400"
+                    class="w-6 h-6 text-green-500 dark:text-green-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -300,11 +300,11 @@
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     ></path>
                   </svg>
-                  <h4 class="text-lg font-semibold text-gray-100">
+                  <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Direkt schreiben
                   </h4>
                 </div>
-                <p class="text-sm text-gray-400">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
                   Erstellen Sie den Bericht manuell mit dem erweiterten Editor
                   und optionalen LLM-Vorschlägen.
                 </p>
@@ -315,27 +315,27 @@
 
         {#if createMode === "generate"}
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Patientenkontext
-              <span class="text-gray-500"
+              <span class="text-gray-400 dark:text-gray-500"
                 >(automatisch befüllt, bearbeitbar)</span
               >
             </label>
             <textarea
               bind:value={patientContext}
-              class="w-full h-32 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500"
+              class="w-full h-32 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
               placeholder="Patientendaten werden geladen..."
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Sitzungsnotizen
-              <span class="text-gray-500">(optional)</span>
+              <span class="text-gray-400 dark:text-gray-500">(optional)</span>
             </label>
             <textarea
               bind:value={sessionNotes}
-              class="w-full h-48 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:border-blue-500 font-mono text-sm"
+              class="w-full h-48 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 font-mono text-sm"
               placeholder="Geben Sie Sitzungsnotizen ein oder wählen Sie Sitzungen aus..."
             />
           </div>
@@ -355,7 +355,7 @@
           <div class="flex justify-end space-x-4">
             <button
               on:click={reset}
-              class="px-6 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+              class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               disabled={isGenerating}
             >
               Zurücksetzen
@@ -373,12 +373,12 @@
     {:else}
       <div class="space-y-6">
         <div>
-          <h3 class="text-lg font-semibold text-gray-100 mb-2">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {createMode === "generate"
               ? "Generierten Bericht bearbeiten"
               : "Neuen Bericht schreiben"}
           </h3>
-          <p class="text-sm text-gray-400 mb-4">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {createMode === "generate"
               ? "Überprüfen und bearbeiten Sie den generierten Bericht vor dem Speichern."
               : "Schreiben Sie den Bericht mit LLM-Vorschlägen zur Unterstützung."}
@@ -397,7 +397,7 @@
               editableContent = "";
               createMode = null;
             }}
-            class="px-6 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+            class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {createMode === "generate" ? "Neu generieren" : "Abbrechen"}
           </button>
