@@ -128,7 +128,7 @@ pnpm test:coverage
 | `frontend-ci.yml` | push / PR | Svelte build, type-check, Vitest tests |
 | `security.yml` | daily + push | `cargo audit`, dependency vulnerability scan |
 | `lint.yml` | push / PR | `rustfmt`, `cargo clippy`, frontend lint |
-| `release.yml` | merge to `main` | Semantic versioning, universal DMG build, GitHub Release |
+| `release.yml` | merge to `main` | Semantic versioning, Apple Silicon DMG build, GitHub Release |
 
 See [CI/CD Documentation](.github/CI_CD_DOCUMENTATION.md) for details.
 
