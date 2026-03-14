@@ -16,9 +16,11 @@ This repository (**RamDoc**) hosts the full open-source code.
 
 ## Releases / Download
 
-Pre-built **universal macOS DMGs** (Apple Silicon + Intel) are published automatically on every
+Pre-built **macOS DMGs for Apple Silicon (aarch64)** are published automatically on every
 versioned merge to `main`. Download the latest release from the
 [GitHub Releases](https://github.com/vGsteiger/RamDoc/releases) page.
+
+> **Note:** Intel Mac (x86_64) is not supported. The app requires Apple Silicon (M1 or later).
 
 Releases are triggered when a PR is labeled `major`, `minor`, or `patch` (or uses conventional
 commit prefixes such as `feat:` / `fix:`).
@@ -84,7 +86,7 @@ DokAssist is designed with a defence-in-depth approach:
 - Rust 1.88+ (MSRV)
 - Node.js 20+
 - pnpm 8+
-- macOS 13+ (for full Keychain + Metal GPU support)
+- macOS 13+ on Apple Silicon (Intel Macs are not supported)
 
 ### Build
 
@@ -99,8 +101,8 @@ pnpm tauri dev
 # Production build (single arch)
 pnpm tauri build
 
-# Production universal DMG (Apple Silicon + Intel)
-pnpm build:dmg
+# Production DMG (Apple Silicon)
+pnpm tauri build --target aarch64-apple-darwin
 ```
 
 ### Testing
@@ -126,7 +128,7 @@ pnpm test:coverage
 | `frontend-ci.yml` | push / PR | Svelte build, type-check, Vitest tests |
 | `security.yml` | daily + push | `cargo audit`, dependency vulnerability scan |
 | `lint.yml` | push / PR | `rustfmt`, `cargo clippy`, frontend lint |
-| `release.yml` | merge to `main` | Semantic versioning, universal DMG build, GitHub Release |
+| `release.yml` | merge to `main` | Semantic versioning, Apple Silicon DMG build, GitHub Release |
 
 See [CI/CD Documentation](.github/CI_CD_DOCUMENTATION.md) for details.
 
