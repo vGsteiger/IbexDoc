@@ -589,6 +589,10 @@ export async function exportReportToDocx(reportId: string): Promise<number[]> {
   return await invoke<number[]>("export_report_to_docx", { reportId });
 }
 
+export async function exportPatientPdf(patientId: string): Promise<number[]> {
+  return await invoke<number[]>("export_patient_pdf", { patientId });
+}
+
 // ---------------------------------------------------------------------------
 // Email
 // ---------------------------------------------------------------------------

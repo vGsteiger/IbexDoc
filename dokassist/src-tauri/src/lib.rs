@@ -109,6 +109,7 @@ pub fn run() {
             commands::updater::install_update,
             commands::updater::get_app_version,
             commands::export::export_all_patient_data,
+            commands::export::export_patient_pdf,
             commands::chat::run_agent_turn,
             commands::chat::create_chat_session,
             commands::chat::get_or_create_patient_chat_session,
