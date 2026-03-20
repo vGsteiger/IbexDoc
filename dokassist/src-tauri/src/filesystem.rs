@@ -777,14 +777,17 @@ pub fn restore_backup(
 
         // Extract file to temp location - verify it's within temp_restore_dir
         let extract_path = temp_restore_dir.join(&file_path);
-        let canonical_temp = temp_restore_dir.canonicalize().map_err(AppError::Filesystem)?;
+        let canonical_temp = temp_restore_dir
+            .canonicalize()
+            .map_err(AppError::Filesystem)?;
         if let Some(parent) = extract_path.parent() {
             fs::create_dir_all(parent)?;
         }
         // Verify extracted path is within temp directory (after parent dirs created)
         let canonical_extract = extract_path.canonicalize().or_else(|_| {
             // If path doesn't exist yet, check its parent
-            extract_path.parent()
+            extract_path
+                .parent()
                 .ok_or_else(|| AppError::Validation("Invalid extract path".to_string()))?
                 .canonicalize()
                 .map_err(AppError::Filesystem)
@@ -879,7 +882,10 @@ pub fn restore_backup(
         let vault_marker = vault_path.join(".metadata_never_index");
         if !vault_marker.exists() {
             if let Err(e) = crate::spotlight::exclude_from_spotlight(&vault_path) {
-                log::warn!("Failed to re-apply Spotlight exclusion after restore: {}", e);
+                log::warn!(
+                    "Failed to re-apply Spotlight exclusion after restore: {}",
+                    e
+                );
             }
         }
     }
@@ -1387,4 +1393,3 @@ mod tests {
         assert!(db_path.exists());
     }
 }
-
