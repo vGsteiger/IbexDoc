@@ -11,6 +11,7 @@
 
   let sessionType = $state('Erstgespräch');
   let sessionDate = $state(new Date().toISOString().split('T')[0]);
+  let sessionTime = $state('');
   let durationMinutes = $state(50);
   let notes = $state('');
   let amdpCategories = $state<AMDPCategory[]>(JSON.parse(JSON.stringify(AMDP_CATEGORIES)));
@@ -53,6 +54,7 @@
         session_date: sessionDate,
         session_type: sessionType,
         duration_minutes: durationMinutes || undefined,
+        scheduled_time: sessionTime ? `${sessionDate}T${sessionTime}:00` : undefined,
         notes,
         amdp_data: showAMDP ? serializeAMDP(amdpCategories) : undefined,
       };
@@ -124,6 +126,18 @@
         type="date"
         bind:value={sessionDate}
         required
+        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+      <label for="session-time" class="block text-sm font-medium text-gray-300 mb-1">
+        Uhrzeit (optional)
+      </label>
+      <input
+        id="session-time"
+        type="time"
+        bind:value={sessionTime}
         class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
