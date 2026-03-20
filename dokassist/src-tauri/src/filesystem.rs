@@ -743,28 +743,58 @@ pub fn restore_backup(
         }
 
         let file_path = file.name().to_string();
+
+        // Validate file path to prevent Zip Slip attack
+        let file_path_obj = Path::new(&file_path);
+        for component in file_path_obj.components() {
+            if !matches!(component, Component::Normal(_)) {
+                let _ = fs::remove_dir_all(&temp_restore_dir);
+                return Err(AppError::Validation(format!(
+                    "Invalid path component in archive: {}",
+                    file_path
+                )));
+            }
+        }
+
         let mut file_data = Vec::new();
         std::io::copy(&mut file, &mut file_data)?;
 
-        // Verify checksum
+        // Verify checksum - fail if missing to prevent restoring unverified content
         let computed_checksum = sha256_checksum(&file_data);
-        if let Some(expected_checksum) = manifest.checksums.get(&file_path) {
-            if &computed_checksum != expected_checksum {
-                // Clean up temp directory on checksum failure
-                let _ = fs::remove_dir_all(&temp_restore_dir);
-                return Err(AppError::Validation(format!(
-                    "Checksum mismatch for {}: expected {}, got {}",
-                    file_path, expected_checksum, computed_checksum
-                )));
-            }
-        } else {
-            log::warn!("No checksum found for {} in manifest", file_path);
+        let expected_checksum = manifest.checksums.get(&file_path).ok_or_else(|| {
+            let _ = fs::remove_dir_all(&temp_restore_dir);
+            AppError::Validation(format!("Missing checksum for {} in manifest", file_path))
+        })?;
+
+        if &computed_checksum != expected_checksum {
+            // Clean up temp directory on checksum failure
+            let _ = fs::remove_dir_all(&temp_restore_dir);
+            return Err(AppError::Validation(format!(
+                "Checksum mismatch for {}: expected {}, got {}",
+                file_path, expected_checksum, computed_checksum
+            )));
         }
 
-        // Extract file to temp location
+        // Extract file to temp location - verify it's within temp_restore_dir
         let extract_path = temp_restore_dir.join(&file_path);
+        let canonical_temp = temp_restore_dir.canonicalize().map_err(AppError::Filesystem)?;
         if let Some(parent) = extract_path.parent() {
             fs::create_dir_all(parent)?;
+        }
+        // Verify extracted path is within temp directory (after parent dirs created)
+        let canonical_extract = extract_path.canonicalize().or_else(|_| {
+            // If path doesn't exist yet, check its parent
+            extract_path.parent()
+                .ok_or_else(|| AppError::Validation("Invalid extract path".to_string()))?
+                .canonicalize()
+                .map_err(AppError::Filesystem)
+        })?;
+        if !canonical_extract.starts_with(&canonical_temp) {
+            let _ = fs::remove_dir_all(&temp_restore_dir);
+            return Err(AppError::Validation(format!(
+                "Archive path escapes temp directory: {}",
+                file_path
+            )));
         }
         fs::write(&extract_path, &file_data)?;
     }
@@ -772,16 +802,38 @@ pub fn restore_backup(
     // All checksums verified — now perform the destructive replacement
     // This is the point of no return
 
-    // 1. Replace database
+    // 1. Replace database atomically
     let db_path = base_dir.join("dokassist.db");
     let temp_db_path = temp_restore_dir.join("dokassist.db");
     if temp_db_path.exists() {
-        // Remove existing database
+        // Use atomic rename/swap to avoid data loss
+        let db_backup_path = base_dir.join("dokassist.db.backup");
+
+        // Move existing database to backup location if it exists
         if db_path.exists() {
-            fs::remove_file(&db_path)?;
+            if db_backup_path.exists() {
+                fs::remove_file(&db_backup_path)?;
+            }
+            fs::rename(&db_path, &db_backup_path)?;
         }
+
         // Move restored database into place
-        fs::copy(&temp_db_path, &db_path)?;
+        match fs::rename(&temp_db_path, &db_path) {
+            Ok(_) => {
+                // Success - clean up backup
+                if db_backup_path.exists() {
+                    let _ = fs::remove_file(&db_backup_path);
+                }
+            }
+            Err(e) => {
+                // Rollback - restore original database
+                if db_backup_path.exists() {
+                    let _ = fs::rename(&db_backup_path, &db_path);
+                }
+                let _ = fs::remove_dir_all(&temp_restore_dir);
+                return Err(AppError::Filesystem(e));
+            }
+        }
     } else {
         // Clean up and return error
         let _ = fs::remove_dir_all(&temp_restore_dir);
@@ -790,16 +842,46 @@ pub fn restore_backup(
         ));
     }
 
-    // 2. Replace vault directory
+    // 2. Replace vault directory atomically
     let vault_path = base_dir.join(VAULT_DIR);
     let temp_vault_path = temp_restore_dir.join(VAULT_DIR);
     if temp_vault_path.exists() {
-        // Remove existing vault
+        // Use atomic swap strategy
+        let vault_backup_path = base_dir.join(format!("{}.backup", VAULT_DIR));
+
+        // Move existing vault to backup location if it exists
         if vault_path.exists() {
-            fs::remove_dir_all(&vault_path)?;
+            if vault_backup_path.exists() {
+                fs::remove_dir_all(&vault_backup_path)?;
+            }
+            fs::rename(&vault_path, &vault_backup_path)?;
         }
+
         // Move restored vault into place
-        copy_dir_recursive(&temp_vault_path, &vault_path)?;
+        match fs::rename(&temp_vault_path, &vault_path) {
+            Ok(_) => {
+                // Success - clean up backup
+                if vault_backup_path.exists() {
+                    let _ = fs::remove_dir_all(&vault_backup_path);
+                }
+            }
+            Err(e) => {
+                // Rollback - restore original vault
+                if vault_backup_path.exists() {
+                    let _ = fs::rename(&vault_backup_path, &vault_path);
+                }
+                let _ = fs::remove_dir_all(&temp_restore_dir);
+                return Err(AppError::Filesystem(e));
+            }
+        }
+
+        // Re-apply Spotlight exclusion after restore
+        let vault_marker = vault_path.join(".metadata_never_index");
+        if !vault_marker.exists() {
+            if let Err(e) = crate::spotlight::exclude_from_spotlight(&vault_path) {
+                log::warn!("Failed to re-apply Spotlight exclusion after restore: {}", e);
+            }
+        }
     }
 
     // Clean up temp directory

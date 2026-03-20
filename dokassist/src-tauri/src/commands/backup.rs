@@ -1,7 +1,6 @@
 use crate::audit::{self, AuditAction};
 use crate::error::AppError;
 use crate::filesystem;
-use crate::recovery;
 use crate::state::{AppState, AuthState};
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -69,11 +68,12 @@ pub async fn create_vault_backup(state: State<'_, AppState>) -> Result<Vec<u8>, 
 /// with the backup contents. The caller MUST confirm with the user first.
 ///
 /// Steps:
-/// 1. Decrypt and validate the backup archive
-/// 2. Verify all file checksums
-/// 3. Check schema version compatibility
-/// 4. Replace the database and vault directory
-/// 5. Re-initialize the database connection
+/// 1. Close existing database connection to avoid file locks
+/// 2. Decrypt and validate the backup archive
+/// 3. Verify all file checksums
+/// 4. Check schema version compatibility
+/// 5. Replace the database and vault directory
+/// 6. Re-initialize the database connection
 ///
 /// After restore, the app will need to restart to use the restored database.
 #[tauri::command]
@@ -83,33 +83,31 @@ pub async fn restore_vault_backup(
 ) -> Result<BackupInfo, AppError> {
     let base_dir = state.data_dir.clone();
 
-    // Get backup key from current auth state
-    let backup_key: [u8; 32] = {
+    // Get keys from current auth state before closing DB
+    let (backup_key, db_key): ([u8; 32], [u8; 32]) = {
         let auth = state
             .auth
             .lock()
             .map_err(|_| AppError::Validation("Auth state mutex poisoned".to_string()))?;
         match &*auth {
-            AuthState::Unlocked { fs_key, .. } => **fs_key,
+            AuthState::Unlocked { fs_key, db_key, .. } => (**fs_key, **db_key),
             _ => return Err(AppError::AuthRequired),
         }
     };
+
+    // Close the database connection before restore to avoid file lock issues
+    {
+        let mut db_lock = state.db.lock().map_err(|_| {
+            AppError::Database(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(1),
+                Some("Database state mutex poisoned".to_string()),
+            ))
+        })?;
+        *db_lock = None;
+    }
 
     // Perform the restore
     let manifest = filesystem::restore_backup(&base_dir, &encrypted_backup, &backup_key)?;
-
-    // Log the restore action in the newly restored database
-    // We need to re-initialize the database connection with the restored DB
-    let db_key: [u8; 32] = {
-        let auth = state
-            .auth
-            .lock()
-            .map_err(|_| AppError::Validation("Auth state mutex poisoned".to_string()))?;
-        match &*auth {
-            AuthState::Unlocked { db_key, .. } => **db_key,
-            _ => return Err(AppError::AuthRequired),
-        }
-    };
 
     // Re-initialize the database connection with the restored database
     state.init_db(&db_key)?;
@@ -201,7 +199,50 @@ pub async fn validate_backup_archive(
         )));
     }
 
-    // Return backup info without actually restoring
+    // Verify all checksums in vault.zip
+    let mut vault_zip_file = archive
+        .by_name("vault.zip")
+        .map_err(|e| AppError::Validation(format!("vault.zip not found: {}", e)))?;
+
+    let mut vault_zip_data = Vec::new();
+    std::io::copy(&mut vault_zip_file, &mut vault_zip_data)?;
+
+    // Open vault.zip and verify checksums
+    let vault_cursor = Cursor::new(vault_zip_data);
+    let mut vault_archive = ZipArchive::new(vault_cursor)
+        .map_err(|e| AppError::Validation(format!("Invalid vault.zip: {}", e)))?;
+
+    for i in 0..vault_archive.len() {
+        let mut file = vault_archive.by_index(i).map_err(|e| {
+            AppError::Validation(format!("Failed to read archive entry {}: {}", i, e))
+        })?;
+
+        if file.is_dir() {
+            continue;
+        }
+
+        let file_path = file.name().to_string();
+        let mut file_data = Vec::new();
+        std::io::copy(&mut file, &mut file_data)?;
+
+        // Compute and verify checksum
+        use ring::digest::{digest, SHA256};
+        let hash = digest(&SHA256, &file_data);
+        let computed_checksum = hex::encode(hash.as_ref());
+
+        let expected_checksum = manifest.checksums.get(&file_path).ok_or_else(|| {
+            AppError::Validation(format!("Missing checksum for {} in manifest", file_path))
+        })?;
+
+        if &computed_checksum != expected_checksum {
+            return Err(AppError::Validation(format!(
+                "Checksum mismatch for {}: expected {}, got {}",
+                file_path, expected_checksum, computed_checksum
+            )));
+        }
+    }
+
+    // Return backup info after successful validation
     Ok(BackupInfo {
         schema_version: manifest.schema_version,
         created_at: manifest.created_at,

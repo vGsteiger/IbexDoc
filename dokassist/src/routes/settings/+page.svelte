@@ -739,7 +739,7 @@
           <p class="text-xs font-medium text-green-400 mb-2">
             ✓ Backup validated successfully
           </p>
-          <div class="text-xs text-gray-300 space-y-1">
+          <div class="text-xs text-gray-600 dark:text-gray-300 space-y-1">
             <p>
               Created: {new Date(validatedBackupInfo.created_at).toLocaleString()}
             </p>
