@@ -28,6 +28,8 @@
     const lower = interpretation.toLowerCase();
     if (lower.includes('minimal')) {
       return 'bg-green-500/20 text-green-400 border-green-500/30';
+    } else if (lower.includes('moderately severe')) {
+      return 'bg-red-500/20 text-red-400 border-red-500/30';
     } else if (lower.includes('mild')) {
       return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
     } else if (lower.includes('moderate')) {

@@ -2,7 +2,7 @@ use crate::audit::{self, AuditAction};
 use crate::error::AppError;
 use crate::models::outcome_score::{self, CreateOutcomeScore, OutcomeScore, UpdateOutcomeScore};
 use crate::search;
-use crate::AppState;
+use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
@@ -41,7 +41,11 @@ pub async fn get_outcome_score(
     let pool = state.get_db()?;
     let conn = pool.conn()?;
 
-    outcome_score::get_outcome_score(&conn, &id)
+    let score = outcome_score::get_outcome_score(&conn, &id)?;
+
+    audit::log(&conn, AuditAction::View, "outcome_score", Some(&id), None)?;
+
+    Ok(score)
 }
 
 #[tauri::command]
@@ -54,12 +58,22 @@ pub async fn list_scores_for_session(
     let pool = state.get_db()?;
     let conn = pool.conn()?;
 
-    outcome_score::list_scores_for_session(
+    let scores = outcome_score::list_scores_for_session(
         &conn,
         &session_id,
         limit.unwrap_or(100),
         offset.unwrap_or(0),
-    )
+    )?;
+
+    audit::log(
+        &conn,
+        AuditAction::View,
+        "outcome_score",
+        None,
+        Some(&format!("session_id={}", session_id)),
+    )?;
+
+    Ok(scores)
 }
 
 #[tauri::command]
@@ -72,12 +86,22 @@ pub async fn list_scores_by_scale(
     let pool = state.get_db()?;
     let conn = pool.conn()?;
 
-    outcome_score::list_scores_by_scale(
+    let scores = outcome_score::list_scores_by_scale(
         &conn,
         &scale_type,
         limit.unwrap_or(100),
         offset.unwrap_or(0),
-    )
+    )?;
+
+    audit::log(
+        &conn,
+        AuditAction::View,
+        "outcome_score",
+        None,
+        Some(&format!("scale_type={}", scale_type)),
+    )?;
+
+    Ok(scores)
 }
 
 #[tauri::command]
@@ -116,14 +140,14 @@ pub async fn delete_outcome_score(state: State<'_, AppState>, id: String) -> Res
 
     let tx = conn.unchecked_transaction()?;
 
+    // Remove from search index within the same transaction to keep DB and FTS in sync
+    search::remove_from_index(&tx, "outcome_score", &id)?;
+
     outcome_score::delete_outcome_score(&tx, &id)?;
 
     audit::log(&tx, AuditAction::Delete, "outcome_score", Some(&id), None)?;
 
     tx.commit()?;
-
-    // Remove from search index
-    search::remove_from_index(&conn, "outcome_score", &id)?;
 
     Ok(())
 }

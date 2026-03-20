@@ -88,6 +88,7 @@ interface OutcomeScore {
 createOutcomeScore(input: CreateOutcomeScore): Promise<OutcomeScore>
 getOutcomeScore(id: string): Promise<OutcomeScore>
 listScoresForSession(sessionId: string, limit?: number, offset?: number): Promise<OutcomeScore[]>
+listScoresByScale(scaleType: string, limit?: number, offset?: number): Promise<OutcomeScore[]>
 updateOutcomeScore(id: string, input: UpdateOutcomeScore): Promise<OutcomeScore>
 deleteOutcomeScore(id: string): Promise<void>
 ```
