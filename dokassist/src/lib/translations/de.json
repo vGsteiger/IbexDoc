@@ -215,7 +215,8 @@
     "newPatient": "Neuer Patient",
     "viewAllPatients": "Alle Patienten anzeigen",
     "viewCalendar": "Kalender anzeigen",
-    "minutes": "Min"
+    "minutes": "Min",
+    "loadError": "Dashboard konnte nicht geladen werden"
   },
   "common": {
     "save": "Speichern",

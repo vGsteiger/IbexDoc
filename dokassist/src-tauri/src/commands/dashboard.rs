@@ -50,12 +50,16 @@ fn get_todays_sessions(conn: &Connection) -> Result<Vec<SessionWithPatient>, App
 
 fn get_recent_patients(conn: &Connection, limit: u32) -> Result<Vec<Patient>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT DISTINCT p.id, p.ahv_number, p.first_name, p.last_name, p.date_of_birth,
+        "SELECT p.id, p.ahv_number, p.first_name, p.last_name, p.date_of_birth,
                 p.gender, p.address, p.phone, p.email, p.insurance,
                 p.gp_name, p.gp_address, p.notes, p.created_at, p.updated_at
          FROM patients p
-         JOIN sessions s ON p.id = s.patient_id
-         ORDER BY s.created_at DESC
+         JOIN (
+             SELECT patient_id, MAX(created_at) AS last_session_created_at
+             FROM sessions
+             GROUP BY patient_id
+         ) s ON p.id = s.patient_id
+         ORDER BY s.last_session_created_at DESC
          LIMIT ?",
     )?;
 

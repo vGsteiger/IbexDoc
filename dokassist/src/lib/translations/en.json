@@ -215,7 +215,8 @@
     "newPatient": "New Patient",
     "viewAllPatients": "View All Patients",
     "viewCalendar": "View Calendar",
-    "minutes": "min"
+    "minutes": "min",
+    "loadError": "Failed to load dashboard"
   },
   "common": {
     "save": "Save",

@@ -3,35 +3,28 @@
   import { goto } from '$app/navigation';
   import { getDashboardData, type DashboardData } from '$lib/api';
   import { t } from '$lib/translations';
+  import { language } from '$lib/stores/language';
   import { Calendar, Users, FileText, Plus } from 'lucide-svelte';
 
   let data = $state<DashboardData | null>(null);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
 
-  const SESSION_TYPE_LABELS: Record<string, string> = {
-    initial: 'Erstgespräch',
-    followup: 'Folgegespräch',
-    crisis: 'Krisenintervention',
-    group: 'Gruppentherapie',
-    family: 'Familiengespräch',
-    supervision: 'Supervision',
-    other: 'Sonstige',
-  };
+  function getSessionTypeLabel(sessionType: string): string {
+    const key = `sessions.types.${sessionType}`;
+    const translated = $t(key);
+    // If translation doesn't exist, $t returns the key itself
+    return translated === key ? sessionType : translated;
+  }
 
   function formatDate(isoDate: string): string {
     const d = new Date(isoDate + 'T00:00:00');
-    return d.toLocaleDateString('de-CH', {
+    const locale = $language === 'de' ? 'de-CH' : 'en-US';
+    return d.toLocaleDateString(locale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
-  }
-
-  function formatTime(isoDate: string): string {
-    // If the session has a specific time, extract it
-    // For now, we just show the date since sessions only have date
-    return '';
   }
 
   onMount(async () => {
@@ -39,7 +32,7 @@
       data = await getDashboardData();
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
-      error = err instanceof Error ? err.message : 'Failed to load dashboard';
+      error = err instanceof Error ? err.message : $t('dashboard.loadError');
     } finally {
       isLoading = false;
     }
@@ -83,7 +76,7 @@
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item.patient_name}</p>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200">
-                    {SESSION_TYPE_LABELS[item.session.session_type] ?? item.session.session_type}
+                    {getSessionTypeLabel(item.session.session_type)}
                   </span>
                   {#if item.session.duration_minutes}
                     <span class="text-xs text-gray-500 dark:text-gray-400">{item.session.duration_minutes} {$t('dashboard.minutes')}</span>
@@ -172,7 +165,7 @@
                     {formatDate(item.session.session_date)}
                   </span>
                   <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200">
-                    {SESSION_TYPE_LABELS[item.session.session_type] ?? item.session.session_type}
+                    {getSessionTypeLabel(item.session.session_type)}
                   </span>
                 </div>
               </button>
