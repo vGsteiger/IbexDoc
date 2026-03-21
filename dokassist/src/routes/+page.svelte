@@ -19,7 +19,7 @@
       } else if (status === 'recovery_required') {
         goto('/recover');
       } else if (status === 'unlocked') {
-        goto('/patients');
+        goto('/dashboard');
       }
     } catch (err) {
       console.error('Failed to check auth:', err);
@@ -44,7 +44,7 @@
         } else if (status === 'recovery_required') {
           goto('/recover');
         } else if (status === 'unlocked') {
-          goto('/patients');
+          goto('/dashboard');
         }
       } catch (err) {
         console.error('Failed to check auth:', err);

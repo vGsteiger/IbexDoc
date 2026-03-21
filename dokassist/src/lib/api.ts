@@ -1026,3 +1026,18 @@ export async function searchLiterature(
 export async function getLiteratureDocumentChunks(id: string): Promise<DocumentChunk[]> {
   return await invoke<DocumentChunk[]>('get_literature_document_chunks', { id });
 }
+
+// ---------------------------------------------------------------------------
+// Dashboard API
+// ---------------------------------------------------------------------------
+
+export interface DashboardData {
+  todays_sessions: SessionWithPatient[];
+  recent_patients: Patient[];
+  sessions_with_incomplete_notes: SessionWithPatient[];
+}
+
+export async function getDashboardData(): Promise<DashboardData> {
+  return await invoke<DashboardData>("get_dashboard_data");
+}
+
