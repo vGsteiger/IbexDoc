@@ -1,10 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { listAllSessions, type SessionWithPatient } from '$lib/api';
+  import { listAllSessions, listPatients, updateSession, type SessionWithPatient, type Patient } from '$lib/api';
+  import { addToast } from '$lib/stores/toast';
 
   let allSessions = $state<SessionWithPatient[]>([]);
   let viewMode = $state<'week' | 'month'>('week');
+
+  // Patient-picker modal state (new session from time slot)
+  let showNewSessionModal = $state(false);
+  let modalDate = $state('');
+  let modalTime = $state('');
+  let modalPatientId = $state('');
+  let allPatients = $state<Patient[]>([]);
+
+  // Mark-completed modal state
+  let showCompleteModal = $state(false);
+  let completeSession = $state<SessionWithPatient | null>(null);
+  let completeNotes = $state('');
+  let isSavingCompletion = $state(false);
 
   function getMonday(date: Date): Date {
     const d = new Date(date);
@@ -197,11 +211,45 @@
     }
   }
 
-  function handleTimeSlotClick(date: Date, hour: number) {
-    // Navigate to new session form with pre-filled date and time
-    const dateStr = toLocalISODate(date);
-    const timeStr = formatTime(hour);
-    goto(`/patients/new?date=${dateStr}&time=${timeStr}`);
+  async function handleTimeSlotClick(date: Date, hour: number) {
+    modalDate = toLocalISODate(date);
+    modalTime = formatTime(hour);
+    modalPatientId = '';
+    if (allPatients.length === 0) {
+      allPatients = await listPatients();
+    }
+    showNewSessionModal = true;
+  }
+
+  function confirmNewSession() {
+    if (!modalPatientId) return;
+    showNewSessionModal = false;
+    goto(`/patients/${modalPatientId}/sessions/new?date=${modalDate}&time=${modalTime}`);
+  }
+
+  function openCompleteModal(session: SessionWithPatient) {
+    completeSession = session;
+    completeNotes = session.session.notes ?? '';
+    showCompleteModal = true;
+  }
+
+  async function confirmComplete() {
+    if (!completeSession) return;
+    isSavingCompletion = true;
+    try {
+      await updateSession(completeSession.session.id, {
+        notes: completeNotes.trim() || '—',
+      });
+      allSessions = await listAllSessions(500);
+      addToast('Session marked as completed');
+      showCompleteModal = false;
+      completeSession = null;
+      completeNotes = '';
+    } catch {
+      addToast('Failed to update session', 'error');
+    } finally {
+      isSavingCompletion = false;
+    }
   }
 
   onMount(async () => {
@@ -256,100 +304,89 @@
   </div>
 
   <!-- Sessions -->
-  {#if weekSessions.length === 0}
-    <p class="text-gray-500 dark:text-gray-400 text-sm">Keine Sitzungen diese Woche.</p>
-  {:else}
-    <div class="space-y-6">
-      {#each weekSessions as [date, sessions]}
-        <div>
-          <h2
-            class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2"
-          >
-            {formatDate(date)}
-          </h2>
-          <div class="space-y-2">
-            {#each sessions as item}
-              <button
-                onclick={() => goto(`/patients/${item.session.patient_id}/sessions`)}
-                class="w-full text-left bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 flex items-center gap-3 transition-colors"
-              >
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                    {item.patient_name}
-                  </p>
-                </div>
-                <span
-                  class="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 shrink-0"
-                >
-                  {SESSION_TYPE_LABELS[item.session.session_type] ?? item.session.session_type}
-                </span>
-                {#if item.session.duration_minutes}
-                  <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0"
-                    >{item.session.duration_minutes} Min.</span
-                  >
-                {/if}
-              </button>
-            {/each}
-          </div>
+  {#if viewMode === 'week'}
+    <!-- Week view grid -->
+    <div class="grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-700 border-x border-b border-gray-200 dark:border-gray-700 rounded-b-lg overflow-hidden">
+      {#each hours as hour}
+        <!-- Hour label -->
+        <div class="bg-white dark:bg-gray-800 p-2 text-xs text-gray-500 dark:text-gray-400 text-right">
+          {formatTime(hour)}
         </div>
 
-        <!-- Time slots -->
-        <div class="grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-700 border-x border-b border-gray-200 dark:border-gray-700 rounded-b-lg overflow-hidden">
-          {#each hours as hour}
-            <!-- Hour label -->
-            <div class="bg-white dark:bg-gray-800 p-2 text-xs text-gray-500 dark:text-gray-400 text-right">
-              {formatTime(hour)}
-            </div>
+        <!-- Day cells for this hour -->
+        {#each weekDays as day}
+          {@const dateStr = toLocalISODate(day)}
+          {@const daySessions = weekSessions.get(dateStr)?.get(hour) || []}
+          {@const untimed = weekSessions.get(dateStr)?.get(-1) || []}
 
-            <!-- Day cells for this hour -->
-            {#each weekDays as day}
-              {@const dateStr = toLocalISODate(day)}
-              {@const daySessions = weekSessions.get(dateStr)?.get(hour) || []}
-              {@const untimed = weekSessions.get(dateStr)?.get(-1) || []}
+          <div class="bg-white dark:bg-gray-800 p-1 min-h-[60px] relative group">
+            <!-- Empty slot - clickable to create new session -->
+            {#if daySessions.length === 0}
+              <button
+                onclick={() => handleTimeSlotClick(day, hour)}
+                aria-label="New session at {formatTime(hour)} on {toLocalISODate(day)}"
+                class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-blue-500/10 hover:bg-blue-500/20 transition-opacity flex items-center justify-center text-xs text-blue-600 dark:text-blue-400"
+              >
+                +
+              </button>
+            {/if}
 
-              <div class="bg-white dark:bg-gray-800 p-1 min-h-[60px] relative group">
-                <!-- Empty slot - clickable to create new session -->
-                {#if daySessions.length === 0}
+            <!-- Sessions in this time slot -->
+            {#each daySessions as session}
+              {@const status = getSessionStatus(session)}
+              <div
+                class="w-full mb-1 p-1 rounded border text-xs {getStatusColor(status)} group/card relative"
+              >
+                <button
+                  onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
+                  aria-label="Session with {session.patient_name}, status: {status}"
+                  class="w-full text-left hover:opacity-80 transition-opacity"
+                >
+                  <span class="sr-only">{status === 'completed' ? 'Completed' : status === 'note-pending' ? 'Pending notes' : 'Scheduled'} — </span>
+                  <div class="font-medium truncate">{session.patient_name}</div>
+                  {#if session.session.duration_minutes}
+                    <div class="text-[10px] opacity-70">{session.session.duration_minutes} min</div>
+                  {/if}
+                </button>
+                {#if status !== 'completed'}
                   <button
-                    onclick={() => handleTimeSlotClick(day, hour)}
-                    class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-blue-500/10 hover:bg-blue-500/20 transition-opacity flex items-center justify-center text-xs text-blue-600 dark:text-blue-400"
-                  >
-                    +
-                  </button>
-                {/if}
-
-                <!-- Sessions in this time slot -->
-                {#each daySessions as session}
-                  {@const status = getSessionStatus(session)}
-                  <button
-                    onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                    class="w-full text-left mb-1 p-1 rounded border text-xs {getStatusColor(status)} hover:opacity-80 transition-opacity"
-                  >
-                    <div class="font-medium truncate">{session.patient_name}</div>
-                    {#if session.session.duration_minutes}
-                      <div class="text-[10px] opacity-70">{session.session.duration_minutes} min</div>
-                    {/if}
-                  </button>
-                {/each}
-
-                <!-- Show untimed sessions in the first hour only -->
-                {#if hour === 7}
-                  {#each untimed as session}
-                    {@const status = getSessionStatus(session)}
-                    <button
-                      onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                      class="w-full text-left mb-1 p-1 rounded border text-xs {getStatusColor(status)} hover:opacity-80 transition-opacity opacity-60"
-                    >
-                      <div class="font-medium truncate">{session.patient_name}</div>
-                      <div class="text-[10px]">Keine Zeit</div>
-                    </button>
-                  {/each}
+                    onclick={() => openCompleteModal(session)}
+                    aria-label="Mark session with {session.patient_name} as completed"
+                    class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded bg-green-600 text-white text-[10px] hover:bg-green-500 transition-all"
+                    title="Mark as completed"
+                  >✓</button>
                 {/if}
               </div>
             {/each}
-          {/each}
-        </div>
-      </div>
+
+            <!-- Show untimed sessions in the first hour only -->
+            {#if hour === 7}
+              {#each untimed as session}
+                {@const status = getSessionStatus(session)}
+                <div class="w-full mb-1 p-1 rounded border text-xs {getStatusColor(status)} opacity-60 group/card relative">
+                  <button
+                    onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
+                    aria-label="Session with {session.patient_name} (no scheduled time), status: {status}"
+                    class="w-full text-left hover:opacity-80 transition-opacity"
+                  >
+                    <span class="sr-only">{status === 'completed' ? 'Completed' : status === 'note-pending' ? 'Pending notes' : 'Scheduled'} — </span>
+                    <div class="font-medium truncate">{session.patient_name}</div>
+                    <div class="text-[10px]">Keine Zeit</div>
+                  </button>
+                  {#if status !== 'completed'}
+                    <button
+                      onclick={() => openCompleteModal(session)}
+                      aria-label="Mark session with {session.patient_name} as completed"
+                      class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded bg-green-600 text-white text-[10px] hover:bg-green-500 transition-all"
+                      title="Mark as completed"
+                    >✓</button>
+                  {/if}
+                </div>
+              {/each}
+            {/if}
+          </div>
+        {/each}
+      {/each}
     </div>
 
     <!-- Legend -->
@@ -454,3 +491,91 @@
     </div>
   {/if}
 </div>
+
+<!-- Patient-picker modal for new session from time slot -->
+{#if showNewSessionModal}
+  <div
+    class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    role="dialog"
+    aria-modal="true"
+    aria-label="New session"
+  >
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-96 max-w-full mx-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Neue Sitzung</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{modalDate.split('-').reverse().join('.')} um {modalTime}</p>
+
+      <label for="modal-patient" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Patient
+      </label>
+      <select
+        id="modal-patient"
+        bind:value={modalPatientId}
+        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6"
+      >
+        <option value="">— Select patient —</option>
+        {#each allPatients as patient}
+          <option value={patient.id}>{patient.last_name}, {patient.first_name}</option>
+        {/each}
+      </select>
+
+      <div class="flex gap-3 justify-end">
+        <button
+          onclick={() => (showNewSessionModal = false)}
+          class="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onclick={confirmNewSession}
+          disabled={!modalPatientId}
+          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Mark-completed modal -->
+{#if showCompleteModal && completeSession}
+  <div
+    class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Complete session"
+  >
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-96 max-w-full mx-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Sitzung abschliessen</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{completeSession.patient_name} · {completeSession.session.session_date.slice(0, 10).split('-').reverse().join('.')}</p>
+
+      <label for="complete-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Notizen (optional)
+      </label>
+      <textarea
+        id="complete-notes"
+        bind:value={completeNotes}
+        rows="4"
+        placeholder="Gesprächsnotizen..."
+        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-6"
+      ></textarea>
+
+      <div class="flex gap-3 justify-end">
+        <button
+          onclick={() => { showCompleteModal = false; completeSession = null; }}
+          disabled={isSavingCompletion}
+          class="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          onclick={confirmComplete}
+          disabled={isSavingCompletion}
+          class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+        >
+          {isSavingCompletion ? 'Saving…' : 'Mark Completed'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

@@ -1272,6 +1272,7 @@ dependencies = [
  "aes-gcm",
  "argon2",
  "bip39",
+ "cc",
  "chrono",
  "core-foundation 0.10.1",
  "core-foundation-sys",

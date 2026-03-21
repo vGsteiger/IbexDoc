@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { createSession, type CreateSession } from '$lib/api';
+  import { addToast } from '$lib/stores/toast';
   import { AMDP_CATEGORIES, serializeAMDP, type AMDPCategory } from '$lib/amdp';
   import AMDPForm from '$lib/components/AMDPForm.svelte';
   import { get } from 'svelte/store';
@@ -9,9 +10,12 @@
 
   const patientId = $derived($page.params.id);
 
+  const prefilledDate = $page.url.searchParams.get('date');
+  const prefilledTime = $page.url.searchParams.get('time');
+
   let sessionType = $state('Erstgespräch');
-  let sessionDate = $state(new Date().toISOString().split('T')[0]);
-  let sessionTime = $state('');
+  let sessionDate = $state(prefilledDate ?? new Date().toISOString().split('T')[0]);
+  let sessionTime = $state(prefilledTime ?? '');
   let durationMinutes = $state(50);
   let notes = $state('');
   let amdpCategories = $state<AMDPCategory[]>(JSON.parse(JSON.stringify(AMDP_CATEGORIES)));
@@ -60,6 +64,7 @@
       };
 
       await createSession(input);
+      addToast('Session saved');
       goto(`/patients/${patientId}/sessions`);
     } catch (err) {
       error = 'Fehler beim Speichern: ' + (err instanceof Error ? err.message : String(err));
