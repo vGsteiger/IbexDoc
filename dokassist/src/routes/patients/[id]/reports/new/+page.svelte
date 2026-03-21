@@ -315,29 +315,31 @@
 
         {#if createMode === "generate"}
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="patient-context" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Patientenkontext
               <span class="text-gray-400 dark:text-gray-500"
                 >(automatisch befüllt, bearbeitbar)</span
               >
             </label>
             <textarea
+              id="patient-context"
               bind:value={patientContext}
               class="w-full h-32 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
               placeholder="Patientendaten werden geladen..."
-            />
+            ></textarea>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="session-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Sitzungsnotizen
               <span class="text-gray-400 dark:text-gray-500">(optional)</span>
             </label>
             <textarea
+              id="session-notes"
               bind:value={sessionNotes}
               class="w-full h-48 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 font-mono text-sm"
               placeholder="Geben Sie Sitzungsnotizen ein oder wählen Sie Sitzungen aus..."
-            />
+            ></textarea>
           </div>
 
           {#if isGenerating}

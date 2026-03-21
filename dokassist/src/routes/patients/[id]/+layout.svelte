@@ -3,6 +3,9 @@
   import { page } from '$app/stores';
   import { getPatient, type Patient } from '$lib/api';
   import { Hourglass } from 'lucide-svelte';
+  import type { Snippet } from 'svelte';
+
+  let { children }: { children: Snippet } = $props();
 
   let patientId = $derived($page.params.id);
   let patient = $state<Patient | null>(null);
@@ -73,7 +76,7 @@
     </div>
 
     <div class="flex-1 overflow-auto">
-      <slot />
+      {@render children()}
     </div>
   {/if}
 </div>

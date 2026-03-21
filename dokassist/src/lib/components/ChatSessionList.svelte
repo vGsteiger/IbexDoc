@@ -14,6 +14,13 @@
 
   let renamingId = $state<string | null>(null);
   let renameValue = $state('');
+  let renameInputEl = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    if (renamingId && renameInputEl) {
+      renameInputEl.focus();
+    }
+  });
 
   function startRename(session: ChatSession) {
     renamingId = session.id;
@@ -79,6 +86,7 @@
             {#if renamingId === session.id}
               <div class="flex gap-1">
                 <input
+                  bind:this={renameInputEl}
                   bind:value={renameValue}
                   onkeydown={(e) => {
                     if (e.key === 'Enter') confirmRename(session.id);
@@ -86,7 +94,6 @@
                   }}
                   class="flex-1 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5
                          text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
-                  autofocus
                 />
                 <button
                   onclick={() => confirmRename(session.id)}

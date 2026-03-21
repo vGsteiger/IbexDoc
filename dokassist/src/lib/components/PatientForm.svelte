@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, untrack } from 'svelte';
   import type { Patient, CreatePatient, UpdatePatient } from '$lib/api';
   import AhvInput from './AhvInput.svelte';
 
@@ -15,7 +15,7 @@
     cancel: void;
   }>();
 
-  let formData = $state({
+  let formData = $state(untrack(() => ({
     ahv_number: patient?.ahv_number || '',
     first_name: patient?.first_name || '',
     last_name: patient?.last_name || '',
@@ -28,6 +28,25 @@
     gp_name: patient?.gp_name || '',
     gp_address: patient?.gp_address || '',
     notes: patient?.notes || ''
+  })));
+
+  $effect(() => {
+    if (patient) {
+      formData = {
+        ahv_number: patient.ahv_number || '',
+        first_name: patient.first_name || '',
+        last_name: patient.last_name || '',
+        date_of_birth: patient.date_of_birth || '',
+        gender: patient.gender || '',
+        address: patient.address || '',
+        phone: patient.phone || '',
+        email: patient.email || '',
+        insurance: patient.insurance || '',
+        gp_name: patient.gp_name || '',
+        gp_address: patient.gp_address || '',
+        notes: patient.notes || ''
+      };
+    }
   });
 
   let errors = $state<Record<string, string>>({});

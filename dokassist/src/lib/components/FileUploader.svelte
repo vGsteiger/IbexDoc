@@ -94,6 +94,8 @@
     class="relative border-2 border-dashed rounded-lg p-8 transition-colors {isDragging
       ? 'border-blue-500 bg-blue-500/10'
       : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'}"
+    role="region"
+    aria-label="File upload area"
     ondragover={handleDragOver}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}

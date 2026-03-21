@@ -218,7 +218,7 @@
     <!-- Loading State -->
     {#if loading}
       <div class="text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         <p class="text-gray-500 dark:text-gray-400 mt-2">Loading literature...</p>
       </div>
     {:else if literature.length === 0}
@@ -270,7 +270,7 @@
                 <div
                   class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"
                   title="Processing…"
-                />
+                ></div>
               {:else if lit.chunk_count > 0}
                 <span class="text-green-500" title="Extracted and embedded ({lit.chunk_count} chunks)">
                   <Check size={16} />
@@ -291,7 +291,7 @@
                     class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-100"
                     rows="3"
                     placeholder="Add a description..."
-                  />
+                  ></textarea>
                   <div class="flex gap-2">
                     <button
                       onclick={() => saveDescription(lit.id)}

@@ -633,7 +633,7 @@ export async function listEmails(
   offset?: number,
 ): Promise<Email[]> {
   return await invoke<Email[]>("list_emails", {
-    patient_id: patientId,
+    patientId,
     limit,
     offset,
   });

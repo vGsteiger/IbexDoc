@@ -139,7 +139,7 @@
         rows="8"
         placeholder="Gesprächsnotizen, Beobachtungen, Interventionen..."
         class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-      />
+      ></textarea>
     </div>
 
     <div>

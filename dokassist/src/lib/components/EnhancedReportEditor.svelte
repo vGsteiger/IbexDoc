@@ -182,7 +182,7 @@
           {readonly}
           class="w-full h-full p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm resize-none focus:outline-none"
           placeholder="Berichtinhalt wird hier angezeigt..."
-        />
+        ></textarea>
       {/if}
     </div>
 
@@ -225,7 +225,7 @@
             bind:value={suggestionInstruction}
             class="w-full h-16 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 text-xs focus:outline-none focus:border-blue-500"
             placeholder="Anweisung für Textverbesserung..."
-          />
+          ></textarea>
           <button
             on:click={generateSuggestion}
             disabled={isGeneratingSuggestion}

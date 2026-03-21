@@ -72,8 +72,21 @@
 </script>
 
 {#if file}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onclick={handleClose}>
-    <div class="relative w-full h-full max-w-6xl max-h-[90vh] m-4" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+    role="presentation"
+    onclick={handleClose}
+    onkeydown={(e) => e.key === 'Escape' && handleClose()}
+  >
+    <div
+      class="relative w-full h-full max-w-6xl max-h-[90vh] m-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={file.filename}
+      tabindex="-1"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+    >
       <div class="absolute top-0 left-0 right-0 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between rounded-t-lg">
         <div class="flex-1 min-w-0">
           <h2 class="text-gray-900 dark:text-gray-100 font-medium truncate" title={file.filename}>

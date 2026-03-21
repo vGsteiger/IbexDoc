@@ -149,14 +149,14 @@
             <!-- Basic Info -->
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >First Name</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >First Name</span
                 >
                 <p class="text-gray-900 dark:text-gray-100">{patient.first_name}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >Last Name</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >Last Name</span
                 >
                 <p class="text-gray-900 dark:text-gray-100">{patient.last_name}</p>
               </div>
@@ -164,14 +164,14 @@
 
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >AHV Number</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >AHV Number</span
                 >
                 <p class="text-gray-900 dark:text-gray-100">{patient.ahv_number}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >Date of Birth</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >Date of Birth</span
                 >
                 <p class="text-gray-900 dark:text-gray-100">{formatDate(patient.date_of_birth)}</p>
               </div>
@@ -179,8 +179,8 @@
 
             {#if patient.gender}
               <div>
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >Gender</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >Gender</span
                 >
                 <p class="text-gray-900 dark:text-gray-100 capitalize">{patient.gender}</p>
               </div>
@@ -195,18 +195,18 @@
                 <div class="grid grid-cols-2 gap-6">
                   {#if patient.phone}
                     <div>
-                      <label
+                      <span
                         class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                        >Phone</label
+                        >Phone</span
                       >
                       <p class="text-gray-900 dark:text-gray-100">{patient.phone}</p>
                     </div>
                   {/if}
                   {#if patient.email}
                     <div>
-                      <label
+                      <span
                         class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                        >Email</label
+                        >Email</span
                       >
                       <p class="text-gray-900 dark:text-gray-100">{patient.email}</p>
                     </div>
@@ -217,8 +217,8 @@
 
             {#if patient.address}
               <div>
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >Address</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >Address</span
                 >
                 <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line">
                   {patient.address}
@@ -235,8 +235,8 @@
 
                 {#if patient.insurance}
                   <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                      >Insurance</label
+                    <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                      >Insurance</span
                     >
                     <p class="text-gray-900 dark:text-gray-100">{patient.insurance}</p>
                   </div>
@@ -246,18 +246,18 @@
                   <div class="grid grid-cols-2 gap-6">
                     {#if patient.gp_name}
                       <div>
-                        <label
+                        <span
                           class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                          >GP Name</label
+                          >GP Name</span
                         >
                         <p class="text-gray-900 dark:text-gray-100">{patient.gp_name}</p>
                       </div>
                     {/if}
                     {#if patient.gp_address}
                       <div>
-                        <label
+                        <span
                           class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                          >GP Address</label
+                          >GP Address</span
                         >
                         <p class="text-gray-900 dark:text-gray-100">{patient.gp_address}</p>
                       </div>
@@ -270,8 +270,8 @@
             <!-- Notes -->
             {#if patient.notes}
               <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
-                  >Notes</label
+                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  >Notes</span
                 >
                 <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line">{patient.notes}</p>
               </div>
@@ -292,13 +292,20 @@
       {#if showDeleteConfirm}
         <div
           class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          role="presentation"
           onclick={() => (showDeleteConfirm = false)}
+          onkeydown={(e) => e.key === 'Escape' && (showDeleteConfirm = false)}
         >
           <div
             class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            tabindex="-1"
             onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => e.stopPropagation()}
           >
-            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Delete Patient</h2>
+            <h2 id="delete-dialog-title" class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Delete Patient</h2>
             <p class="text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to delete {patient.first_name}
               {patient.last_name}? This action cannot be undone and will also

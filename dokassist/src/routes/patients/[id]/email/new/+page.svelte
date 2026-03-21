@@ -5,6 +5,7 @@
   import {
     getPatient,
     createEmail,
+    markEmailAsSent,
     parseError,
     type CreateEmail,
     type Patient,
