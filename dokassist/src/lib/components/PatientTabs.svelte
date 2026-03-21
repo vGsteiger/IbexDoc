@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { ClipboardList, CalendarDays, FolderOpen, Hospital, Pill, FileText } from 'lucide-svelte';
+  import { ClipboardList, CalendarDays, FolderOpen, Hospital, Pill, FileText, ClipboardCheck } from 'lucide-svelte';
 
   interface Props {
     patientId: string;
@@ -14,8 +14,9 @@
     { path: `/patients/${patientId}/files`, label: 'Files', icon: FolderOpen },
     { path: `/patients/${patientId}/diagnoses`, label: 'Diagnoses', icon: Hospital },
     { path: `/patients/${patientId}/medications`, label: 'Medications', icon: Pill },
-    { path: `/patients/${patientId}/reports`, label: 'Reports', icon: FileText },
-  ]);
+    { path: `/patients/${patientId}/treatment-plans`, label: 'Treatment Plans', icon: ClipboardCheck },
+    { path: `/patients/${patientId}/reports`, label: 'Reports', icon: FileText }
+  ];
 
   let currentPath = $derived($page.url.pathname);
 </script>
