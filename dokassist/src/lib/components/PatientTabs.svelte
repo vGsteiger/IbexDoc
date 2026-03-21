@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { ClipboardList, CalendarDays, FolderOpen, Hospital, Pill, FileText } from 'lucide-svelte';
+  import { ClipboardList, CalendarDays, FolderOpen, Hospital, Pill, FileText, ClipboardCheck } from 'lucide-svelte';
 
   interface Props {
     patientId: string;
@@ -8,12 +8,13 @@
 
   let { patientId }: Props = $props();
 
-  const tabs = [
+  const tabs = $derived([
     { path: `/patients/${patientId}`, label: 'Overview', icon: ClipboardList },
     { path: `/patients/${patientId}/sessions`, label: 'Sessions', icon: CalendarDays },
     { path: `/patients/${patientId}/files`, label: 'Files', icon: FolderOpen },
     { path: `/patients/${patientId}/diagnoses`, label: 'Diagnoses', icon: Hospital },
     { path: `/patients/${patientId}/medications`, label: 'Medications', icon: Pill },
+    { path: `/patients/${patientId}/treatment-plans`, label: 'Treatment Plans', icon: ClipboardCheck },
     { path: `/patients/${patientId}/reports`, label: 'Reports', icon: FileText }
   ];
 
@@ -26,7 +27,8 @@
       {@const Icon = tab.icon}
       <a
         href={tab.path}
-        class="flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap {currentPath === tab.path
+        class="flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap {currentPath ===
+        tab.path
           ? 'text-blue-400 border-b-2 border-blue-400'
           : 'text-gray-400 hover:text-gray-300'}"
       >
