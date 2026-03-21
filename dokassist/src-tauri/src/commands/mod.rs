@@ -14,4 +14,5 @@ pub mod reports;
 pub mod search;
 pub mod sessions;
 pub mod settings;
+pub mod treatment_plans;
 pub mod updater;
