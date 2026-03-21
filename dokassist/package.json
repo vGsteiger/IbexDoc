@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "build:dmg": "pnpm tauri build --target universal-apple-darwin",
+    "build:dmg": "pnpm tauri build --target aarch64-apple-darwin",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
