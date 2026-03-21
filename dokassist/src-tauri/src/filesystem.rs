@@ -1268,7 +1268,7 @@ mod tests {
         // Verify manifest
         assert_eq!(manifest.schema_version, 1);
         assert_eq!(manifest.db_schema_version, 6);
-        assert!(manifest.checksums.len() > 0);
+        assert!(!manifest.checksums.is_empty());
 
         // Verify database was restored
         let restored_db = fs::read(&db_path).unwrap();
