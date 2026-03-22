@@ -7,6 +7,7 @@ pub mod diagnoses;
 pub mod emails;
 pub mod export;
 pub mod files;
+pub mod letters;
 pub mod literature;
 pub mod llm;
 pub mod medications;

@@ -2,6 +2,7 @@ pub mod chat;
 pub mod diagnosis;
 pub mod email;
 pub mod file_record;
+pub mod letter;
 pub mod literature;
 pub mod medication;
 pub mod outcome_score;
