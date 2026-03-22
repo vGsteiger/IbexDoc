@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { globalSearch, type SearchResult, createSession, type Patient } from '$lib/api';
+  import { globalSearch, type SearchResult, type Patient } from '$lib/api';
   import { t } from '$lib/translations';
   import { lockApp } from '$lib/api';
   import { authStatus } from '$lib/stores/auth';
