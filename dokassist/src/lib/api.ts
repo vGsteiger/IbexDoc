@@ -901,6 +901,110 @@ export async function markEmailAsSent(id: string): Promise<Email> {
 }
 
 // ---------------------------------------------------------------------------
+// Letters
+// ---------------------------------------------------------------------------
+
+export type LetterType = 'referral' | 'insurance_authorization' | 'therapy_extension';
+export type LetterLanguage = 'de' | 'fr';
+export type LetterStatus = 'draft' | 'finalized' | 'sent';
+
+export interface Letter {
+  id: string;
+  patient_id: string;
+  letter_type: LetterType;
+  template_language: LetterLanguage;
+  recipient_name: string | null;
+  recipient_address: string | null;
+  subject: string;
+  content: string;
+  status: LetterStatus;
+  model_name: string | null;
+  session_ids: string | null;
+  created_at: string;
+  updated_at: string;
+  finalized_at: string | null;
+  sent_at: string | null;
+}
+
+export interface CreateLetter {
+  patient_id: string;
+  letter_type: LetterType;
+  template_language: LetterLanguage;
+  recipient_name?: string;
+  recipient_address?: string;
+  subject: string;
+  content: string;
+  model_name?: string;
+  session_ids?: string;
+}
+
+export interface UpdateLetter {
+  letter_type?: LetterType;
+  template_language?: LetterLanguage;
+  recipient_name?: string;
+  recipient_address?: string;
+  subject?: string;
+  content?: string;
+  status?: LetterStatus;
+  model_name?: string;
+  session_ids?: string;
+}
+
+export async function createLetter(input: CreateLetter): Promise<Letter> {
+  return await invoke<Letter>('create_letter', { input });
+}
+
+export async function getLetter(id: string): Promise<Letter> {
+  return await invoke<Letter>('get_letter', { id });
+}
+
+export async function listLetters(
+  patientId: string,
+  limit?: number,
+  offset?: number
+): Promise<Letter[]> {
+  return await invoke<Letter[]>('list_letters', {
+    patientId,
+    limit,
+    offset,
+  });
+}
+
+export async function updateLetter(id: string, input: UpdateLetter): Promise<Letter> {
+  return await invoke<Letter>('update_letter', { id, input });
+}
+
+export async function deleteLetter(id: string): Promise<void> {
+  return await invoke<void>('delete_letter', { id });
+}
+
+export async function markLetterAsFinalized(id: string): Promise<Letter> {
+  return await invoke<Letter>('mark_letter_as_finalized', { id });
+}
+
+export async function markLetterAsSent(id: string): Promise<Letter> {
+  return await invoke<Letter>('mark_letter_as_sent', { id });
+}
+
+export async function generateLetter(
+  letterType: LetterType,
+  language: LetterLanguage,
+  patientContext: string,
+  clinicalSummary: string,
+  recipientName?: string,
+  systemPrompt?: string
+): Promise<string> {
+  return await invoke<string>('generate_letter', {
+    letterType,
+    language,
+    patientContext,
+    clinicalSummary,
+    recipientName,
+    systemPrompt,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Updater
 // ---------------------------------------------------------------------------
 
