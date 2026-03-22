@@ -183,7 +183,7 @@ pub fn list_all_sessions(
         .query_map(params![limit, offset], |row| {
             Ok(SessionWithPatient {
                 session: row_to_session(row)?,
-                patient_name: row.get(10)?,
+                patient_name: row.get(11)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
