@@ -833,7 +833,7 @@ export async function generateSessionSummary(
   sessionNotes: string,
   systemPrompt?: string,
 ): Promise<string> {
-  return await invoke<string>("generate_session_summary", {
+  return await invoke<string>('generate_session_summary', {
     patientContext,
     sessionNotes,
     systemPrompt,

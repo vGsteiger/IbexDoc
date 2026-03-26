@@ -118,8 +118,10 @@
   async function loadScores() {
     try {
       loadingScores = true;
+      error = null;
       scores = await listScoresForSession(sessionId);
     } catch (e) {
+      error = parseError(e);
       console.error("Failed to load scores:", e);
     } finally {
       loadingScores = false;
@@ -137,7 +139,7 @@
         duration_minutes: editedDuration,
         session_type: editedSessionType,
         session_date: editedSessionDate,
-        clinical_summary: editableSummary || undefined,
+        clinical_summary: editableSummary ?? "",
       };
       session = await updateSession(sessionId, updateData);
       editableSummary = session.clinical_summary || "";
@@ -156,10 +158,12 @@
       isDeleting = true;
       error = null;
       await deleteSession(sessionId);
-      goto(`/patients/${patientId}/sessions`);
+      showDeleteConfirm = false;
+      await goto(`/patients/${patientId}/sessions`);
     } catch (e) {
       error = parseError(e);
       console.error("Failed to delete session:", e);
+    } finally {
       isDeleting = false;
       showDeleteConfirm = false;
     }
@@ -212,7 +216,7 @@
     if (!llmStatus?.is_loaded) {
       error = {
         code: "LLM_ERROR",
-        message: "LLM model not loaded. Please configure the model in Settings.",
+        message: $t('sessions.llmModelNotLoaded'),
         ref: "LLM_NOT_LOADED",
       };
       return;
@@ -423,7 +427,7 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
               <button
                 onclick={generateSummary}
                 class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                disabled={isGenerating || !session.notes}
+                disabled={isGenerating || !editedNotes || editedNotes.trim().length === 0}
               >
                 {$t('sessions.generateSummary')}
               </button>
@@ -432,7 +436,7 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
 
           {#if isGenerating}
             <ReportStream content={generatedSummary} isStreaming={isGenerating} />
-          {:else if showSummaryEditor || editableSummary}
+          {:else if isEditing || showSummaryEditor}
             <div class="space-y-4">
               <textarea
                 bind:value={editableSummary}

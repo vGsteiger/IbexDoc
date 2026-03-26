@@ -231,6 +231,7 @@
     "noSummary": "No clinical summary available. Click \"Generate Summary\" to create a structured summary.",
     "clinicalSummaryPlaceholder": "Clinical summary...",
     "generateSummary": "Generate Summary",
+    "llmModelNotLoaded": "LLM model not loaded. Please configure the model in Settings.",
     "confirmDelete": "Delete session?",
     "confirmDeleteMessage": "Are you sure you want to delete this session? This action cannot be undone.",
     "requiredFields": "Please fill in all required fields.",

@@ -131,8 +131,12 @@ pub fn update_session(
         values.push(Box::new(amdp_data));
     }
     if let Some(clinical_summary) = input.clinical_summary {
-        updates.push("clinical_summary = ?");
-        values.push(Box::new(clinical_summary));
+        if clinical_summary.is_empty() {
+            updates.push("clinical_summary = NULL");
+        } else {
+            updates.push("clinical_summary = ?");
+            values.push(Box::new(clinical_summary));
+        }
     }
 
     if updates.is_empty() {

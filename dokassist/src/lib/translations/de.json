@@ -231,6 +231,7 @@
     "noSummary": "Keine klinische Zusammenfassung vorhanden. Klicken Sie auf \"Zusammenfassung generieren\", um eine strukturierte Zusammenfassung zu erstellen.",
     "clinicalSummaryPlaceholder": "Klinische Zusammenfassung...",
     "generateSummary": "Zusammenfassung generieren",
+    "llmModelNotLoaded": "LLM-Modell nicht geladen. Bitte konfigurieren Sie das Modell in den Einstellungen.",
     "confirmDelete": "Sitzung löschen?",
     "confirmDeleteMessage": "Möchten Sie diese Sitzung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "requiredFields": "Bitte füllen Sie alle Pflichtfelder aus.",
