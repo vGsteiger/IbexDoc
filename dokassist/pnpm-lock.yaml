@@ -53,8 +53,8 @@ devDependencies:
     specifier: ^3.16.0
     version: 3.16.0(eslint@10.1.0)(svelte@5.55.0)
   globals:
-    specifier: ^16.0.0
-    version: 16.5.0
+    specifier: ^17.4.0
+    version: 17.4.0
   jsdom:
     specifier: ^29.0.1
     version: 29.0.1
@@ -1920,6 +1920,11 @@ packages:
 
   /globals@16.5.0:
     resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
+    engines: {node: '>=18'}
+    dev: true
+
+  /globals@17.4.0:
+    resolution: {integrity: sha512-hjrNztw/VajQwOLsMNT1cbJiH2muO3OROCHnbehc8eY5JyD2gqz4AcMHPqgaOR59DjgUjYAYLeH699g/eWi2jw==}
     engines: {node: '>=18'}
     dev: true
 
