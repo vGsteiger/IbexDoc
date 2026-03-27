@@ -1,0 +1,106 @@
+name: Build Medication Reference DB
+
+on:
+  # Run on the first day of each month to pick up updated AIPS data
+  schedule:
+    - cron: '0 6 1 * *'
+  # Allow manual trigger for testing or emergency re-builds
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: 'Version string (default: YYYY-MM from current date)'
+        required: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to create releases and upload assets
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set version string
+        id: version
+        run: |
+          if [ -n "${{ inputs.version_override }}" ]; then
+            echo "value=${{ inputs.version_override }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(date +'%Y-%m')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install lxml
+
+      - name: Download AIPS XML (Swissmedic public data)
+        run: |
+          # The AIPS mediXML download is publicly available without authentication.
+          # See: https://www.swissmedic.ch/swissmedic/en/home/humanarzneimittel/authorisations/aips.html
+          curl -fsSL \
+            "https://download.swissmedicinfo.ch/Accept.aspx?lang=DE&ReturnUrl=%2f" \
+            --output aips_de.xml
+          # Sanity-check: the file must be a valid XML document
+          python3 -c "
+          from lxml import etree
+          tree = etree.parse('aips_de.xml')
+          count = len(tree.findall('.//{*}medicalInformation'))
+          print(f'AIPS XML OK — {count} medicalInformation entries')
+          if count < 100:
+              raise SystemExit('Too few entries — AIPS download may have failed')
+          "
+
+      - name: Build reference SQLite
+        run: |
+          python3 scripts/build_medication_ref.py \
+            --aips aips_de.xml \
+            --out  medication_ref_de.sqlite \
+            --version "${{ steps.version.outputs.value }}"
+
+      - name: Install minisign
+        run: |
+          curl -fsSLO https://github.com/jedisct1/minisign/releases/download/0.11/minisign-0.11-linux.tar.gz
+          tar -xzf minisign-0.11-linux.tar.gz
+          sudo install -m 755 minisign-0.11-linux/x86_64/minisign /usr/local/bin/minisign
+          minisign --version
+
+      - name: Sign the SQLite with minisign
+        env:
+          MEDICATION_REF_PRIVATE_KEY: ${{ secrets.MEDICATION_REF_PRIVATE_KEY }}
+        run: |
+          # Write the private key to a temp file (key is stored as base64 in the secret)
+          echo "$MEDICATION_REF_PRIVATE_KEY" | base64 -d > medication_ref.key
+          chmod 600 medication_ref.key
+          # Sign — minisign reads the passphrase from stdin; CI key has no passphrase
+          echo "" | minisign -S -s medication_ref.key -m medication_ref_de.sqlite
+          rm -f medication_ref.key
+          # Verify our own signature as a sanity check (using the public key from the secret)
+          echo "${{ secrets.MEDICATION_REF_PUBLIC_KEY }}" > medication_ref.pub
+          minisign -V -p medication_ref.pub -m medication_ref_de.sqlite
+          rm -f medication_ref.pub
+          echo "Signature verified OK"
+
+      - name: Create or update GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: medication-ref/v${{ steps.version.outputs.value }}
+          name: Medication Reference DB ${{ steps.version.outputs.value }}
+          body: |
+            Automated monthly build of the Swissmedic AIPS medication reference database.
+
+            **Version:** ${{ steps.version.outputs.value }}
+            **Source:** [Swissmedic AIPS](https://www.swissmedic.ch/swissmedic/en/home/humanarzneimittel/authorisations/aips.html) (public domain)
+            **Integrity:** Signed with Ed25519 (minisign). The app verifies the signature
+            against the hardcoded public key before accepting the file.
+
+            > Patient data never leaves the device. This file contains only public reference
+            > data from the official Swiss pharmaceutical compendium.
+          files: |
+            medication_ref_de.sqlite
+            medication_ref_de.sqlite.minisig
+          make_latest: true
