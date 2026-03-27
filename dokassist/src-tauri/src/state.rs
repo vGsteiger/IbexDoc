@@ -39,7 +39,10 @@ impl AppState {
         let medication_ref = if ref_db_path.exists() {
             match crate::medication_reference::open_reference_db(&ref_db_path) {
                 Ok(conn) => {
-                    log::info!("Medication reference DB loaded from '{}'", ref_db_path.display());
+                    log::info!(
+                        "Medication reference DB loaded from '{}'",
+                        ref_db_path.display()
+                    );
                     Some(conn)
                 }
                 Err(e) => {
@@ -153,9 +156,7 @@ impl AppState {
     }
 
     /// Acquire a lock on the medication reference DB connection, if installed.
-    pub fn get_medication_ref(
-        &self,
-    ) -> Option<std::sync::MutexGuard<'_, Option<Connection>>> {
+    pub fn get_medication_ref(&self) -> Option<std::sync::MutexGuard<'_, Option<Connection>>> {
         self.medication_ref.lock().ok()
     }
 

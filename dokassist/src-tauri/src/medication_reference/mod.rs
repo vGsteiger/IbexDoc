@@ -1,6 +1,6 @@
 pub mod download;
 
-use rusqlite::{Connection, OpenFlags, params};
+use rusqlite::{params, Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -165,7 +165,16 @@ pub fn get_substance_detail(conn: &Connection, id: &str) -> Result<SubstanceDeta
         other => AppError::Database(other),
     })
     .map(
-        |(id, name_de, atc_code, trade_json, indication, side_effects, contraindications, source_version)| {
+        |(
+            id,
+            name_de,
+            atc_code,
+            trade_json,
+            indication,
+            side_effects,
+            contraindications,
+            source_version,
+        )| {
             SubstanceDetail {
                 id,
                 name_de,
@@ -183,11 +192,9 @@ pub fn get_substance_detail(conn: &Connection, id: &str) -> Result<SubstanceDeta
 /// Return the `source_version` string stored in the first row of `substances`,
 /// or `None` if the DB is empty.
 pub fn get_db_version(conn: &Connection) -> Option<String> {
-    conn.query_row(
-        "SELECT source_version FROM substances LIMIT 1",
-        [],
-        |row| row.get(0),
-    )
+    conn.query_row("SELECT source_version FROM substances LIMIT 1", [], |row| {
+        row.get(0)
+    })
     .ok()
     .flatten()
 }

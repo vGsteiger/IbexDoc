@@ -34,8 +34,7 @@ const REF_DB_SIG_URL: &str =
 /// SECURITY NOTE: even if GitHub releases are fully compromised an attacker cannot forge a
 /// valid signature without the private key, so the public key hardcoded here is the root of
 /// trust for the reference DB.
-const REF_DB_PUBLIC_KEY: &str =
-    "RWSfnrRB0cL2sWFA/bAJbZa8mvXCcVjjVq6N50oz6KA65wW9MkM4Vjv9";
+const REF_DB_PUBLIC_KEY: &str = "RWSfnrRB0cL2sWFA/bAJbZa8mvXCcVjjVq6N50oz6KA65wW9MkM4Vjv9";
 
 /// Download and verify the medication reference SQLite.
 ///
@@ -54,17 +53,19 @@ pub async fn download_reference_db(app: &AppHandle, dest_path: &Path) -> Result<
 
     // Step 2 — stream the SQLite to a temp path beside the final destination
     let tmp_path = dest_path.with_extension("sqlite.tmp");
-    let sha256_hex = stream_to_file(&client, app, &tmp_path).await.map_err(|e| {
-        // Clean up on error
-        let _ = std::fs::remove_file(&tmp_path);
-        e
-    })?;
+    let sha256_hex = stream_to_file(&client, app, &tmp_path)
+        .await
+        .inspect_err(|_e| {
+            // Clean up on error
+            let _ = std::fs::remove_file(&tmp_path);
+        })?;
 
     // Step 3 — verify the minisign signature
-    verify_minisign_signature(&sig_bytes, &sha256_hex, &tmp_path).await.map_err(|e| {
-        let _ = std::fs::remove_file(&tmp_path);
-        e
-    })?;
+    verify_minisign_signature(&sig_bytes, &sha256_hex, &tmp_path)
+        .await
+        .inspect_err(|_e| {
+            let _ = std::fs::remove_file(&tmp_path);
+        })?;
 
     // Step 4 — atomic rename to final path
     tokio::fs::rename(&tmp_path, dest_path).await.map_err(|e| {
@@ -115,11 +116,10 @@ async fn stream_to_file(
     app: &AppHandle,
     tmp_path: &Path,
 ) -> Result<String, AppError> {
-    let response = client
-        .get(REF_DB_URL)
-        .send()
-        .await
-        .map_err(|e| AppError::Validation(format!("Failed to start reference DB download: {e}")))?;
+    let response =
+        client.get(REF_DB_URL).send().await.map_err(|e| {
+            AppError::Validation(format!("Failed to start reference DB download: {e}"))
+        })?;
 
     let total_size = response.content_length().unwrap_or(0);
 
@@ -142,8 +142,7 @@ async fn stream_to_file(
     let mut stream = response.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk =
-            chunk.map_err(|e| AppError::Validation(format!("Stream error: {e}")))?;
+        let chunk = chunk.map_err(|e| AppError::Validation(format!("Stream error: {e}")))?;
 
         downloaded += chunk.len() as u64;
         if downloaded > MAX_REF_DB_BYTES {

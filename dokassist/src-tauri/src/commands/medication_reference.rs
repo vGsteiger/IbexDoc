@@ -53,7 +53,7 @@ pub async fn get_medication_reference_version(
         .get_medication_ref()
         .ok_or_else(|| AppError::Validation("Medication ref mutex poisoned".to_string()))?;
 
-    Ok(guard.as_ref().and_then(|conn| get_db_version(conn)))
+    Ok(guard.as_ref().and_then(get_db_version))
 }
 
 /// Download, verify, and install the medication reference DB.
