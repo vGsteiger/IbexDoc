@@ -148,6 +148,13 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute("PRAGMA user_version = 11;", [])?;
     }
 
+    // Migration 12: Letters table for formal letter drafting
+    if version < 12 {
+        log::info!("Running migration 012: Letters");
+        conn.execute_batch(include_str!("migrations/012_letters.sql"))?;
+        conn.execute("PRAGMA user_version = 12;", [])?;
+    }
+
     log::info!("Database migrations complete");
     Ok(())
 }

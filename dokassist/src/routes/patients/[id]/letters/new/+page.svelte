@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { t } from '$lib/translations';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
@@ -8,8 +8,8 @@
     createLetter,
     generateLetter,
     getPatient,
-    listDiagnoses,
-    listMedications,
+    listDiagnosesForPatient,
+    listMedicationsForPatient,
     type LetterType,
     type LetterLanguage,
     type Patient,
@@ -18,8 +18,7 @@
   } from '$lib/api';
   import { language as appLanguage } from '$lib/stores/language';
 
-  let patientId: string;
-  $: patientId = $page.params.id;
+  const patientId = $derived(page.params.id);
 
   let patient = $state<Patient | null>(null);
   let diagnoses = $state<Diagnosis[]>([]);
@@ -46,8 +45,8 @@
   onMount(async () => {
     try {
       patient = await getPatient(patientId);
-      diagnoses = await listDiagnoses(patientId, 10, 0);
-      medications = await listMedications(patientId, 10, 0);
+      diagnoses = await listDiagnosesForPatient(patientId, 10, 0);
+      medications = await listMedicationsForPatient(patientId, 10, 0);
 
       // Auto-fill patient context
       patientContext = formatPatientContext();

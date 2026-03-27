@@ -252,8 +252,16 @@ pub fn letter_generation_prompt(
     };
 
     let (context_label, summary_label, recipient_label) = match language {
-        "de" => ("Patientenkontext", "Klinische Zusammenfassung", "Empfänger-Anrede"),
-        "fr" => ("Contexte du patient", "Résumé clinique", "Salutation au destinataire"),
+        "de" => (
+            "Patientenkontext",
+            "Klinische Zusammenfassung",
+            "Empfänger-Anrede",
+        ),
+        "fr" => (
+            "Contexte du patient",
+            "Résumé clinique",
+            "Salutation au destinataire",
+        ),
         _ => ("Patient context", "Clinical summary", "Recipient greeting"),
     };
 
