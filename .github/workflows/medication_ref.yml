@@ -136,45 +136,30 @@ jobs:
           print("Download OK — file appears to be XML.")
           PYEOF
 
-      - name: Debug AIPS XML structure
-        run: |
-          python3 -c "
-          from lxml import etree
-          parser = etree.XMLParser(recover=True, huge_tree=True)
-          tree = etree.parse('aips_de.xml', parser)
-          root = tree.getroot()
-          print(f'Root tag: {root.tag}')
-          print(f'Root attribs: {root.attrib}')
-          print(f'Namespaces: {root.nsmap}')
-          print()
-          print('Direct children (first 10):')
-          for i, child in enumerate(root):
-              if i >= 10:
-                  print(f'  ... ({len(list(root))} total children)')
-                  break
-              print(f'  tag={child.tag} attribs={dict(child.attrib)}')
-              for j, sub in enumerate(child):
-                  if j >= 5:
-                      print(f'    ... ({len(list(child))} sub-elements)')
-                      break
-                  text = (sub.text or '')[:80]
-                  print(f'    tag={sub.tag} text={text!r}')
-          "
-
       - name: Validate AIPS XML
         run: |
           python3 -c "
           from lxml import etree
 
-          # The AIPS XML embeds HTML content which may use entities like
-          # '&nbsp;' that are not defined in plain XML.
-          # Use recover mode to handle these gracefully.
           parser = etree.XMLParser(recover=True, huge_tree=True)
           tree = etree.parse('aips_de.xml', parser)
-          count = len(tree.findall('.//{*}medicalInformation'))
-          print(f'AIPS XML OK — {count} medicalInformation entries')
-          if count < 100:
-              raise SystemExit('Too few entries — AIPS download may have failed')
+          root = tree.getroot()
+          tag = root.tag.split('}')[-1] if '}' in root.tag else root.tag
+
+          # New format (Aug 2025+): MedicinalDocumentsBundles
+          if tag == 'MedicinalDocumentsBundles':
+              ns = {'n': 'https://simisinfo.refdata.ch/MedicinalDocuments/1.0/'}
+              count = len(root.findall('n:MedicinalDocumentsBundle', ns))
+              print(f'AIPS XML OK (new format) — {count} MedicinalDocumentsBundle entries')
+              if count < 100:
+                  raise SystemExit('Too few entries — AIPS download may have failed')
+
+          # Legacy format (pre-Aug 2025): medicalInformations
+          else:
+              count = len(tree.findall('.//{*}medicalInformation'))
+              print(f'AIPS XML OK (legacy format) — {count} medicalInformation entries')
+              if count < 100:
+                  raise SystemExit('Too few entries — AIPS download may have failed')
           "
 
       - name: Build reference SQLite
@@ -188,8 +173,18 @@ jobs:
         run: |
           curl -fsSLO https://github.com/jedisct1/minisign/releases/download/0.11/minisign-0.11-linux.tar.gz
           tar -xzf minisign-0.11-linux.tar.gz
-          sudo install -m 755 minisign-0.11-linux/x86_64/minisign /usr/local/bin/minisign
-          minisign --version
+          ARCH=$(uname -m)
+          echo "Runner architecture: $ARCH"
+          # Find binary matching runner arch, fall back to any available
+          MINISIGN_BIN=$(find . -path "*/${ARCH}/minisign" -type f | head -1)
+          if [ -z "$MINISIGN_BIN" ]; then
+            echo "No binary found for ${ARCH}. Available:"
+            find . -name minisign -type f
+            exit 1
+          fi
+          echo "Using: $MINISIGN_BIN"
+          sudo install -m 755 "$MINISIGN_BIN" /usr/local/bin/minisign
+          minisign -v
 
       - name: Sign the SQLite with minisign
         env:
@@ -203,10 +198,9 @@ jobs:
           echo "" | minisign -S -s medication_ref.key -m medication_ref_de.sqlite
           rm -f medication_ref.key
 
-          # Verify our own signature as a sanity check (using the public key from the secret)
-          echo "${{ secrets.MEDICATION_REF_PUBLIC_KEY }}" > medication_ref.pub
-          minisign -V -p medication_ref.pub -m medication_ref_de.sqlite
-          rm -f medication_ref.pub
+          # Verify our own signature as a sanity check.
+          # -P accepts the public key as an inline base64 string (no file needed).
+          minisign -V -P "${{ secrets.MEDICATION_REF_PUBLIC_KEY }}" -m medication_ref_de.sqlite
           echo "Signature verified OK"
 
       - name: Create or update GitHub Release and upload assets
