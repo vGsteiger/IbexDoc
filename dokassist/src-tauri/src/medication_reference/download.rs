@@ -125,13 +125,9 @@ async fn stream_to_file(
         .get(REF_DB_URL)
         .send()
         .await
-        .map_err(|e| {
-            AppError::Validation(format!("Failed to start reference DB download: {e}"))
-        })?
+        .map_err(|e| AppError::Validation(format!("Failed to start reference DB download: {e}")))?
         .error_for_status()
-        .map_err(|e| {
-            AppError::Validation(format!("Failed to start reference DB download: {e}"))
-        })?;
+        .map_err(|e| AppError::Validation(format!("Failed to start reference DB download: {e}")))?;
 
     let total_size = response.content_length().unwrap_or(0);
 
