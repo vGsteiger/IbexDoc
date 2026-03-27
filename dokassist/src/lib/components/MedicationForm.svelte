@@ -1,6 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { CreateMedication, UpdateMedication, Medication } from '$lib/api';
+  import type { CreateMedication, UpdateMedication, Medication, SubstanceSummary } from '$lib/api';
+  import MedicationAutocomplete from './MedicationAutocomplete.svelte';
+  import MedicationInfoPanel from './MedicationInfoPanel.svelte';
 
   interface Props {
     medication?: Medication;
@@ -19,6 +21,7 @@
   );
   let endDate = $state(untrack(() => medication?.end_date || ''));
   let notes = $state(untrack(() => medication?.notes || ''));
+  let selectedSubstanceId = $state<string | null>(null);
 
   $effect(() => {
     if (medication) {
@@ -28,8 +31,15 @@
       startDate = medication.start_date || new Date().toISOString().split('T')[0];
       endDate = medication.end_date || '';
       notes = medication.notes || '';
+      // Clear any reference panel when editing an existing record
+      selectedSubstanceId = null;
     }
   });
+
+  function handleSubstanceSelect(summary: SubstanceSummary) {
+    substance = summary.name_de;
+    selectedSubstanceId = summary.id;
+  }
 
   function handleSubmit(event: Event) {
     event.preventDefault();
@@ -39,7 +49,6 @@
     }
 
     if (medication) {
-      // Update existing medication
       const update: UpdateMedication = {
         substance: substance !== medication.substance ? substance : undefined,
         dosage: dosage !== medication.dosage ? dosage : undefined,
@@ -50,7 +59,6 @@
       };
       onSave({ id: medication.id, update });
     } else if (patientId) {
-      // Create new medication
       const input: CreateMedication = {
         patient_id: patientId,
         substance,
@@ -70,14 +78,19 @@
     <label for="substance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
       Wirkstoff *
     </label>
-    <input
+    <MedicationAutocomplete
       id="substance"
-      type="text"
-      bind:value={substance}
+      value={substance}
+      onInput={(v) => {
+        substance = v;
+        if (!v) selectedSubstanceId = null;
+      }}
+      onSelect={handleSubstanceSelect}
       required
       placeholder="z.B. Sertralin"
       class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
+    <MedicationInfoPanel substanceId={selectedSubstanceId} />
   </div>
 
   <div>

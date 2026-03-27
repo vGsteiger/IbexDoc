@@ -10,6 +10,7 @@ mod error;
 mod filesystem; // PKG-3: Encrypted Filesystem
 mod keychain;
 mod llm;
+mod medication_reference;
 mod models;
 mod recovery;
 mod search;
@@ -82,6 +83,10 @@ pub fn run() {
             commands::medications::list_medications_for_patient,
             commands::medications::update_medication,
             commands::medications::delete_medication,
+            commands::medication_reference::search_medication_reference,
+            commands::medication_reference::get_medication_reference_detail,
+            commands::medication_reference::get_medication_reference_version,
+            commands::medication_reference::download_medication_reference,
             commands::treatment_plans::create_treatment_plan,
             commands::treatment_plans::get_treatment_plan,
             commands::treatment_plans::list_treatment_plans_for_patient,

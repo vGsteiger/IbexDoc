@@ -30,6 +30,8 @@
     clearTaskModel,
     parseCsvPreview,
     importCsvData,
+    getMedicationReferenceVersion,
+    downloadMedicationReference,
     type LlmEngineStatus,
     type ModelChoice,
     type UpdateInfo,
@@ -88,6 +90,13 @@
   let embedPhase = $state<'idle' | 'loading' | 'done' | 'error'>('idle');
   let embedError = $state('');
 
+  // Medication reference DB state
+  let medRefVersion = $state<string | null>(null);
+  let medRefPhase = $state<'idle' | 'downloading' | 'done' | 'error'>('idle');
+  let medRefProgress = $state<number>(0);
+  let medRefError = $state('');
+  let medRefUnlisten: UnlistenFn | null = null;
+
   // Update state
   let updateInfo = $state<UpdateInfo | null>(null);
   let checkingUpdate = $state(false);
@@ -97,11 +106,12 @@
   let updateUnlisten: UnlistenFn | null = null;
 
   onMount(async () => {
-    [status, recommended, appVersion, embedStatus] = await Promise.all([
+    [status, recommended, appVersion, embedStatus, medRefVersion] = await Promise.all([
       getEngineStatus(),
       getRecommendedModel(),
       getVersion().catch(() => 'Unknown'),
       getEmbedStatus(),
+      getMedicationReferenceVersion().catch(() => null),
     ]);
     if (status.is_loaded) phase = 'done';
     if (embedStatus.is_loaded) embedPhase = 'done';
@@ -140,10 +150,33 @@
     }
   }
 
+  async function handleDownloadMedRef() {
+    medRefPhase = 'downloading';
+    medRefProgress = 0;
+    medRefError = '';
+
+    medRefUnlisten = await listen<number>('medication-ref-download-progress', (e) => {
+      medRefProgress = Math.round(e.payload * 100);
+    });
+
+    try {
+      await downloadMedicationReference();
+      medRefVersion = await getMedicationReferenceVersion();
+      medRefPhase = 'done';
+    } catch (e) {
+      medRefPhase = 'error';
+      medRefError = parseError(e).message;
+    } finally {
+      medRefUnlisten?.();
+      medRefUnlisten = null;
+    }
+  }
+
   onDestroy(() => {
     unlisten?.();
     doneUnsubscribe?.();
     updateUnlisten?.();
+    medRefUnlisten?.();
   });
 
   async function handleCheckForUpdates() {
@@ -1064,6 +1097,67 @@
     {/if}
     {#if embedPhase === 'error'}
       <p class="text-xs text-red-400">{embedError}</p>
+    {/if}
+  </section>
+
+  <section class="mt-10">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
+      Medikamenten-Referenzdatenbank
+    </h2>
+    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+      Offizielle Wirkstoffdaten aus dem Swissmedic AIPS-Kompendium für Autocomplete und
+      Fachinformationen. Die Daten werden lokal gespeichert — keine Patientendaten verlassen
+      das Gerät.
+    </p>
+
+    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 flex items-center gap-3">
+      <div
+        class="w-3 h-3 rounded-full shrink-0 {medRefVersion
+          ? 'bg-green-500'
+          : 'bg-gray-500'}"
+      ></div>
+      <div class="flex-1">
+        {#if medRefVersion}
+          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">
+            Installiert — Version {medRefVersion}
+          </p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Aktualisierung empfohlen, wenn eine neue AIPS-Version verfügbar ist.
+          </p>
+        {:else}
+          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">Nicht installiert</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Herunterladen, um Autocomplete und Fachinformationen zu aktivieren.
+          </p>
+        {/if}
+      </div>
+
+      <button
+        onclick={handleDownloadMedRef}
+        disabled={medRefPhase === 'downloading'}
+        class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+      >
+        {#if medRefPhase === 'downloading'}
+          {medRefProgress}%…
+        {:else if medRefVersion}
+          Aktualisieren
+        {:else}
+          Herunterladen
+        {/if}
+      </button>
+    </div>
+
+    {#if medRefPhase === 'downloading'}
+      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">
+        <div
+          class="bg-blue-600 h-1.5 rounded-full transition-all"
+          style="width: {medRefProgress}%"
+        ></div>
+      </div>
+      <p class="text-xs text-blue-400">Datenbank wird heruntergeladen und verifiziert…</p>
+    {/if}
+    {#if medRefPhase === 'error'}
+      <p class="text-xs text-red-400">{medRefError}</p>
     {/if}
   </section>
 
