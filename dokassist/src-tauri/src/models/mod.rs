@@ -5,6 +5,7 @@ pub mod fhir;
 pub mod file_record;
 pub mod literature;
 pub mod medication;
+pub mod model;
 pub mod outcome_score;
 pub mod patient;
 pub mod report;
