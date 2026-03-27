@@ -173,14 +173,16 @@ jobs:
         run: |
           curl -fsSLO https://github.com/jedisct1/minisign/releases/download/0.11/minisign-0.11-linux.tar.gz
           tar -xzf minisign-0.11-linux.tar.gz
-          # Find the binary wherever it landed in the archive
-          MINISIGN_BIN=$(find . -name minisign -type f | head -1)
+          ARCH=$(uname -m)
+          echo "Runner architecture: $ARCH"
+          # Find binary matching runner arch, fall back to any available
+          MINISIGN_BIN=$(find . -path "*/${ARCH}/minisign" -type f | head -1)
           if [ -z "$MINISIGN_BIN" ]; then
-            echo "ERROR: minisign binary not found in archive. Contents:"
-            tar -tzf minisign-0.11-linux.tar.gz
+            echo "No binary found for ${ARCH}. Available:"
+            find . -name minisign -type f
             exit 1
           fi
-          echo "Found minisign at: $MINISIGN_BIN"
+          echo "Using: $MINISIGN_BIN"
           sudo install -m 755 "$MINISIGN_BIN" /usr/local/bin/minisign
           minisign -v
 
