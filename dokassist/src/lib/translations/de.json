@@ -237,7 +237,17 @@
     "backToEmails": "Zurück zu E-Mails",
     "saveChanges": "Änderungen speichern",
     "loadingEmail": "E-Mail wird geladen...",
-    "validationError": "Bitte füllen Sie alle Felder aus"
+    "validationError": "Bitte füllen Sie alle Felder aus",
+    "aiAssist": "KI-Assistent",
+    "aiPromptLabel": "Was soll diese E-Mail sagen?",
+    "generateDraft": "Entwurf generieren",
+    "generating": "Generiert…",
+    "modelNotLoaded": "Kein KI-Modell geladen",
+    "generatedDraft": "Generierter Entwurf",
+    "applyToBody": "Zum Nachrichtentext übernehmen",
+    "showReasoning": "Begründung anzeigen",
+    "hideReasoning": "Begründung ausblenden",
+    "reasoningLines": "Zeilen"
   },
   "sessions": {
     "title": "Sitzungen",
@@ -332,6 +342,7 @@
     "generated": "Erstellt:",
     "model": "Modell:",
     "view": "Ansehen",
+    "delete": "Löschen",
     "confirmDelete": "Möchten Sie diesen Bericht wirklich löschen?",
     "selectType": "Berichtstyp auswählen",
     "selectTypeRequired": "Bitte wählen Sie einen Berichtstyp.",
