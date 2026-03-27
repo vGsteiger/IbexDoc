@@ -238,7 +238,17 @@
     "backToEmails": "Back to Emails",
     "saveChanges": "Save Changes",
     "loadingEmail": "Loading email...",
-    "validationError": "Please fill in all fields"
+    "validationError": "Please fill in all fields",
+    "aiAssist": "AI Assist",
+    "aiPromptLabel": "What should this email say?",
+    "generateDraft": "Generate Draft",
+    "generating": "Generating…",
+    "modelNotLoaded": "No AI model is loaded",
+    "generatedDraft": "Generated Draft",
+    "applyToBody": "Apply to body",
+    "showReasoning": "Show reasoning",
+    "hideReasoning": "Hide reasoning",
+    "reasoningLines": "lines"
   },
   "sessions": {
     "title": "Sessions",
@@ -333,6 +343,7 @@
     "generated": "Generated:",
     "model": "Model:",
     "view": "View",
+    "delete": "Delete",
     "confirmDelete": "Are you sure you want to delete this report?",
     "selectType": "Select Report Type",
     "selectTypeRequired": "Please select a report type.",
