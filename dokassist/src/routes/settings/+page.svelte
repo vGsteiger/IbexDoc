@@ -38,6 +38,30 @@
   import { language } from '$lib/stores/language';
   import { t } from '$lib/translations';
 
+  function renderMarkdown(text: string): string {
+    function escape(s: string) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function inline(s: string) {
+      return s
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    }
+    return text
+      .split('\n')
+      .map((line) => {
+        if (/^## /.test(line))
+          return `<p class="font-semibold mt-2 mb-0.5">${inline(escape(line.slice(3)))}</p>`;
+        if (/^### /.test(line))
+          return `<p class="font-medium mt-1 mb-0.5">${inline(escape(line.slice(4)))}</p>`;
+        if (/^- /.test(line))
+          return `<p class="ml-3">&bull; ${inline(escape(line.slice(2)))}</p>`;
+        if (line.trim() === '') return '<div class="mt-1"></div>';
+        return `<p>${inline(escape(line))}</p>`;
+      })
+      .join('');
+  }
+
   let status = $state<LlmEngineStatus | null>(null);
   let recommended = $state<ModelChoice | null>(null);
   let downloadProgress = $state<number | null>(null);
@@ -466,15 +490,14 @@
                 class="text-xs text-gray-600 dark:text-gray-400 mb-3 max-h-32 overflow-y-auto bg-gray-200 dark:bg-gray-900 rounded p-2"
               >
                 <p class="font-medium mb-1">{$t('settings.releaseNotes')}</p>
-                <div class="whitespace-pre-wrap">{updateInfo.body}</div>
+                <div>{@html renderMarkdown(updateInfo.body)}</div>
               </div>
             {/if}
 
             {#if installingUpdate}
               <div class="mb-3">
                 <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                  <span>{$t('settings.downloading')} {$t('settings.downloadingAndInstalling')}</span
-                  >
+                  <span>{$t('settings.downloadingAndInstalling')}</span>
                   <span>{updateProgress}%</span>
                 </div>
                 <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">

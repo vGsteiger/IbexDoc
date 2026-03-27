@@ -185,7 +185,7 @@ jobs:
           echo "Warning: No aarch64 .app.tar.gz found in artifacts"
         fi
 
-        [ -f "$ARM_SIG" ] && ARM_SIG_CONTENT=$(cat "$ARM_SIG")
+        [ -f "$ARM_SIG" ] && ARM_SIG_CONTENT=$(tr -d '\r\n' < "$ARM_SIG")
 
         # Generate and upload latest.json for Tauri updater
         # NOTE: Tauri v2 requires plain semver (no "v" prefix)
