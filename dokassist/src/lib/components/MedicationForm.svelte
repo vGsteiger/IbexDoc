@@ -67,7 +67,7 @@
 
 <form onsubmit={handleSubmit} class="space-y-4">
   <div>
-    <label for="substance" class="block text-sm font-medium text-gray-300 mb-1">
+    <label for="substance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
       Wirkstoff *
     </label>
     <input
@@ -76,24 +76,24 @@
       bind:value={substance}
       required
       placeholder="z.B. Sertralin"
-      class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
   </div>
 
   <div>
-    <label for="dosage" class="block text-sm font-medium text-gray-300 mb-1"> Dosierung * </label>
+    <label for="dosage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Dosierung * </label>
     <input
       id="dosage"
       type="text"
       bind:value={dosage}
       required
       placeholder="z.B. 50 mg"
-      class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
   </div>
 
   <div>
-    <label for="frequency" class="block text-sm font-medium text-gray-300 mb-1">
+    <label for="frequency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
       Häufigkeit *
     </label>
     <input
@@ -102,13 +102,13 @@
       bind:value={frequency}
       required
       placeholder="z.B. 1x täglich"
-      class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
   </div>
 
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="start-date" class="block text-sm font-medium text-gray-300 mb-1">
+      <label for="start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         Startdatum *
       </label>
       <input
@@ -121,7 +121,7 @@
     </div>
 
     <div>
-      <label for="end-date" class="block text-sm font-medium text-gray-300 mb-1"> Enddatum </label>
+      <label for="end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Enddatum </label>
       <input
         id="end-date"
         type="date"
@@ -132,7 +132,7 @@
   </div>
 
   <div>
-    <label for="notes" class="block text-sm font-medium text-gray-300 mb-1"> Notizen </label>
+    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Notizen </label>
     <textarea
       id="notes"
       bind:value={notes}

@@ -1,8 +1,6 @@
 use crate::ahv::validate_ahv;
 use crate::audit::{self, AuditAction};
-use crate::models::import::{
-    ColumnMapping, CsvPatientRow, CsvPreview, CsvWarning, ImportResult,
-};
+use crate::models::import::{ColumnMapping, CsvPatientRow, CsvPreview, CsvWarning, ImportResult};
 use crate::models::patient::CreatePatient;
 use crate::state::AppState;
 use serde::Deserialize;
@@ -83,11 +81,18 @@ pub async fn parse_csv_preview(
     let detected_mappings = detect_column_mappings(&headers);
 
     // Validate detected mappings
-    let has_required_fields =
-        detected_mappings.iter().any(|m| m.patient_field == "ahv_number")
-            && detected_mappings.iter().any(|m| m.patient_field == "first_name")
-            && detected_mappings.iter().any(|m| m.patient_field == "last_name")
-            && detected_mappings.iter().any(|m| m.patient_field == "date_of_birth");
+    let has_required_fields = detected_mappings
+        .iter()
+        .any(|m| m.patient_field == "ahv_number")
+        && detected_mappings
+            .iter()
+            .any(|m| m.patient_field == "first_name")
+        && detected_mappings
+            .iter()
+            .any(|m| m.patient_field == "last_name")
+        && detected_mappings
+            .iter()
+            .any(|m| m.patient_field == "date_of_birth");
 
     if !has_required_fields {
         warnings.push(CsvWarning {
@@ -98,14 +103,16 @@ pub async fn parse_csv_preview(
     }
 
     // Audit the preview action
-    if let Ok(conn) = state.db.conn() {
-        let _ = audit::log(
-            &conn,
-            AuditAction::View,
-            "import",
-            None,
-            Some(&format!("preview: {} rows", total_rows)),
-        );
+    if let Ok(pool) = state.get_db() {
+        if let Ok(conn) = pool.conn() {
+            let _ = audit::log(
+                &conn,
+                AuditAction::View,
+                "import",
+                None,
+                Some(&format!("preview: {} rows", total_rows)),
+            );
+        }
     }
 
     Ok(CsvPreview {
@@ -211,7 +218,8 @@ pub async fn import_csv_data(
     }
 
     // Phase 2: Import all validated rows in a transaction
-    let conn = state.db.conn().map_err(|e| e.to_string())?;
+    let pool = state.get_db().map_err(|e| e.to_string())?;
+    let conn = pool.conn().map_err(|e| e.to_string())?;
 
     // Begin transaction
     conn.execute("BEGIN TRANSACTION", [])
@@ -289,6 +297,7 @@ fn detect_column_mappings(headers: &[String]) -> Vec<ColumnMapping> {
         } else if header_lower.contains("first") && header_lower.contains("name")
             || header_lower.contains("vorname")
             || header_lower.contains("prenom")
+            || header_lower.contains("prénom")
         {
             Some("first_name")
         } else if header_lower.contains("last") && header_lower.contains("name")
@@ -435,7 +444,7 @@ fn create_patient_from_row(
     let input = CreatePatient {
         ahv_number: normalized_ahv,
         first_name: row.first_name.unwrap(), // Safe because validated
-        last_name: row.last_name.unwrap(),    // Safe because validated
+        last_name: row.last_name.unwrap(),   // Safe because validated
         date_of_birth: row.date_of_birth.unwrap(), // Safe because validated
         gender: row.gender,
         address: row.address,
@@ -477,9 +486,7 @@ mod tests {
         assert!(mappings.iter().any(|m| m.patient_field == "ahv_number"));
         assert!(mappings.iter().any(|m| m.patient_field == "first_name"));
         assert!(mappings.iter().any(|m| m.patient_field == "last_name"));
-        assert!(mappings
-            .iter()
-            .any(|m| m.patient_field == "date_of_birth"));
+        assert!(mappings.iter().any(|m| m.patient_field == "date_of_birth"));
         assert!(mappings.iter().any(|m| m.patient_field == "gender"));
         assert!(mappings.iter().any(|m| m.patient_field == "email"));
     }
@@ -501,9 +508,7 @@ mod tests {
         assert!(mappings.iter().any(|m| m.patient_field == "ahv_number"));
         assert!(mappings.iter().any(|m| m.patient_field == "first_name"));
         assert!(mappings.iter().any(|m| m.patient_field == "last_name"));
-        assert!(mappings
-            .iter()
-            .any(|m| m.patient_field == "date_of_birth"));
+        assert!(mappings.iter().any(|m| m.patient_field == "date_of_birth"));
         assert!(mappings.iter().any(|m| m.patient_field == "gender"));
         assert!(mappings.iter().any(|m| m.patient_field == "phone"));
     }
@@ -589,7 +594,8 @@ mod tests {
         mapping_map.insert("Last Name".to_string(), "last_name".to_string());
         mapping_map.insert("Date of Birth".to_string(), "date_of_birth".to_string());
 
-        let record = csv::StringRecord::from(vec!["756.1234.5678.97", "Hans", "Müller", "1980-01-15"]);
+        let record =
+            csv::StringRecord::from(vec!["756.1234.5678.97", "Hans", "Müller", "1980-01-15"]);
 
         let patient_row = map_csv_row_to_patient(&headers, &record, &mapping_map);
 
