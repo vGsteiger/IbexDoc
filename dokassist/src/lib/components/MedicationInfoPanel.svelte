@@ -20,15 +20,22 @@
 
     loading = true;
     collapsed = false;
+    const currentSubstanceId = substanceId;
     invoke<SubstanceDetail>('get_medication_reference_detail', { id: substanceId })
       .then((d) => {
-        detail = d;
+        if (currentSubstanceId === substanceId) {
+          detail = d;
+        }
       })
       .catch(() => {
-        detail = null;
+        if (currentSubstanceId === substanceId) {
+          detail = null;
+        }
       })
       .finally(() => {
-        loading = false;
+        if (currentSubstanceId === substanceId) {
+          loading = false;
+        }
       });
   });
 </script>

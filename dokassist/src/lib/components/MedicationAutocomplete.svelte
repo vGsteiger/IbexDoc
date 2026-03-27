@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
+  import { onDestroy } from 'svelte';
   import type { SubstanceSummary } from '$lib/api';
 
   interface Props {
@@ -24,6 +25,13 @@
   let showDropdown = $state(false);
   let selectedIndex = $state(0);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+  });
 
   function handleInput(event: Event) {
     const input = (event.target as HTMLInputElement).value;
@@ -106,16 +114,27 @@
     {required}
     {placeholder}
     autocomplete="off"
+    role="combobox"
+    aria-expanded={showDropdown}
+    aria-controls="{id}-listbox"
+    aria-activedescendant={showDropdown && suggestions[selectedIndex] ? `${id}-option-${selectedIndex}` : undefined}
+    aria-autocomplete="list"
     class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
   />
 
   {#if showDropdown && suggestions.length > 0}
     <div
+      id="{id}-listbox"
+      role="listbox"
+      aria-label="Medication suggestions"
       class="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto"
     >
       {#each suggestions as entry, index}
         <button
           type="button"
+          id="{id}-option-{index}"
+          role="option"
+          aria-selected={index === selectedIndex}
           class="w-full px-3 py-2 text-left transition-colors flex items-start gap-2"
           class:bg-gray-700={index === selectedIndex}
           onmouseenter={() => (selectedIndex = index)}

@@ -103,4 +103,4 @@ jobs:
           files: |
             medication_ref_de.sqlite
             medication_ref_de.sqlite.minisig
-          make_latest: false
+          make_latest: true

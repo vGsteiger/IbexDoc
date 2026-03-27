@@ -67,6 +67,15 @@ pub async fn download_medication_reference(
 ) -> Result<(), AppError> {
     let dest_path = state.data_dir.join("medication_ref.sqlite");
 
+    // Close any existing DB connection before download to avoid file lock issues on Windows
+    {
+        let mut guard = state
+            .medication_ref
+            .lock()
+            .map_err(|_| AppError::Validation("Medication ref mutex poisoned".to_string()))?;
+        *guard = None;
+    }
+
     download::download_reference_db(&app, &dest_path).await?;
 
     // Reload the connection in AppState so searches work immediately.

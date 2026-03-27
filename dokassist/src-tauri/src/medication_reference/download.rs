@@ -42,7 +42,7 @@ const REF_DB_PUBLIC_KEY: &str = "RWSfnrRB0cL2sWFA/bAJbZa8mvXCcVjjVq6N50oz6KA65wW
 /// 1. Download the `.minisig` signature file (tiny, always first).
 /// 2. Download the SQLite file, streaming it to a temp path while computing SHA-256.
 /// 3. Verify the minisign Ed25519 signature over the file bytes.
-/// 4. Rename the temp file to `dest_path` (atomic on most OS).
+/// 4. Remove any existing DB file and rename the temp file to `dest_path` (atomic on most OS).
 ///
 /// Emits `"medication-ref-download-progress"` (f64 0.0–1.0) during step 2.
 pub async fn download_reference_db(app: &AppHandle, dest_path: &Path) -> Result<(), AppError> {
@@ -67,7 +67,10 @@ pub async fn download_reference_db(app: &AppHandle, dest_path: &Path) -> Result<
             let _ = std::fs::remove_file(&tmp_path);
         })?;
 
-    // Step 4 — atomic rename to final path
+    // Step 4 — remove existing DB file if present, then atomic rename to final path
+    if dest_path.exists() {
+        std::fs::remove_file(dest_path).map_err(AppError::Filesystem)?;
+    }
     tokio::fs::rename(&tmp_path, dest_path).await.map_err(|e| {
         let _ = std::fs::remove_file(&tmp_path);
         AppError::Filesystem(e)
@@ -87,6 +90,8 @@ async fn fetch_signature(client: &reqwest::Client) -> Result<Vec<u8>, AppError> 
         .get(REF_DB_SIG_URL)
         .send()
         .await
+        .map_err(|e| AppError::Validation(format!("Failed to fetch .minisig: {e}")))?
+        .error_for_status()
         .map_err(|e| AppError::Validation(format!("Failed to fetch .minisig: {e}")))?;
 
     if let Some(len) = response.content_length() {
@@ -116,8 +121,15 @@ async fn stream_to_file(
     app: &AppHandle,
     tmp_path: &Path,
 ) -> Result<String, AppError> {
-    let response =
-        client.get(REF_DB_URL).send().await.map_err(|e| {
+    let response = client
+        .get(REF_DB_URL)
+        .send()
+        .await
+        .map_err(|e| {
+            AppError::Validation(format!("Failed to start reference DB download: {e}"))
+        })?
+        .error_for_status()
+        .map_err(|e| {
             AppError::Validation(format!("Failed to start reference DB download: {e}"))
         })?;
 
@@ -183,7 +195,11 @@ async fn verify_minisign_signature(
     let signature = minisign_verify::Signature::decode(sig_str)
         .map_err(|e| AppError::Validation(format!("Failed to decode .minisig: {e}")))?;
 
-    // Read the full file for signature verification
+    // NOTE: The minisign-verify crate requires the full file bytes for verification.
+    // This means we must read the entire file into memory (up to MAX_REF_DB_BYTES).
+    // While this causes a temporary memory spike, it's necessary for cryptographic
+    // verification. The file is bounded to 256 MiB and verification is a one-time
+    // operation during download/update, making this acceptable for the security benefit.
     let file_bytes = tokio::fs::read(db_path)
         .await
         .map_err(AppError::Filesystem)?;

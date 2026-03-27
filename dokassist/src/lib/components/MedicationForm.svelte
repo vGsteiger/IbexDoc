@@ -83,7 +83,7 @@
       value={substance}
       onInput={(v) => {
         substance = v;
-        if (!v) selectedSubstanceId = null;
+        selectedSubstanceId = null;
       }}
       onSelect={handleSubstanceSelect}
       required
