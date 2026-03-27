@@ -560,6 +560,38 @@ export async function deleteMedication(id: string): Promise<void> {
   return await invoke<void>('delete_medication', { id });
 }
 
+// === Medication Reference Types ===
+
+export interface SubstanceSummary {
+  id: string;
+  name_de: string;
+  atc_code: string | null;
+  trade_names: string[];
+}
+
+export interface SubstanceDetail extends SubstanceSummary {
+  indication: string | null;
+  side_effects: string | null;
+  contraindications: string | null;
+  source_version: string | null;
+}
+
+export async function searchMedicationReference(query: string): Promise<SubstanceSummary[]> {
+  return await invoke<SubstanceSummary[]>('search_medication_reference', { query });
+}
+
+export async function getMedicationReferenceDetail(id: string): Promise<SubstanceDetail> {
+  return await invoke<SubstanceDetail>('get_medication_reference_detail', { id });
+}
+
+export async function getMedicationReferenceVersion(): Promise<string | null> {
+  return await invoke<string | null>('get_medication_reference_version');
+}
+
+export async function downloadMedicationReference(): Promise<void> {
+  return await invoke<void>('download_medication_reference');
+}
+
 // === Treatment Plan Types ===
 
 export interface TreatmentPlan {

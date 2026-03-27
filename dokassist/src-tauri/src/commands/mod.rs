@@ -12,6 +12,7 @@ pub mod import;
 pub mod letters;
 pub mod literature;
 pub mod llm;
+pub mod medication_reference;
 pub mod medications;
 pub mod models;
 pub mod outcome_scores;
