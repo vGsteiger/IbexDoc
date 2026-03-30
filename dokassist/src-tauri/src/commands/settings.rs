@@ -86,13 +86,3 @@ pub async fn complete_onboarding(state: State<'_, AppState>) -> Result<(), AppEr
 
     Ok(())
 }
-
-
-}
-
-
-}
-
-
-}
-
