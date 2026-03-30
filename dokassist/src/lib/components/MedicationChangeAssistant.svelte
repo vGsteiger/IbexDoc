@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import { invoke } from '@tauri-apps/api/core';
   import type { SubstanceDetail } from '$lib/api';
@@ -17,20 +18,24 @@
   let error = $state<string | null>(null);
   let sessionId = $state<string | null>(null);
 
+  // Track active listeners so they can be cleaned up on unmount.
+  let activeUnlisteners: UnlistenFn[] = [];
+
+  function cleanupListeners() {
+    activeUnlisteners.forEach((fn) => fn());
+    activeUnlisteners = [];
+  }
+
+  onDestroy(cleanupListeners);
+
   async function generateGuidance() {
     try {
       isGenerating = true;
       error = null;
       aiGuidance = '';
 
-      // Clean up any existing listeners
-      if (sessionId) {
-        try {
-          await invoke('cancel_generation', { sessionId });
-        } catch (e) {
-          console.warn('Failed to cancel previous generation:', e);
-        }
-      }
+      // Clean up any listeners from a previous run.
+      cleanupListeners();
 
       // Create or get the chat session for this patient
       sessionId = await invoke<string>('get_or_create_patient_chat_session', { patientId });
@@ -42,17 +47,16 @@
 
       const doneUnlisten = await listen<void>('agent-done', () => {
         isGenerating = false;
-        chunkUnlisten();
-        doneUnlisten();
+        cleanupListeners();
       });
 
       const errorUnlisten = await listen<string>('agent-error', (event) => {
         error = event.payload;
         isGenerating = false;
-        chunkUnlisten();
-        doneUnlisten();
-        errorUnlisten();
+        cleanupListeners();
       });
+
+      activeUnlisteners = [chunkUnlisten, doneUnlisten, errorUnlisten];
 
       // Construct a prompt that asks the agent to compare the medications
       const prompt = `Bitte vergleiche die folgenden beiden Medikamente und gib eine Entscheidungshilfe für den Medikamentenwechsel:

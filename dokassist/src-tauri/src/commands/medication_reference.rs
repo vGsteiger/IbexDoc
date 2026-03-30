@@ -105,9 +105,9 @@ pub async fn compare_medications(
         .get_medication_ref()
         .ok_or_else(|| AppError::Validation("Medication ref mutex poisoned".to_string()))?;
 
-    let conn = guard.as_ref().ok_or_else(|| {
-        AppError::NotFound("medication reference DB not installed".to_string())
-    })?;
+    let conn = guard
+        .as_ref()
+        .ok_or_else(|| AppError::NotFound("medication reference DB not installed".to_string()))?;
 
     let current_medication = medication_reference::get_substance_detail(conn, &current_id)?;
     let replacement_medication = medication_reference::get_substance_detail(conn, &replacement_id)?;

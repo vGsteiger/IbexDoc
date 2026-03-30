@@ -21,8 +21,6 @@
   let error = $state<string | null>(null);
   let showAddForm = $state(false);
   let editingMedication = $state<Medication | null>(null);
-  let replacingMedicationId = $state<string | null>(null);
-
   // Get active medications (those without end_date or with end_date in the future)
   const activeMedications = $derived(
     medications.filter((m) => {
@@ -89,7 +87,6 @@
           );
 
           if (replacingMed) {
-            replacingMedicationId = replacingMed.id;
             // Update the old medication's end_date to the start_date of the new one
             await updateMedication(replacingMed.id, {
               end_date: input.start_date,
@@ -101,7 +98,6 @@
       // Reset form
       showAddForm = false;
       editingMedication = null;
-      replacingMedicationId = null;
       await loadMedications();
     } catch (err) {
       error = 'Fehler beim Speichern: ' + (err instanceof Error ? err.message : String(err));

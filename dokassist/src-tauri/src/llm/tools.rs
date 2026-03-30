@@ -486,16 +486,15 @@ fn tool_compare_medications(app: &tauri::AppHandle, args: &Value) -> Result<Valu
     let current_id = sanitize_for_prompt(str_arg(args, "current_substance_id")?);
     let replacement_id = sanitize_for_prompt(str_arg(args, "replacement_substance_id")?);
 
-    let state = app
-        .state::<crate::state::AppState>();
+    let state = app.state::<crate::state::AppState>();
 
     let guard = state
         .get_medication_ref()
         .ok_or_else(|| AppError::Validation("Medication ref mutex poisoned".to_string()))?;
 
-    let conn = guard.as_ref().ok_or_else(|| {
-        AppError::NotFound("medication reference DB not installed".to_string())
-    })?;
+    let conn = guard
+        .as_ref()
+        .ok_or_else(|| AppError::NotFound("medication reference DB not installed".to_string()))?;
 
     let current = crate::medication_reference::get_substance_detail(conn, &current_id)?;
     let replacement = crate::medication_reference::get_substance_detail(conn, &replacement_id)?;
@@ -524,20 +523,26 @@ fn tool_compare_medications(app: &tauri::AppHandle, args: &Value) -> Result<Valu
     let mut summary_notes = Vec::new();
 
     if current.atc_code == replacement.atc_code && current.atc_code.is_some() {
-        summary_notes.push("Beide Medikamente haben denselben ATC-Code (gleiche pharmakologische Klasse)".to_string());
+        summary_notes.push(
+            "Beide Medikamente haben denselben ATC-Code (gleiche pharmakologische Klasse)"
+                .to_string(),
+        );
     }
 
     // Check for potential overlapping side effects
-    if let (Some(current_se), Some(replacement_se)) = (&current.side_effects, &replacement.side_effects) {
+    if let (Some(current_se), Some(replacement_se)) =
+        (&current.side_effects, &replacement.side_effects)
+    {
         if !current_se.is_empty() && !replacement_se.is_empty() {
             summary_notes.push("Bitte Nebenwirkungen beider Medikamente vergleichen".to_string());
         }
     }
 
     if let Value::Object(ref mut map) = comparison {
-        map.insert("summary_notes".to_string(), Value::Array(
-            summary_notes.into_iter().map(Value::String).collect()
-        ));
+        map.insert(
+            "summary_notes".to_string(),
+            Value::Array(summary_notes.into_iter().map(Value::String).collect()),
+        );
     }
 
     Ok(comparison)
