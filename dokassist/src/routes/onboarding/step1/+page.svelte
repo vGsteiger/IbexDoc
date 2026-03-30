@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { getSettings, updateSettings, type PracticeSettings } from '$lib/api';
+  import { getSettings, updateSettings, parseError, type PracticeSettings } from '$lib/api';
   import { ChevronRight, Building, User, Mail, Phone, MapPin, Globe } from 'lucide-svelte';
 
   let settings = $state<PracticeSettings>({
@@ -67,10 +67,10 @@
     error = null;
 
     try {
-      await updateSettings(settings);
+      await updateSettings({ ...settings, canton: settings.canton || null });
       goto('/onboarding/step2');
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to save settings';
+      error = parseError(err).message;
     } finally {
       isSaving = false;
     }
@@ -204,10 +204,11 @@
             </label>
             <select
               id="canton"
-              bind:value={settings.canton}
+              value={settings.canton ?? ''}
+              onchange={(e) => { settings.canton = e.currentTarget.value || null; }}
               class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value={null}>Select canton...</option>
+              <option value="">Select canton...</option>
               {#each cantons as canton}
                 <option value={canton.code}>{canton.name} ({canton.code})</option>
               {/each}

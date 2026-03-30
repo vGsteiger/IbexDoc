@@ -5,6 +5,7 @@
   import {
     getRecommendedModel,
     downloadAndRegisterModel,
+    parseError,
     type ModelChoice,
   } from '$lib/api';
   import { ChevronRight, ChevronLeft, Download, Check, Zap, Brain, Gauge } from 'lucide-svelte';
@@ -23,7 +24,7 @@
     try {
       recommended = await getRecommendedModel();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to get recommended model';
+      error = parseError(err).message;
     } finally {
       isLoading = false;
     }
@@ -41,29 +42,24 @@
     downloadProgress = 0;
     error = null;
 
-    // Listen for download progress
-    unlisten = await listen<number>('model-download-progress', (e) => {
-      downloadProgress = Math.round(e.payload * 100);
-    });
-
-    doneUnsubscribe = await listen('model-download-done', () => {
-      doneUnsubscribe?.();
-      unlisten?.();
-      unlisten = null;
-      doneUnsubscribe = null;
-      isComplete = true;
-      isDownloading = false;
-    });
-
     try {
-      await downloadAndRegisterModel(recommended.filename);
+      unlisten = await listen<number>('model-download-progress', (e) => {
+        downloadProgress = Math.round(e.payload * 100);
+      });
+
+      doneUnsubscribe = await listen('model-download-done', () => {
+        isComplete = true;
+      });
+
+      await downloadAndRegisterModel(recommended);
     } catch (err) {
-      unlisten?.();
+      error = parseError(err).message;
+    } finally {
       doneUnsubscribe?.();
-      unlisten = null;
+      unlisten?.();
       doneUnsubscribe = null;
+      unlisten = null;
       isDownloading = false;
-      error = err instanceof Error ? err.message : 'Failed to download model';
     }
   }
 

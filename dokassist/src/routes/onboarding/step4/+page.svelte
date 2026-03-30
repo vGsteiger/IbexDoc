@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { completeOnboarding } from '$lib/api';
+  import { completeOnboarding, parseError } from '$lib/api';
   import {
     ChevronLeft,
     Users,
@@ -14,6 +14,14 @@
   let isCompleting = $state(false);
   let error = $state<string | null>(null);
 
+  const colorClasses: Record<string, { bg: string; text: string }> = {
+    blue: { bg: 'bg-blue-900/20', text: 'text-blue-500' },
+    green: { bg: 'bg-green-900/20', text: 'text-green-500' },
+    purple: { bg: 'bg-purple-900/20', text: 'text-purple-500' },
+    yellow: { bg: 'bg-yellow-900/20', text: 'text-yellow-500' },
+    red: { bg: 'bg-red-900/20', text: 'text-red-500' },
+  };
+
   async function handleComplete() {
     isCompleting = true;
     error = null;
@@ -22,7 +30,7 @@
       await completeOnboarding();
       goto('/dashboard');
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to complete onboarding';
+      error = parseError(err).message;
       isCompleting = false;
     }
   }
@@ -96,9 +104,9 @@
         {#each features as feature}
           <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div
-              class="inline-block p-3 bg-{feature.color}-900/20 rounded-lg mb-4"
+              class="inline-block p-3 {colorClasses[feature.color].bg} rounded-lg mb-4"
             >
-              <svelte:component this={feature.icon} size={28} class="text-{feature.color}-500" />
+              <svelte:component this={feature.icon} size={28} class={colorClasses[feature.color].text} />
             </div>
             <h3 class="text-gray-100 font-semibold mb-2">{feature.title}</h3>
             <p class="text-gray-400 text-sm">{feature.description}</p>

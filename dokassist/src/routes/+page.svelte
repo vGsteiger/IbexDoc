@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { checkAuth, getSettings } from '$lib/api';
+  import { checkAuth, getSettings, parseError } from '$lib/api';
   import { authStatus, isLoading } from '$lib/stores/auth';
   import { t } from '$lib/translations';
 
   let error = $state<string | null>(null);
 
-  onMount(async () => {
+  async function checkAndRedirect() {
     try {
       const status = await checkAuth();
       authStatus.set(status);
@@ -19,7 +19,6 @@
       } else if (status === 'recovery_required') {
         goto('/recover');
       } else if (status === 'unlocked') {
-        // Check if onboarding is completed
         try {
           const settings = await getSettings();
           if (!settings.onboarding_completed) {
@@ -28,55 +27,26 @@
             goto('/dashboard');
           }
         } catch (err) {
-          // If settings fetch fails, go to dashboard anyway
           console.error('Failed to check onboarding status:', err);
-          goto('/dashboard');
+          goto('/onboarding/step1');
         }
       }
     } catch (err) {
       console.error('Failed to check auth:', err);
-      error = err instanceof Error ? err.message : 'Failed to check authentication status';
+      error = parseError(err).message;
     } finally {
       isLoading.set(false);
     }
+  }
+
+  onMount(() => {
+    checkAndRedirect();
   });
 
   function handleRetry() {
     error = null;
     isLoading.set(true);
-    onMount(async () => {
-      try {
-        const status = await checkAuth();
-        authStatus.set(status);
-
-        if (status === 'first_run') {
-          goto('/setup');
-        } else if (status === 'locked') {
-          goto('/unlock');
-        } else if (status === 'recovery_required') {
-          goto('/recover');
-        } else if (status === 'unlocked') {
-          // Check if onboarding is completed
-          try {
-            const settings = await getSettings();
-            if (!settings.onboarding_completed) {
-              goto('/onboarding/step1');
-            } else {
-              goto('/dashboard');
-            }
-          } catch (err) {
-            // If settings fetch fails, go to dashboard anyway
-            console.error('Failed to check onboarding status:', err);
-            goto('/dashboard');
-          }
-        }
-      } catch (err) {
-        console.error('Failed to check auth:', err);
-        error = err instanceof Error ? err.message : 'Failed to check authentication status';
-      } finally {
-        isLoading.set(false);
-      }
-    });
+    checkAndRedirect();
   }
 </script>
 

@@ -1,10 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { ChevronRight, ChevronLeft, Upload, FileText, Database } from 'lucide-svelte';
-
-  function handleContinue() {
-    goto('/onboarding/step4');
-  }
+  import { ChevronRight, ChevronLeft, FileText, Database } from 'lucide-svelte';
 
   function handleBack() {
     goto('/onboarding/step2');
