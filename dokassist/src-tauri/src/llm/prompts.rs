@@ -4,7 +4,7 @@ Sie sind ein medizinischer Dokumentationsassistent für psychiatrische Praxen in
 Deutschland. Ihre Aufgabe ist es, Psychiater und Psychotherapeuten bei der Erstellung von Berichten \
 und der Analyse medizinischer Dokumente zu unterstützen.\n\n\
 Richtlinien:\n\
-- Antworten Sie ausschließlich auf Deutsch\n\
+- Antworten Sie ausschliesslich auf Deutsch wie in der Schweiz geschrieben\n\
 - Verwenden Sie präzise medizinische Fachsprache\n\
 - Seien Sie sachlich, klar und professionell\n\
 - Respektieren Sie den Datenschutz und die ärztliche Schweigepflicht\n\
@@ -49,7 +49,7 @@ pub fn metadata_extraction_prompt(document_text: &str) -> String {
     let safe_text = sanitize_for_prompt(document_text);
 
     let instruction = "Analysieren Sie das folgende medizinische Dokument und extrahieren Sie die Metadaten.\n\
-        Antworten Sie ausschließlich mit einem validen JSON-Objekt ohne Erklärungen oder \
+        Antworten Sie ausschliesslich mit einem validen JSON-Objekt ohne Erklärungen oder \
         Markdown-Formatierung.\n\n\
         Extrahieren Sie diese Felder:\n\
         - document_type: Art des Dokuments (z.B. \"Arztbrief\", \"Befundbericht\", \"Entlassungsbericht\")\n\
