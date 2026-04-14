@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::llm::{download, engine::LlmEngine, ModelChoice};
+use crate::llm::{download, ModelChoice};
 use crate::models::model::{self, Model, TaskModel, TaskType};
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
