@@ -79,6 +79,7 @@
   let errorMsg = $state('');
   let unlisten: UnlistenFn | null = null;
   let appVersion = $state('');
+  let activeDownloadFilename = $state<string | null>(null);
 
   // Model management state
   let installedModels = $state<ModelInfo[]>([]);
@@ -126,11 +127,30 @@
   async function loadInstalledModels() {
     try {
       loadingModels = true;
-      [installedModels, taskModels, availableModels] = await Promise.all([
+      const results = await Promise.allSettled([
         listModels(),
         listTaskModels(),
         listAvailableModels(),
       ]);
+
+      // Handle each result separately
+      if (results[0].status === 'fulfilled') {
+        installedModels = results[0].value;
+      } else {
+        console.error('Failed to load installed models:', results[0].reason);
+      }
+
+      if (results[1].status === 'fulfilled') {
+        taskModels = results[1].value;
+      } else {
+        console.error('Failed to load task models:', results[1].reason);
+      }
+
+      if (results[2].status === 'fulfilled') {
+        availableModels = results[2].value;
+      } else {
+        console.error('Failed to load available models:', results[2].reason);
+      }
 
       // Build a map of task -> model_id for easy lookup
       selectedTaskModel = taskModels.reduce((acc, tm) => {
@@ -278,6 +298,7 @@
     phase = 'downloading';
     downloadProgress = 0;
     errorMsg = '';
+    activeDownloadFilename = model.filename;
 
     unlisten = await listen<number>('model-download-progress', (e) => {
       downloadProgress = Math.round(e.payload * 100);
@@ -299,6 +320,7 @@
       unlisten = null;
       doneUnsubscribe?.();
       doneUnsubscribe = null;
+      activeDownloadFilename = null;
     }
   }
 
@@ -991,7 +1013,7 @@
 
             {#if !model.is_downloaded}
               <div class="mt-3">
-                {#if phase === 'downloading' && recommended?.filename === model.filename}
+                {#if phase === 'downloading' && activeDownloadFilename === model.filename}
                   <div class="mb-3">
                     <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                       <span>Downloading...</span>
@@ -1011,7 +1033,7 @@
                   disabled={phase === 'downloading' || phase === 'loading' || !canRunModel}
                   class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
                 >
-                  {phase === 'downloading' && recommended?.filename === model.filename
+                  {phase === 'downloading' && activeDownloadFilename === model.filename
                     ? 'Downloading...'
                     : 'Download Model'}
                 </button>

@@ -306,8 +306,8 @@ pub async fn list_available_models(
             name: "Gemma 4 26B A4B MoE Q4_K_M".to_string(),
             filename: "gemma-4-26B-A4B-it-Q4_K_M.gguf".to_string(),
             size_bytes: 16 * GB,
-            min_ram_gb: 24,
-            description: "High-quality 26B parameter Mixture-of-Experts model. Best for systems with 24GB+ RAM.".to_string(),
+            min_ram_gb: 32,
+            description: "High-quality 26B parameter Mixture-of-Experts model. Best for systems with 32GB+ RAM.".to_string(),
             is_downloaded: false,
             model_id: None,
         },
@@ -324,8 +324,8 @@ pub async fn list_available_models(
             name: "Gemma 4 E4B Q8_0".to_string(),
             filename: "gemma-4-E4B-it-Q8_0.gguf".to_string(),
             size_bytes: 5 * GB,
-            min_ram_gb: 16,
-            description: "Dense 4B parameter model with 8-bit quantization. Good for systems with 16-24GB RAM.".to_string(),
+            min_ram_gb: 18,
+            description: "Dense 4B parameter model with 8-bit quantization. Good for systems with 18-24GB RAM.".to_string(),
             is_downloaded: false,
             model_id: None,
         },
@@ -366,8 +366,14 @@ pub async fn list_available_models(
         })
         .collect();
 
-    // Sort by RAM requirement (descending) so best models appear first
-    result.sort_by(|a, b| b.min_ram_gb.cmp(&a.min_ram_gb));
+    // Sort by RAM requirement (descending) so best models appear first.
+    // Add deterministic tie-breakers for models with the same RAM requirement.
+    result.sort_by(|a, b| {
+        b.min_ram_gb
+            .cmp(&a.min_ram_gb)
+            .then_with(|| b.size_bytes.cmp(&a.size_bytes))
+            .then_with(|| a.name.cmp(&b.name))
+    });
 
     Ok(result)
 }
