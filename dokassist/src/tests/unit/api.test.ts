@@ -128,11 +128,11 @@ import {
   getSettings,
   updateSettings,
   completeOnboarding,
-  queryPatientHistory
+  queryPatientHistory,
+  compareMedications,
   type Letter,
   type ModelChoice,
   type AppError,
-  compareMedications,
   type MedicationComparison,
   type PracticeSettings,
 } from '$lib/api';

@@ -3,10 +3,7 @@ use crate::models::{diagnosis, medication, outcome_score, patient, session, trea
 use rusqlite::Connection;
 
 /// Assembles comprehensive patient history context for RAG queries
-pub fn assemble_patient_context(
-    conn: &Connection,
-    patient_id: &str,
-) -> Result<String, AppError> {
+pub fn assemble_patient_context(conn: &Connection, patient_id: &str) -> Result<String, AppError> {
     let patient = patient::get_patient(conn, patient_id)?;
 
     // Fetch patient data with appropriate limits to avoid loading excessive data
@@ -15,7 +12,8 @@ pub fn assemble_patient_context(
     let diagnoses = diagnosis::list_diagnoses_for_patient(conn, patient_id, 100, 0)?;
     let medications = medication::list_medications_for_patient(conn, patient_id, 100, 0)?;
     let outcome_scores = outcome_score::list_scores_for_patient(conn, patient_id, 100, 0)?;
-    let treatment_plans = treatment_plan::list_treatment_plans_for_patient(conn, patient_id, 20, 0)?;
+    let treatment_plans =
+        treatment_plan::list_treatment_plans_for_patient(conn, patient_id, 20, 0)?;
 
     // Format patient context as structured text
     let mut context = String::new();
@@ -42,7 +40,7 @@ pub fn assemble_patient_context(
             context.push_str(&format!("\nPatient Notes:\n{}\n", notes));
         }
     }
-    context.push_str("\n");
+    context.push('\n');
 
     // Active diagnoses
     context.push_str("===== DIAGNOSES =====\n");
@@ -95,7 +93,7 @@ pub fn assemble_patient_context(
     if diagnoses.is_empty() {
         context.push_str("No diagnoses recorded.\n");
     }
-    context.push_str("\n");
+    context.push('\n');
 
     // Current and past medications
     context.push_str("===== MEDICATIONS =====\n");
@@ -113,7 +111,10 @@ pub fn assemble_patient_context(
         for medication in &current_medications {
             context.push_str(&format!(
                 "- {}: {} {} (started: {})\n",
-                medication.substance, medication.dosage, medication.frequency, medication.start_date
+                medication.substance,
+                medication.dosage,
+                medication.frequency,
+                medication.start_date
             ));
             if let Some(notes) = &medication.notes {
                 if !notes.trim().is_empty() {
@@ -126,11 +127,7 @@ pub fn assemble_patient_context(
     if !past_medications.is_empty() {
         context.push_str("\nPast Medications:\n");
         for medication in &past_medications {
-            let end_date = medication
-                .end_date
-                .as_ref()
-                .map(|d| d.as_str())
-                .unwrap_or("unknown");
+            let end_date = medication.end_date.as_deref().unwrap_or("unknown");
             context.push_str(&format!(
                 "- {}: {} {} ({} to {})\n",
                 medication.substance,
@@ -145,7 +142,7 @@ pub fn assemble_patient_context(
     if medications.is_empty() {
         context.push_str("No medications recorded.\n");
     }
-    context.push_str("\n");
+    context.push('\n');
 
     // Treatment plans
     context.push_str("===== TREATMENT PLANS =====\n");
@@ -200,14 +197,12 @@ pub fn assemble_patient_context(
                             .unwrap_or_default();
                         context.push_str(&format!(
                             "    - {} (type: {}{}\n",
-                            intervention.description,
-                            intervention.r#type,
-                            frequency
+                            intervention.description, intervention.r#type, frequency
                         ));
                     }
                 }
             }
-            context.push_str("\n");
+            context.push('\n');
         }
     } else {
         context.push_str("No treatment plans recorded.\n\n");
@@ -239,48 +234,66 @@ pub fn assemble_patient_context(
             context.push_str("PHQ-9 Scores (Depression):\n");
             for score in phq9_scores.iter().take(10) {
                 // Show last 10 scores
-                let interpretation = score.interpretation.as_deref().unwrap_or("no interpretation");
+                let interpretation = score
+                    .interpretation
+                    .as_deref()
+                    .unwrap_or("no interpretation");
                 context.push_str(&format!(
                     "  {}: {} ({} - {})\n",
                     score.administered_at, score.score, score.scale_type, interpretation
                 ));
             }
             if phq9_scores.len() > 10 {
-                context.push_str(&format!("  ... and {} older scores\n", phq9_scores.len() - 10));
+                context.push_str(&format!(
+                    "  ... and {} older scores\n",
+                    phq9_scores.len() - 10
+                ));
             }
         }
 
         if !gad7_scores.is_empty() {
             context.push_str("GAD-7 Scores (Anxiety):\n");
             for score in gad7_scores.iter().take(10) {
-                let interpretation = score.interpretation.as_deref().unwrap_or("no interpretation");
+                let interpretation = score
+                    .interpretation
+                    .as_deref()
+                    .unwrap_or("no interpretation");
                 context.push_str(&format!(
                     "  {}: {} ({} - {})\n",
                     score.administered_at, score.score, score.scale_type, interpretation
                 ));
             }
             if gad7_scores.len() > 10 {
-                context.push_str(&format!("  ... and {} older scores\n", gad7_scores.len() - 10));
+                context.push_str(&format!(
+                    "  ... and {} older scores\n",
+                    gad7_scores.len() - 10
+                ));
             }
         }
 
         if !bdi_scores.is_empty() {
             context.push_str("BDI-II Scores (Depression):\n");
             for score in bdi_scores.iter().take(10) {
-                let interpretation = score.interpretation.as_deref().unwrap_or("no interpretation");
+                let interpretation = score
+                    .interpretation
+                    .as_deref()
+                    .unwrap_or("no interpretation");
                 context.push_str(&format!(
                     "  {}: {} ({} - {})\n",
                     score.administered_at, score.score, score.scale_type, interpretation
                 ));
             }
             if bdi_scores.len() > 10 {
-                context.push_str(&format!("  ... and {} older scores\n", bdi_scores.len() - 10));
+                context.push_str(&format!(
+                    "  ... and {} older scores\n",
+                    bdi_scores.len() - 10
+                ));
             }
         }
     } else {
         context.push_str("No outcome scores recorded.\n");
     }
-    context.push_str("\n");
+    context.push('\n');
 
     // Session history (most recent first, limited by query)
     context.push_str("===== SESSION HISTORY =====\n");
@@ -301,7 +314,7 @@ pub fn assemble_patient_context(
                 if !notes.trim().is_empty() {
                     context.push_str("Notes:\n");
                     context.push_str(notes);
-                    context.push_str("\n");
+                    context.push('\n');
                 }
             }
 
@@ -309,11 +322,11 @@ pub fn assemble_patient_context(
                 if !summary.trim().is_empty() {
                     context.push_str("Clinical Summary:\n");
                     context.push_str(summary);
-                    context.push_str("\n");
+                    context.push('\n');
                 }
             }
 
-            context.push_str("\n");
+            context.push('\n');
         }
     } else {
         context.push_str("No sessions recorded.\n");

@@ -383,10 +383,10 @@ pub async fn generate_letter(
     }
 
     let engine = {
-    let llm = state.llm.lock().unwrap();
-    let engine = llm
-        .as_ref()
-        .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
+        let llm = state.llm.lock().unwrap();
+        let engine = llm
+            .as_ref()
+            .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
 
         Arc::clone(engine)
     };
@@ -419,7 +419,6 @@ pub async fn generate_letter(
     let _ = app.emit("letter-done", ());
     Ok(letter)
 }
-
 
 /// Query a patient's history using RAG with streaming output.
 /// Emits `"patient-history-chunk"` events for each token and `"patient-history-done"` on completion.
