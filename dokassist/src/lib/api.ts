@@ -237,6 +237,7 @@ export interface AvailableModel {
   size_bytes: number;
   min_ram_gb: number;
   description: string;
+  disclaimer: string | null;
   is_downloaded: boolean;
   model_id: string | null;
 }
@@ -1535,4 +1536,3 @@ export async function importCsvData(
     columnMappings,
   });
 }
-
