@@ -92,10 +92,13 @@ pub fn find_boundary_forward(s: &str, start_pos: usize) -> usize {
 /// ```
 pub fn find_boundary_backward(s: &str, end_pos: usize) -> usize {
     let end_pos = end_pos.min(s.len());
-    (0..=end_pos)
-        .rev()
-        .find(|&i| s.is_char_boundary(i))
-        .unwrap_or(0)
+    for offset in 0..=3 {
+        let boundary = end_pos.saturating_sub(offset);
+        if s.is_char_boundary(boundary) {
+            return boundary;
+        }
+    }
+    0
 }
 
 #[cfg(test)]
@@ -136,8 +139,8 @@ mod tests {
         // "😀" is 4 bytes (F0 9F 98 80)
         let s = "Hi 😀!";
 
-        // Truncate to 6 bytes: "Hi 😀" (6 bytes exactly)
-        assert_eq!(truncate_to_boundary(s, 6), "Hi 😀");
+        // Truncate to 7 bytes: "Hi 😀" (7 bytes exactly)
+        assert_eq!(truncate_to_boundary(s, 7), "Hi 😀");
 
         // Truncate to 5 bytes: should stop at "Hi " (3 bytes, before the emoji)
         assert_eq!(truncate_to_boundary(s, 5), "Hi ");
