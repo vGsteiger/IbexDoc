@@ -19,8 +19,8 @@ const MAX_POINTER_BYTES: usize = 4096;
 /// cannot diverge — adding a model in one place without the other is a
 /// compile error (missing struct field).
 ///
-/// `pinned_sha256` is the SHA-256 of the GGUF blob, baked in at compile time.
-/// CRIT-3: The runtime-fetched LFS pointer digest is asserted against this
+/// `pinned_sha256` (when set) is the SHA-256 of the GGUF blob, baked in at compile time.
+/// CRIT-3: When set, the runtime-fetched LFS pointer digest is asserted against this
 /// value before the download begins, so neither a MITM on the LFS endpoint
 /// nor a supply-chain swap of the blob can pass silently.
 ///
@@ -221,7 +221,7 @@ pub async fn download_model_with_progress(
     // CRIT-3: If a pinned hash is baked in, assert the LFS pointer matches it.
     // This prevents a MITM on the LFS endpoint from silently swapping the expected digest.
     if let Some(pinned) = model.pinned_sha256 {
-        if expected_hex.to_lowercase() != pinned.to_lowercase() {
+        if !expected_hex.eq_ignore_ascii_case(pinned) {
             return Err(AppError::Validation(format!(
                 "LFS pointer SHA-256 for '{}' does not match pinned value: \
                  expected pinned={}, fetched={}. \
@@ -445,29 +445,31 @@ mod tests {
         }
     }
 
-    /// If a pinned_sha256 is set, it must be exactly 64 lowercase hex characters.
+    /// All models must have a pinned SHA-256 (CRIT-3), and it must be exactly 64 lowercase hex characters.
     #[test]
-    fn test_pinned_sha256_format() {
+    fn test_all_models_have_valid_pinned_sha256() {
         for entry in MODELS {
-            if let Some(pinned) = entry.pinned_sha256 {
-                assert_eq!(
-                    pinned.len(),
-                    64,
-                    "pinned_sha256 for '{}' must be 64 hex chars",
-                    entry.filename
-                );
-                assert!(
-                    pinned.bytes().all(|b| b.is_ascii_hexdigit()),
-                    "pinned_sha256 for '{}' contains non-hex characters",
-                    entry.filename
-                );
-                assert_eq!(
-                    pinned,
-                    &pinned.to_lowercase(),
-                    "pinned_sha256 for '{}' must be lowercase",
-                    entry.filename
-                );
-            }
+            let pinned = entry
+                .pinned_sha256
+                .unwrap_or_else(|| panic!("pinned_sha256 must be set for '{}'", entry.filename));
+
+            assert_eq!(
+                pinned.len(),
+                64,
+                "pinned_sha256 for '{}' must be 64 hex chars",
+                entry.filename
+            );
+            assert!(
+                pinned.bytes().all(|b| b.is_ascii_hexdigit()),
+                "pinned_sha256 for '{}' contains non-hex characters",
+                entry.filename
+            );
+            assert_eq!(
+                pinned,
+                pinned.to_lowercase(),
+                "pinned_sha256 for '{}' must be lowercase",
+                entry.filename
+            );
         }
     }
 
