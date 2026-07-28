@@ -83,7 +83,7 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
             return Err(AppError::Validation("App is not locked".to_string()));
         }
 
-        // Retrieve keys from Keychain — fast, no biometric gate at keychain level.
+        // Keychain enforces biometric or device-passcode authentication for protected items.
         let mut db_key_vec = keychain::retrieve_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT)?;
         let mut fs_key_vec = keychain::retrieve_key(KEYCHAIN_SERVICE, FS_KEY_ACCOUNT)?;
 
@@ -100,6 +100,11 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
 
         zeroize::Zeroize::zeroize(&mut db_key_vec);
         zeroize::Zeroize::zeroize(&mut fs_key_vec);
+
+        // Recreate legacy items once so existing installs receive the same
+        // Keychain-layer biometric gate as newly initialized and recovered keys.
+        #[cfg(target_os = "macos")]
+        keychain::migrate_master_keys_to_biometric_protection(KEYCHAIN_SERVICE, &db_key, &fs_key)?;
 
         (db_key, fs_key)
         // auth lock released here

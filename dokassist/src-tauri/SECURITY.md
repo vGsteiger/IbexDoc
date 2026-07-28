@@ -409,8 +409,18 @@ fn test_sql_injection_in_update() {
 ## 5. Key Management (PKG-1)
 
 ### Keychain Integration (macOS)
-- Master key stored in **macOS Keychain** (encrypted by OS)
-- Requires user authentication to retrieve
+- Master keys are stored in the macOS Keychain with
+  `SecAccessControl` using
+  `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` and
+  `biometryCurrentSet | or | devicePasscode`. They are device-bound and the
+  operating system requires the currently enrolled biometric set or the device
+  passcode before returning the key data.
+- Changing the enrolled biometric set invalidates the associated Keychain item,
+  requiring recovery with the user's recovery vault.
+- The application-level Touch ID prompt remains defense in depth; Keychain
+  access control independently gates direct Keychain reads.
+- Existing installations recreate their legacy master-key items during the next
+  successful unlock, before the app enters the unlocked state.
 - Fallback: **Recovery vault** (BIP-39 mnemonic + Argon2 key derivation)
 
 ### Key Lifecycle
