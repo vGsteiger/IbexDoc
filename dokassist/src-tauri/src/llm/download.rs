@@ -53,6 +53,11 @@ const MODELS: &[ModelEntry] = &[
         download_url: "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q8_0.gguf",
         lfs_pointer_url: "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/raw/main/gemma-4-E4B-it-Q8_0.gguf",
     },
+    ModelEntry {
+        filename: "medgemma-1.5-4b-it-Q4_K_M.gguf",
+        download_url: "https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-Q4_K_M.gguf",
+        lfs_pointer_url: "https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF/raw/main/medgemma-1.5-4b-it-Q4_K_M.gguf",
+    },
 ];
 
 fn find_model(filename: &str) -> Option<&'static ModelEntry> {
@@ -291,6 +296,10 @@ mod tests {
             (
                 "gemma-4-E4B-it-Q8_0.gguf",
                 "resolve/main/gemma-4-E4B-it-Q8_0.gguf",
+            ),
+            (
+                "medgemma-1.5-4b-it-Q4_K_M.gguf",
+                "resolve/main/medgemma-1.5-4b-it-Q4_K_M.gguf",
             ),
         ];
         for (filename, expected_suffix) in cases {

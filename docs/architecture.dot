@@ -1,0 +1,135 @@
+digraph RamDocArchitecture {
+  graph [
+    label="RamDoc architecture — local-first encrypted patient record application",
+    labelloc=t, fontsize=26, fontname="Arial Bold", fontcolor="#172033",
+    bgcolor="#F8FAFC", pad="0.35", rankdir=LR, nodesep="0.55", ranksep="1.05",
+    splines=ortho
+  ];
+  node [shape=plain fontname="Arial" fontsize=13];
+  edge [fontname="Arial" fontsize=10 color="#64748B" fontcolor="#475569" arrowsize=0.8 penwidth=1.4];
+
+  user [label=<
+    <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="12" BGCOLOR="#E0E7FF">
+      <TR><TD><B>Clinician</B><BR/><FONT POINT-SIZE="10">macOS user</FONT></TD></TR>
+    </TABLE>
+  >];
+
+  subgraph cluster_app {
+    label="RamDoc desktop application (Tauri 2)";
+    fontname="Arial Bold"; fontsize=16; fontcolor="#1E3A8A"; color="#93C5FD"; penwidth=1.8; style="rounded,filled"; fillcolor="#EFF6FF"; margin=20;
+
+    subgraph cluster_frontend {
+      label="WebView frontend — Svelte 5 · SvelteKit 2 · Tailwind CSS";
+      fontname="Arial Bold"; fontsize=13; fontcolor="#075985"; color="#7DD3FC"; style="rounded,filled"; fillcolor="#F0F9FF"; margin=16;
+      ui [label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+          <TR><TD ALIGN="LEFT"><B>Routes &amp; clinical workflow UI</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">Patients · Sessions · Reports · Files · Chat<BR ALIGN="LEFT"/>Literature · Calendar · Settings</FONT></TD></TR>
+        </TABLE>
+      >];
+      client [label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+          <TR><TD ALIGN="LEFT"><B>Client layer</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">lib/api.ts typed invoke wrappers<BR ALIGN="LEFT"/>auth, theme, language &amp; toast stores</FONT></TD></TR>
+        </TABLE>
+      >];
+      ui -> client [label="user actions / state" dir=both];
+    }
+
+    ipc [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="11" BGCOLOR="#DBEAFE">
+        <TR><TD><B>Tauri IPC</B><BR/><FONT POINT-SIZE="10">invoke / typed results</FONT></TD></TR>
+      </TABLE>
+    >];
+
+    subgraph cluster_backend {
+      label="Rust backend";
+      fontname="Arial Bold"; fontsize=13; fontcolor="#9A3412"; color="#FDBA74"; style="rounded,filled"; fillcolor="#FFF7ED"; margin=16;
+      commands [label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+          <TR><TD ALIGN="LEFT"><B>Command handlers</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">Auth · patients · sessions · diagnoses · medications<BR ALIGN="LEFT"/>files · reports · search · exports · backup<BR ALIGN="LEFT"/>chat · literature · models · updater</FONT></TD></TR>
+        </TABLE>
+      >];
+      domain [label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+          <TR><TD ALIGN="LEFT"><B>Application services</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">AppState / auth state machine · models · audit<BR ALIGN="LEFT"/>search · FHIR/CSV/PDF/DOCX export</FONT></TD></TR>
+        </TABLE>
+      >];
+      security [label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FEF2F2">
+          <TR><TD ALIGN="LEFT"><B>Security &amp; lifecycle</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">AES-256-GCM · zeroized keys · BIP-39 recovery<BR ALIGN="LEFT"/>vault path validation · Spotlight exclusion</FONT></TD></TR>
+        </TABLE>
+      >];
+      commands -> domain [label="orchestrates"];
+      domain -> security [label="keys / encryption"];
+    }
+    client -> ipc [label="@tauri-apps/api"];
+    ipc -> commands [label="local IPC"];
+  }
+
+  subgraph cluster_storage {
+    label="Local data plane — ~/DokAssist";
+    fontname="Arial Bold"; fontsize=14; fontcolor="#166534"; color="#86EFAC"; style="rounded,filled"; fillcolor="#F0FDF4"; margin=18;
+    db [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>SQLCipher database</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">patient records · sessions · reports · chat<BR ALIGN="LEFT"/>FTS5 · embeddings · append-only audit log</FONT></TD></TR>
+      </TABLE>
+    >];
+    vault [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>Encrypted file vault</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">per-patient .enc files · temporary exports<BR ALIGN="LEFT"/>AES-256-GCM</FONT></TD></TR>
+      </TABLE>
+    >];
+    models [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>Local model store</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">GGUF LLMs · embedding model<BR ALIGN="LEFT"/>SHA-256-verified downloads</FONT></TD></TR>
+      </TABLE>
+    >];
+  }
+
+  subgraph cluster_localai {
+    label="On-device intelligence";
+    fontname="Arial Bold"; fontsize=14; fontcolor="#6B21A8"; color="#D8B4FE"; style="rounded,filled"; fillcolor="#FAF5FF"; margin=18;
+    llm [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>llama.cpp engine</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">report / letter generation · chat agent<BR ALIGN="LEFT"/>Metal acceleration on Apple Silicon</FONT></TD></TR>
+      </TABLE>
+    >];
+    embed [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>Embedding &amp; retrieval</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">fastembed · chunks · semantic search / RAG</FONT></TD></TR>
+      </TABLE>
+    >];
+  }
+
+  subgraph cluster_macos {
+    label="macOS & external inputs";
+    fontname="Arial Bold"; fontsize=14; fontcolor="#7C2D12"; color="#FED7AA"; style="rounded,filled"; fillcolor="#FFF7ED"; margin=18;
+    keychain [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>macOS Keychain / Touch ID</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">database &amp; vault key custody</FONT></TD></TR>
+      </TABLE>
+    >];
+    medref [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>Medication reference DB</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">public Swiss AIPS data · verified download</FONT></TD></TR>
+      </TABLE>
+    >];
+    updates [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" BGCOLOR="#FFFFFF">
+        <TR><TD ALIGN="LEFT"><B>Release / model downloads</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="10">updater and selected local model artifacts</FONT></TD></TR>
+      </TABLE>
+    >];
+  }
+
+  user -> ui [label="uses"];
+  domain -> db [label="encrypted records / migrations"];
+  security -> vault [label="encrypts / decrypts"];
+  security -> keychain [label="stores / retrieves keys"];
+  domain -> llm [label="generation & chat"];
+  domain -> embed [label="index / retrieve"];
+  llm -> models [label="loads GGUF"];
+  embed -> models [label="loads model"];
+  domain -> medref [label="medication lookup"];
+  domain -> updates [label="verified download", style=dashed];
+  commands -> vault [label="file operations", style=dashed];
+  db -> embed [label="chunks / embeddings", dir=both];
+}
