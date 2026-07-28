@@ -13,31 +13,35 @@ use core_foundation::dictionary::CFDictionary;
 #[cfg(target_os = "macos")]
 use core_foundation::string::CFString;
 #[cfg(target_os = "macos")]
-use security_framework::access_control::{ProtectionMode, SecAccessControl};
-#[cfg(target_os = "macos")]
 use security_framework::passwords::{
-    delete_generic_password, get_generic_password, set_generic_password, AccessControlOptions,
+    delete_generic_password, get_generic_password, set_generic_password,
 };
+#[cfg(target_os = "macos")]
+use security_framework_sys::access_control::kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
 #[cfg(target_os = "macos")]
 use security_framework_sys::base::errSecItemNotFound;
 #[cfg(target_os = "macos")]
 use security_framework_sys::item::{
-    kSecAttrAccessControl, kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword,
-    kSecReturnAttributes, kSecValueData,
+    kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword, kSecReturnAttributes,
+    kSecValueData,
 };
 #[cfg(target_os = "macos")]
 use security_framework_sys::keychain_item::{SecItemAdd, SecItemCopyMatching, SecItemDelete};
 
 #[cfg(target_os = "macos")]
-const MASTER_KEY_ACCESS_CONTROL_VERSION_ACCOUNT: &str = "master-key-access-control-version";
-#[cfg(target_os = "macos")]
-const MASTER_KEY_ACCESS_CONTROL_VERSION: &[u8] = b"1";
+extern "C" {
+    // `kSecAttrAccessible` is not exported by security_framework_sys.
+    static kSecAttrAccessible: core_foundation_sys::string::CFStringRef;
+}
 
-/// Store a master key in macOS Keychain with OS-enforced authentication.
+/// Store a master key in macOS Keychain with device-bound protection.
 ///
-/// The item is device-bound and requires either the currently enrolled biometric
-/// set or the device passcode for every data read. Changing the enrolled biometric
-/// set invalidates the item, in which case recovery is required.
+/// The key is accessible only while the device is unlocked and is never synced
+/// to iCloud. Touch ID/device-password authentication is enforced by
+/// `touch_id::authenticate` before this key is read. A Keychain
+/// `SecAccessControl` policy is deliberately not used here: it returns
+/// `errSecMissingEntitlement` (-34018) for this application's current signing
+/// configuration.
 #[cfg(target_os = "macos")]
 pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppError> {
     // Delete any existing item first using a raw SecItemDelete query so we match
@@ -58,15 +62,6 @@ pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppErro
     ]);
     unsafe { SecItemDelete(del_query.as_concrete_TypeRef()) };
 
-    let access_control = SecAccessControl::create_with_protection(
-        Some(ProtectionMode::AccessibleWhenPasscodeSetThisDeviceOnly),
-        (AccessControlOptions::BIOMETRY_CURRENT_SET
-            | AccessControlOptions::OR
-            | AccessControlOptions::DEVICE_PASSCODE)
-            .bits(),
-    )
-    .map_err(|e| AppError::Keychain(format!("Failed to create key access control: {}", e)))?;
-
     let dict = CFDictionary::<CFString, _>::from_CFType_pairs(&[
         (
             unsafe { CFString::wrap_under_get_rule(kSecClass) },
@@ -85,8 +80,9 @@ pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppErro
             CFData::from_buffer(key).as_CFType(),
         ),
         (
-            unsafe { CFString::wrap_under_get_rule(kSecAttrAccessControl) },
-            access_control.as_CFType(),
+            unsafe { CFString::wrap_under_get_rule(kSecAttrAccessible) },
+            unsafe { CFString::wrap_under_get_rule(kSecAttrAccessibleWhenUnlockedThisDeviceOnly) }
+                .as_CFType(),
         ),
     ]);
 
@@ -110,35 +106,13 @@ pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppErro
 pub fn retrieve_key(service: &str, account: &str) -> Result<Vec<u8>, AppError> {
     get_generic_password(service, account)
         .map(|p| p.to_vec())
-        .map_err(|e| AppError::Keychain(format!("Failed to retrieve key: {}", e)))
-}
-
-/// Recreate legacy master-key items with the current OS-enforced protection.
-///
-/// Versions before the biometric Keychain migration stored master keys without a
-/// `SecAccessControl` object. After a successful legacy unlock, this upgrades both
-/// items before the application enters the unlocked state. The version marker is
-/// metadata only; it contains no key material and must never be used to authorize
-/// access to the master keys.
-#[cfg(target_os = "macos")]
-pub fn migrate_master_keys_to_biometric_protection(
-    service: &str,
-    db_key: &[u8],
-    fs_key: &[u8],
-) -> Result<(), AppError> {
-    let migration_complete = retrieve_metadata(service, MASTER_KEY_ACCESS_CONTROL_VERSION_ACCOUNT)
-        .is_ok_and(|version| version == MASTER_KEY_ACCESS_CONTROL_VERSION);
-    if migration_complete {
-        return Ok(());
-    }
-
-    store_key(service, DB_KEY_ACCOUNT, db_key)?;
-    store_key(service, FS_KEY_ACCOUNT, fs_key)?;
-    store_metadata(
-        service,
-        MASTER_KEY_ACCESS_CONTROL_VERSION_ACCOUNT,
-        MASTER_KEY_ACCESS_CONTROL_VERSION,
-    )
+        .map_err(|e| {
+            if e.code() == errSecItemNotFound {
+                AppError::KeychainItemMissing
+            } else {
+                AppError::Keychain(format!("Failed to retrieve key: {}", e))
+            }
+        })
 }
 
 /// Delete a key from Keychain.

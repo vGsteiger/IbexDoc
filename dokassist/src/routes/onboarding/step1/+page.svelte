@@ -81,7 +81,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-950 flex items-center justify-center p-8">
+<div class="onboarding-theme min-h-screen bg-gray-950 flex items-center justify-center p-8">
   <div class="max-w-3xl w-full">
     <div class="mb-8 text-center">
       <h1 class="text-3xl font-bold text-gray-100 mb-2">Configure Practice Details</h1>

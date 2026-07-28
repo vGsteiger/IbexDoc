@@ -76,7 +76,7 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
 
     // --- Retrieve keys while holding the auth lock ---
     let (db_key, fs_key) = {
-        let auth = state.auth.lock().map_err(|_| lock_poisoned())?;
+        let mut auth = state.auth.lock().map_err(|_| lock_poisoned())?;
 
         // Re-check state in case the app was reset while Touch ID was showing.
         if !matches!(*auth, AuthState::Locked) {
@@ -84,8 +84,26 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
         }
 
         // Keychain enforces biometric or device-passcode authentication for protected items.
-        let mut db_key_vec = keychain::retrieve_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT)?;
-        let mut fs_key_vec = keychain::retrieve_key(KEYCHAIN_SERVICE, FS_KEY_ACCOUNT)?;
+        // A missing item cannot be fixed by retrying Touch ID (for example, the
+        // item may have been invalidated after a biometric-set change), so make
+        // the recovery flow the session's next state.
+        let mut db_key_vec = match keychain::retrieve_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT) {
+            Ok(key) => key,
+            Err(AppError::KeychainItemMissing) => {
+                *auth = AuthState::RecoveryRequired;
+                return Err(AppError::KeychainItemMissing);
+            }
+            Err(err) => return Err(err),
+        };
+        let mut fs_key_vec = match keychain::retrieve_key(KEYCHAIN_SERVICE, FS_KEY_ACCOUNT) {
+            Ok(key) => key,
+            Err(AppError::KeychainItemMissing) => {
+                zeroize::Zeroize::zeroize(&mut db_key_vec);
+                *auth = AuthState::RecoveryRequired;
+                return Err(AppError::KeychainItemMissing);
+            }
+            Err(err) => return Err(err),
+        };
 
         if db_key_vec.len() != 32 || fs_key_vec.len() != 32 {
             zeroize::Zeroize::zeroize(&mut db_key_vec);
@@ -100,11 +118,6 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
 
         zeroize::Zeroize::zeroize(&mut db_key_vec);
         zeroize::Zeroize::zeroize(&mut fs_key_vec);
-
-        // Recreate legacy items once so existing installs receive the same
-        // Keychain-layer biometric gate as newly initialized and recovered keys.
-        #[cfg(target_os = "macos")]
-        keychain::migrate_master_keys_to_biometric_protection(KEYCHAIN_SERVICE, &db_key, &fs_key)?;
 
         (db_key, fs_key)
         // auth lock released here
