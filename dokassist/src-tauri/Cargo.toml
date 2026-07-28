@@ -2,7 +2,7 @@
 name = "dokassist"
 version = "0.10.3"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.95"
 
 [lib]
 name = "dokassist_lib"
@@ -35,7 +35,7 @@ security-framework = "3"
 security-framework-sys = "2"
 core-foundation = "0.10"
 core-foundation-sys = "0.8"
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 ring = "0.17"
 argon2 = "0.5"
 bip39 = "2"
@@ -44,7 +44,7 @@ rand = "0.10"
 hex = "0.4"
 
 # Database (PKG-2)
-rusqlite = { version = "0.39", features = ["bundled-sqlcipher", "vtab"] }
+rusqlite = { version = "0.40.1", features = ["bundled-sqlcipher", "vtab"] }
 
 # LLM (PKG-4)
 llama-cpp-2 = { version = "0.1" }
