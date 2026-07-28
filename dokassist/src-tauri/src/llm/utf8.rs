@@ -1,7 +1,7 @@
-/// UTF-8 boundary-safe truncation utilities.
-///
-/// This module provides functions to safely truncate UTF-8 strings at byte boundaries
-/// without breaking multi-byte character sequences.
+//! UTF-8 boundary-safe truncation utilities.
+//!
+//! This module provides functions to safely truncate UTF-8 strings at byte boundaries
+//! without breaking multi-byte character sequences.
 
 /// Truncates a string to at most `max_bytes` bytes, ensuring the result ends on a valid
 /// UTF-8 character boundary.
