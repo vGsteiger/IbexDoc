@@ -9,6 +9,7 @@ mod prompts;
 mod report;
 pub mod sanitize;
 pub mod tools;
+pub mod utf8;
 
 pub use engine::{EngineStatus, LlmEngine, ModelChoice};
 pub use extract::{extract_metadata_with_prompt, FileMetadata};
