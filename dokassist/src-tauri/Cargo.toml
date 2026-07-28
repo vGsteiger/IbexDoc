@@ -1,6 +1,6 @@
 [package]
 name = "dokassist"
-version = "0.10.2"
+version = "0.10.3"
 edition = "2021"
 rust-version = "1.88"
 
@@ -65,7 +65,7 @@ minisign-verify = "0.2"
 
 # Export
 zip = "8"
-printpdf = "0.9"
+printpdf = "0.10"
 docx-rs = "0.4"
 pulldown-cmark = { version = "0.13", default-features = false }
 
