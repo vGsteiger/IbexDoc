@@ -433,7 +433,11 @@ fn create_patient_from_row(
     row_num: usize,
 ) -> Result<String, CsvWarning> {
     // Validate AHV number
-    let ahv = row.ahv_number.unwrap(); // Safe because validated
+    let ahv = row.ahv_number.ok_or_else(|| CsvWarning {
+        row: Some(row_num),
+        column: Some("ahv_number".to_string()),
+        message: "Missing required field: AHV number".to_string(),
+    })?;
     let normalized_ahv = validate_ahv(&ahv).map_err(|e| CsvWarning {
         row: Some(row_num),
         column: Some("ahv_number".to_string()),
@@ -443,9 +447,21 @@ fn create_patient_from_row(
     // Create patient
     let input = CreatePatient {
         ahv_number: normalized_ahv,
-        first_name: row.first_name.unwrap(), // Safe because validated
-        last_name: row.last_name.unwrap(),   // Safe because validated
-        date_of_birth: row.date_of_birth.unwrap(), // Safe because validated
+        first_name: row.first_name.ok_or_else(|| CsvWarning {
+            row: Some(row_num),
+            column: Some("first_name".to_string()),
+            message: "Missing required field: first name".to_string(),
+        })?,
+        last_name: row.last_name.ok_or_else(|| CsvWarning {
+            row: Some(row_num),
+            column: Some("last_name".to_string()),
+            message: "Missing required field: last name".to_string(),
+        })?,
+        date_of_birth: row.date_of_birth.ok_or_else(|| CsvWarning {
+            row: Some(row_num),
+            column: Some("date_of_birth".to_string()),
+            message: "Missing required field: date of birth".to_string(),
+        })?,
         gender: row.gender,
         address: row.address,
         phone: row.phone,
@@ -577,6 +593,55 @@ mod tests {
         let err = result.unwrap_err();
         assert_eq!(err.row, Some(3));
         assert_eq!(err.column, Some("first_name".to_string()));
+    }
+
+    #[test]
+    fn test_create_patient_from_row_missing_required_field_returns_warning() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        let cases = [
+            (
+                "ahv_number",
+                CsvPatientRow {
+                    first_name: Some("Hans".to_string()),
+                    last_name: Some("Müller".to_string()),
+                    date_of_birth: Some("1980-01-15".to_string()),
+                    ..Default::default()
+                },
+            ),
+            (
+                "first_name",
+                CsvPatientRow {
+                    ahv_number: Some("7561234567897".to_string()),
+                    last_name: Some("Müller".to_string()),
+                    date_of_birth: Some("1980-01-15".to_string()),
+                    ..Default::default()
+                },
+            ),
+            (
+                "last_name",
+                CsvPatientRow {
+                    ahv_number: Some("7561234567897".to_string()),
+                    first_name: Some("Hans".to_string()),
+                    date_of_birth: Some("1980-01-15".to_string()),
+                    ..Default::default()
+                },
+            ),
+            (
+                "date_of_birth",
+                CsvPatientRow {
+                    ahv_number: Some("7561234567897".to_string()),
+                    first_name: Some("Hans".to_string()),
+                    last_name: Some("Müller".to_string()),
+                    ..Default::default()
+                },
+            ),
+        ];
+
+        for (field, row) in cases {
+            let warning = create_patient_from_row(&conn, row, 7).unwrap_err();
+            assert_eq!(warning.row, Some(7));
+            assert_eq!(warning.column.as_deref(), Some(field));
+        }
     }
 
     #[test]
