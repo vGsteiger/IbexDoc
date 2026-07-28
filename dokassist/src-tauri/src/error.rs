@@ -5,6 +5,12 @@ pub enum AppError {
     #[error("Keychain error: {0}")]
     Keychain(String),
 
+    /// A required master-key item is no longer available. The encrypted vault
+    /// must be restored with the recovery phrase; retrying Touch ID cannot
+    /// recreate the key material.
+    #[error("The encryption key is no longer available in the Keychain")]
+    KeychainItemMissing,
+
     #[error("Crypto error: {0}")]
     Crypto(String),
 
@@ -46,6 +52,7 @@ impl AppError {
     pub fn code(&self) -> String {
         match self {
             AppError::Keychain(_) => "KEYCHAIN_ERROR".to_string(),
+            AppError::KeychainItemMissing => "RECOVERY_REQUIRED".to_string(),
             AppError::Crypto(_) => "CRYPTO_ERROR".to_string(),
             AppError::Database(e) => {
                 // Generate specific database error codes based on the error message
