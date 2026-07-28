@@ -2,3 +2,74 @@
 @plugin "@tailwindcss/typography";
 
 @variant dark (&:where(.dark, .dark *));
+
+/* The onboarding was originally authored as a dark-only flow. Keep its
+ * existing dark palette intact while providing matching light-mode surfaces
+ * until the individual screens are fully tokenised. */
+html:not(.dark) .onboarding-theme.bg-gray-950,
+html:not(.dark) .onboarding-theme .bg-gray-950,
+html:not(.dark) .onboarding-theme .bg-gray-900 {
+  background-color: #ffffff;
+}
+
+html:not(.dark) .onboarding-theme .bg-gray-800 {
+  background-color: #f9fafb;
+}
+
+html:not(.dark) .onboarding-theme .border-gray-800,
+html:not(.dark) .onboarding-theme .border-gray-700,
+html:not(.dark) .onboarding-theme .border-gray-600 {
+  border-color: #d1d5db;
+}
+
+html:not(.dark) .onboarding-theme .text-gray-100 {
+  color: #111827;
+}
+
+html:not(.dark) .onboarding-theme .text-gray-400 {
+  color: #4b5563;
+}
+
+html:not(.dark) .onboarding-theme .text-gray-300 {
+  color: #374151;
+}
+
+html:not(.dark) .onboarding-theme .text-gray-600 {
+  color: #6b7280;
+}
+
+html:not(.dark) .onboarding-theme .bg-blue-900\/20 {
+  background-color: rgb(219 234 254 / 0.7);
+}
+
+html:not(.dark) .onboarding-theme .border-blue-800 {
+  border-color: #93c5fd;
+}
+
+html:not(.dark) .onboarding-theme .text-blue-400 {
+  color: #1d4ed8;
+}
+
+html:not(.dark) .onboarding-theme .bg-green-900\/20 {
+  background-color: rgb(220 252 231 / 0.7);
+}
+
+html:not(.dark) .onboarding-theme .border-green-800 {
+  border-color: #86efac;
+}
+
+html:not(.dark) .onboarding-theme .text-green-400 {
+  color: #15803d;
+}
+
+html:not(.dark) .onboarding-theme .bg-yellow-900\/20 {
+  background-color: rgb(254 249 195 / 0.8);
+}
+
+html:not(.dark) .onboarding-theme .border-yellow-800 {
+  border-color: #facc15;
+}
+
+html:not(.dark) .onboarding-theme .text-yellow-400 {
+  color: #a16207;
+}

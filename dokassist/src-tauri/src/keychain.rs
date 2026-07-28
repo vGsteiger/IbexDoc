@@ -3,6 +3,16 @@ use crate::constants::{DB_KEY_ACCOUNT, FS_KEY_ACCOUNT};
 use crate::error::AppError;
 
 #[cfg(target_os = "macos")]
+use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
+#[cfg(target_os = "macos")]
+use core_foundation::boolean::CFBoolean;
+#[cfg(target_os = "macos")]
+use core_foundation::data::CFData;
+#[cfg(target_os = "macos")]
+use core_foundation::dictionary::CFDictionary;
+#[cfg(target_os = "macos")]
+use core_foundation::string::CFString;
+#[cfg(target_os = "macos")]
 use security_framework::passwords::{
     delete_generic_password, get_generic_password, set_generic_password,
 };
@@ -15,34 +25,23 @@ use security_framework_sys::item::{
     kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword, kSecReturnAttributes,
     kSecValueData,
 };
-// kSecAttrAccessible (the dict key for the accessibility level) is not exported
-// by security_framework_sys, so we declare it directly from Security.framework.
-#[cfg(target_os = "macos")]
-extern "C" {
-    static kSecAttrAccessible: core_foundation_sys::string::CFStringRef;
-}
-#[cfg(target_os = "macos")]
-use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
-#[cfg(target_os = "macos")]
-use core_foundation::boolean::CFBoolean;
-#[cfg(target_os = "macos")]
-use core_foundation::data::CFData;
-#[cfg(target_os = "macos")]
-use core_foundation::dictionary::CFDictionary;
-#[cfg(target_os = "macos")]
-use core_foundation::string::CFString;
 #[cfg(target_os = "macos")]
 use security_framework_sys::keychain_item::{SecItemAdd, SecItemCopyMatching, SecItemDelete};
 
+#[cfg(target_os = "macos")]
+extern "C" {
+    // `kSecAttrAccessible` is not exported by security_framework_sys.
+    static kSecAttrAccessible: core_foundation_sys::string::CFStringRef;
+}
+
 /// Store a master key in macOS Keychain with device-bound protection.
 ///
-/// Uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`: the item is accessible
-/// only while the device is unlocked and is never synced to iCloud.
-///
-/// Biometric gating is enforced at the application level via `touch_id::authenticate`
-/// (LocalAuthentication framework) rather than via a `SecAccessControl` object.
-/// The `SecAccessControl` approach requires `keychain-access-groups` entitlements
-/// that are only available with a paid Apple Developer signing identity.
+/// The key is accessible only while the device is unlocked and is never synced
+/// to iCloud. Touch ID/device-password authentication is enforced by
+/// `touch_id::authenticate` before this key is read. A Keychain
+/// `SecAccessControl` policy is deliberately not used here: it returns
+/// `errSecMissingEntitlement` (-34018) for this application's current signing
+/// configuration.
 #[cfg(target_os = "macos")]
 pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppError> {
     // Delete any existing item first using a raw SecItemDelete query so we match
@@ -107,7 +106,13 @@ pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppErro
 pub fn retrieve_key(service: &str, account: &str) -> Result<Vec<u8>, AppError> {
     get_generic_password(service, account)
         .map(|p| p.to_vec())
-        .map_err(|e| AppError::Keychain(format!("Failed to retrieve key: {}", e)))
+        .map_err(|e| {
+            if e.code() == errSecItemNotFound {
+                AppError::KeychainItemMissing
+            } else {
+                AppError::Keychain(format!("Failed to retrieve key: {}", e))
+            }
+        })
 }
 
 /// Delete a key from Keychain.

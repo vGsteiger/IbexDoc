@@ -173,6 +173,8 @@ impl AppState {
 fn determine_initial_auth_state(data_dir: &std::path::Path) -> AuthState {
     let vault_path = data_dir.join(RECOVERY_FILENAME);
     let vault_exists = vault_path.exists();
+    #[cfg(target_os = "macos")]
+    let database_exists = data_dir.join("dokassist.db").exists();
 
     // Check if keys exist in keychain (macOS only)
     #[cfg(target_os = "macos")]
@@ -201,15 +203,7 @@ fn determine_initial_auth_state(data_dir: &std::path::Path) -> AuthState {
                     AuthState::RecoveryRequired
                 }
             }
-            Some(false) => {
-                if vault_exists {
-                    // Recovery case: vault exists but no keychain keys
-                    AuthState::RecoveryRequired
-                } else {
-                    // First run: no vault and no keys
-                    AuthState::FirstRun
-                }
-            }
+            Some(false) => auth_state_without_master_keys(vault_exists, database_exists),
             None => {
                 // Keychain access failed (e.g., locked or permission issue).
                 // Safer to treat as locked so UI can prompt for unlock/retry.
@@ -226,5 +220,43 @@ fn determine_initial_auth_state(data_dir: &std::path::Path) -> AuthState {
         } else {
             AuthState::FirstRun
         }
+    }
+}
+
+/// Decide whether a vault without master keys represents interrupted setup or
+/// existing data that must be recovered. A database file is the commit point:
+/// the recovery phrase is only shown after both keys and the database exist.
+fn auth_state_without_master_keys(vault_exists: bool, database_exists: bool) -> AuthState {
+    match (vault_exists, database_exists) {
+        // Existing encrypted data without its master keys must never be
+        // overwritten automatically. The recovery phrase is needed to
+        // recreate the Keychain items.
+        (true, true) => AuthState::RecoveryRequired,
+        // `initialize_app` creates the vault before writing Keychain items or
+        // the database. If that first setup was interrupted (including the
+        // -34018 regression), the phrase was never shown and there is no
+        // patient data to preserve. Start setup over instead.
+        _ => AuthState::FirstRun,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_keys_require_recovery_only_when_patient_data_exists() {
+        assert!(matches!(
+            auth_state_without_master_keys(true, true),
+            AuthState::RecoveryRequired
+        ));
+        assert!(matches!(
+            auth_state_without_master_keys(true, false),
+            AuthState::FirstRun
+        ));
+        assert!(matches!(
+            auth_state_without_master_keys(false, false),
+            AuthState::FirstRun
+        ));
     }
 }
