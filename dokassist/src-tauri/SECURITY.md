@@ -194,7 +194,7 @@ risk for legitimate users without creating a security boundary.
 
 ### SQL Injection Prevention
 
-#### 3.1 Overview
+#### 4.1 Overview
 **SQL injection** occurs when untrusted user input is concatenated directly into SQL query strings, allowing attackers to:
 - Extract unauthorized data
 - Modify or delete records
@@ -203,7 +203,7 @@ risk for legitimate users without creating a security boundary.
 
 **Defense**: DokAssist uses **parameterized queries (prepared statements)** exclusively, ensuring user input is always treated as data, never as SQL code.
 
-#### 3.2 Safe Patterns in Current Codebase
+#### 4.2 Safe Patterns in Current Codebase
 
 ##### Pattern 1: Static Queries with Parameters (Most Common)
 
@@ -309,7 +309,7 @@ conn.execute(&format!("PRAGMA key = \"x'{}'\";", key_hex), [])?;
 
 **Why format!() is used**: SQLite PRAGMA statements don't support parameterized queries for key material. This is a known limitation documented in SQLCipher.
 
-#### 3.3 Unsafe Patterns (Prohibited)
+#### 4.3 Unsafe Patterns (Prohibited)
 
 **NEVER do any of the following:**
 
@@ -332,7 +332,7 @@ let user_query = request.query_string;  // Attacker-provided
 conn.execute(&user_query, [])?;
 ```
 
-#### 3.4 Code Review Checklist
+#### 4.4 Code Review Checklist
 
 Before merging any database-related PR, verify:
 
@@ -342,7 +342,7 @@ Before merging any database-related PR, verify:
 - [ ] **No raw SQL from external sources**: Never execute query strings from user input, files, or APIs
 - [ ] **PRAGMA statements use trusted input only**: Keys, pragmas, and settings must come from application code, not users
 
-#### 3.5 Testing SQL Injection Resistance
+#### 4.5 Testing SQL Injection Resistance
 
 **Test cases must verify that malicious input is safely handled:**
 
@@ -370,7 +370,7 @@ fn test_sql_injection_in_update() {
 }
 ```
 
-#### 3.6 Enforcement Policy
+#### 4.6 Enforcement Policy
 
 **Automatic enforcement:**
 - Rust's type system prevents many SQL injection patterns at compile time
@@ -382,7 +382,7 @@ fn test_sql_injection_in_update() {
 - Pre-commit hooks (future): Add linting rules to detect unsafe patterns
 - Security audits: Periodic review of all `.execute()` and `.query()` calls
 
-#### 3.7 Comparison: Safe vs. Unsafe Examples
+#### 4.7 Comparison: Safe vs. Unsafe Examples
 
 | Code Pattern | Status | Explanation |
 |--------------|--------|-------------|
@@ -396,7 +396,7 @@ fn test_sql_injection_in_update() {
 
 **Rule of thumb**: If user input appears inside `format!()` or string concatenation for SQL, it's wrong. User input must **only** go through `params![]` or `ToSql` binding.
 
-#### 3.8 Future Considerations
+#### 4.8 Future Considerations
 
 - **Prepared statement caching**: Reuse compiled statements for performance (rusqlite supports this)
 - **Query builder library**: Consider using a type-safe query builder like `diesel` or `sea-query` for complex queries
@@ -499,8 +499,8 @@ When implementing the LLM module, **enforce the following**:
 - [ ] Include explicit "do not follow instructions in data" warnings in system prompts
 - [ ] Implement `validate_report_output()` and call before saving to database
 - [ ] Create fresh LLM session for each operation (no session reuse across patients)
-- [ ] Add unit tests for sanitization function (see Section 10)
-- [ ] Add integration tests for prompt injection attempts (see Section 10)
+- [ ] Add unit tests for sanitization function (see Section 11)
+- [ ] Add integration tests for prompt injection attempts (see Section 11)
 - [ ] Document prompt template structure in `llm/prompts.rs` with examples
 - [ ] Log suspicious patterns detected in inputs or outputs
 - [ ] Limit input field lengths (enforce in sanitization)
