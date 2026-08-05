@@ -74,8 +74,8 @@ fn enforce_patient_scope(scope: &AgentScope, patient_id: &str) -> Result<(), App
 ///
 /// Agent input can include untrusted patient documents, so an agent must never
 /// be able to mutate a clinical record directly. The UI (or an existing
-/// clinician-operated form) must explicitly submit the proposal through its
-/// normal command before any database write occurs.
+/// clinician-operated form) must explicitly submit the proposal through the
+/// command named by `action` before any database write occurs.
 fn proposed_write(action: &str, proposal: Value) -> Value {
     json!({
         "status": "pending_clinician_confirmation",
@@ -181,7 +181,7 @@ fn tool_create_calendar_event(
     let notes = opt_str_arg(args, "notes").map(sanitize_for_prompt);
 
     Ok(proposed_write(
-        "create_calendar_event",
+        "create_session",
         json!({
             "patient_id": patient_id,
             "session_date": date,
@@ -342,7 +342,7 @@ fn tool_write_report(
     )?;
 
     Ok(proposed_write(
-        "write_report",
+        "create_report",
         json!({
             "patient_id": patient_id,
             "report_type": report_type_raw,
@@ -579,7 +579,7 @@ fn tool_draft_email(
     let body = sanitize_for_prompt(str_arg(args, "body")?);
 
     Ok(proposed_write(
-        "draft_email",
+        "create_email",
         json!({
             "patient_id": patient_id,
             "recipient_email": recipient_email,
