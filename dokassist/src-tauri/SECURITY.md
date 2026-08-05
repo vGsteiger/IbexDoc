@@ -121,31 +121,15 @@ All LLM outputs must be validated before storage:
 
 ```rust
 /// Validates LLM output before saving to database.
-/// - Checks for expected structure
-/// - Detects nonsensical or harmful content
-/// - Ensures output is in German for reports
-/// - Limits length to reasonable bounds
+/// - Enforces report length bounds
+/// - Leaves content available for mandatory human review
 pub fn validate_report_output(output: &str) -> Result<(), AppError> {
     if output.len() > 50_000 {
         return Err(AppError::Llm("Report output too long".into()));
     }
 
-    // Check for signs of successful injection
-    let suspicious_patterns = [
-        "ignore previous instructions",
-        "system:",
-        "as an ai language model",
-        "<script>",
-        "curl ",
-        "wget ",
-    ];
-
-    let lower = output.to_lowercase();
-    for pattern in suspicious_patterns {
-        if lower.contains(pattern) {
-            log::warn!("Suspicious pattern in LLM output: {}", pattern);
-            return Err(AppError::Llm("Output validation failed".into()));
-        }
+    if output.trim().len() < 50 {
+        return Err(AppError::Llm("Report output too short or empty".into()));
     }
 
     Ok(())
