@@ -1,12 +1,8 @@
-use crate::constants::{KEYCHAIN_SERVICE, RECOVERY_ATTEMPTS_ACCOUNT};
 use crate::error::AppError;
-use crate::keychain;
 use bip39::{Language, Mnemonic};
 use rand::RngExt;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
 use zeroize::Zeroize;
 
 /// App-specific KDF salt — not secret, prevents cross-app key reuse.
@@ -15,80 +11,6 @@ const KDF_SALT: &[u8; 16] = b"dokassist-v1-key";
 type RecoveryKeys = (Vec<String>, [u8; 32], [u8; 32]);
 /// Vault file format version byte.
 const VAULT_VERSION: u8 = 1;
-
-/// Attempt thresholds beyond which lockout begins (after the Nth failure).
-const LOCKOUT_AFTER: u32 = 3;
-/// Maximum lockout duration in seconds (1 hour).
-const MAX_LOCKOUT_SECS: u64 = 3600;
-
-#[derive(Serialize, Deserialize, Default)]
-struct RecoveryAttemptState {
-    count: u32,
-    locked_until_secs: u64,
-}
-
-fn now_secs() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
-}
-
-fn lockout_duration(count: u32) -> u64 {
-    if count <= LOCKOUT_AFTER {
-        return 0;
-    }
-    // Exponential: 2^(count - LOCKOUT_AFTER) seconds, capped at MAX_LOCKOUT_SECS
-    let exp = count - LOCKOUT_AFTER;
-    let secs = 2u64.saturating_pow(exp);
-    secs.min(MAX_LOCKOUT_SECS)
-}
-
-/// Read attempt state from macOS Keychain (no biometric required).
-/// Falls back to default (zero attempts) if no entry exists yet.
-fn read_attempt_state() -> RecoveryAttemptState {
-    keychain::retrieve_metadata(KEYCHAIN_SERVICE, RECOVERY_ATTEMPTS_ACCOUNT)
-        .ok()
-        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
-        .unwrap_or_default()
-}
-
-/// Persist attempt state to macOS Keychain (no biometric required).
-fn write_attempt_state(state: &RecoveryAttemptState) {
-    if let Ok(json) = serde_json::to_vec(state) {
-        let _ = keychain::store_metadata(KEYCHAIN_SERVICE, RECOVERY_ATTEMPTS_ACCOUNT, &json);
-    }
-}
-
-/// Check whether recovery is currently rate-limited.
-/// Returns `Err(AppError::RateLimited(secs))` if locked out, `Ok(())` otherwise.
-pub fn check_recovery_rate_limit(_data_dir: &Path) -> Result<(), AppError> {
-    let state = read_attempt_state();
-    let now = now_secs();
-    if state.locked_until_secs > now {
-        return Err(AppError::RateLimited(state.locked_until_secs - now));
-    }
-    Ok(())
-}
-
-/// Record a failed recovery attempt and update the lockout state.
-pub fn record_failed_attempt(_data_dir: &Path) {
-    let mut state = read_attempt_state();
-    state.count = state.count.saturating_add(1);
-    let lockout = lockout_duration(state.count);
-    state.locked_until_secs = if lockout > 0 { now_secs() + lockout } else { 0 };
-    write_attempt_state(&state);
-    log::warn!(
-        "Recovery attempt {} failed. Lockout: {}s",
-        state.count,
-        lockout
-    );
-}
-
-/// Clear the recovery attempt counter after a successful recovery.
-pub fn clear_recovery_attempts(_data_dir: &Path) {
-    let _ = keychain::delete_metadata(KEYCHAIN_SERVICE, RECOVERY_ATTEMPTS_ACCOUNT);
-}
 
 /// Derive db_key and fs_key deterministically from 32-byte mnemonic entropy.
 ///

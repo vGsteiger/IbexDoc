@@ -172,7 +172,19 @@ impl LlmEngine {
 
 ---
 
-## 3. Database Security (SQLCipher)
+## 3. Recovery Threat Model
+
+Recovery uses a 24-word BIP-39 mnemonic with 256 bits of entropy. That entropy
+is the defense against guessing the recovery phrase, including an attacker who
+copies the vault and performs recovery attempts offline. Key derivation also
+uses Argon2id to make each guess memory-hard.
+
+Recovery deliberately has no attempt counter or lockout. In a local-only app,
+an attacker can reset any locally stored counter or bypass the application with
+an offline vault copy. A local lockout would therefore add denial-of-service
+risk for legitimate users without creating a security boundary.
+
+## 4. Database Security (SQLCipher)
 
 ### Current Implementation (PKG-2)
 - **AES-256 encryption** at rest using SQLCipher
@@ -392,7 +404,7 @@ fn test_sql_injection_in_update() {
 
 ---
 
-## 4. Filesystem Security (PKG-3)
+## 5. Filesystem Security (PKG-3)
 
 ### Encryption
 - **AES-256-GCM** for file encryption
@@ -406,7 +418,7 @@ fn test_sql_injection_in_update() {
 
 ---
 
-## 5. Key Management (PKG-1)
+## 6. Key Management (PKG-1)
 
 ### Keychain Integration (macOS)
 - Master keys are stored in the macOS Keychain with
@@ -434,7 +446,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 6. Auth State Machine
+## 7. Auth State Machine
 
 **States:**
 - `FirstRun`: No keys exist, needs initialization
@@ -448,7 +460,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 7. Audit Logging (PKG-6)
+## 8. Audit Logging (PKG-6)
 
 **To be implemented**: All sensitive operations logged to encrypted audit log:
 - Patient creation/modification/deletion
@@ -461,7 +473,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 8. Threat Model Summary
+## 9. Threat Model Summary
 
 | Threat                        | Mitigation                                  | Status      |
 |-------------------------------|---------------------------------------------|-------------|
@@ -478,7 +490,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 9. Implementation Checklist for PKG-4 (LLM Engine)
+## 10. Implementation Checklist for PKG-4 (LLM Engine)
 
 When implementing the LLM module, **enforce the following**:
 
@@ -495,7 +507,7 @@ When implementing the LLM module, **enforce the following**:
 
 ---
 
-## 10. Testing Requirements
+## 11. Testing Requirements
 
 ### Unit Tests (to be added in PKG-4)
 
@@ -575,7 +587,7 @@ fn test_cross_patient_isolation() {
 
 ---
 
-## 11. Compliance Notes
+## 12. Compliance Notes
 
 ### GDPR / Medical Data Regulations
 - **Data minimization**: Only collect necessary patient data
@@ -592,7 +604,7 @@ fn test_cross_patient_isolation() {
 
 ---
 
-## 12. Future Considerations
+## 13. Future Considerations
 
 ### When Network Features Are Added (if ever):
 - **TLS 1.3** for any external connections
@@ -607,7 +619,7 @@ fn test_cross_patient_isolation() {
 
 ---
 
-## 13. Security Review Checklist
+## 14. Security Review Checklist
 
 Before merging any PR that touches LLM, database, or filesystem code:
 
@@ -623,7 +635,7 @@ Before merging any PR that touches LLM, database, or filesystem code:
 
 ---
 
-## 14. Contact
+## 15. Contact
 
 For security concerns or vulnerability reports, contact: [security@dokassist.ch] (placeholder)
 

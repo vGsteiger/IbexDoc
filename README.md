@@ -44,7 +44,7 @@ RamDoc is designed with a defence-in-depth approach:
 |---------|----------------|
 | Data at rest | AES-256-GCM for all vault files; SQLCipher for the database |
 | Key storage | macOS Keychain (`ch.dokassist.app`) — keys never touch disk unencrypted |
-| Recovery | BIP-39 mnemonic phrase with brute-force protection (attempt counter + lockout) |
+| Recovery | 24-word BIP-39 mnemonic with 256 bits of entropy and Argon2id key derivation |
 | Audit trail | Append-only `audit_log` SQLite table; deletion blocked by DB trigger |
 | Input sanitisation | AHV validation, FTS5 query escaping, LLM prompt sanitisation (fence + fullwidth variants) |
 | File safety | 500 MiB upload cap, symlink-escape prevention via `canonicalize()`, UUID temp filenames |
@@ -61,7 +61,7 @@ RamDoc is designed with a defence-in-depth approach:
 | `database.rs` | SQLCipher connection, migrations, FTS5 search |
 | `keychain.rs` | macOS Keychain read/write via `security-framework` |
 | `filesystem.rs` | Encrypted vault at `{data_dir}/vault/`; temp exports via UUID filenames |
-| `recovery.rs` | BIP-39 mnemonic generation, verification, and brute-force-protected recovery |
+| `recovery.rs` | BIP-39 mnemonic generation, verification, and Argon2id key derivation |
 | `state.rs` | Auth state machine: `FirstRun → Locked → Unlocked → RecoveryRequired` |
 | `llm/` | GGUF model download (SHA-256 verified), llama.cpp engine, prompt sanitisation, streaming |
 | `commands/` | Tauri IPC command handlers (auth, patients, sessions, diagnoses, medications, files, reports, search) |
@@ -150,4 +150,3 @@ Conventional commit prefixes (`feat:`, `fix:`, `feat!:`) are also recognised whe
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
-
