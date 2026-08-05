@@ -121,14 +121,14 @@ All LLM outputs must be validated before storage:
 
 ```rust
 /// Validates LLM output before saving to database.
-/// - Enforces report length bounds
+/// - Enforces a 50-character minimum and 50,000-byte maximum
 /// - Leaves content available for mandatory human review
 pub fn validate_report_output(output: &str) -> Result<(), AppError> {
     if output.len() > 50_000 {
-        return Err(AppError::Llm("Report output too long".into()));
+        return Err(AppError::Llm("Report output exceeds maximum size".into()));
     }
 
-    if output.trim().len() < 50 {
+    if output.trim().chars().count() < 50 {
         return Err(AppError::Llm("Report output too short or empty".into()));
     }
 

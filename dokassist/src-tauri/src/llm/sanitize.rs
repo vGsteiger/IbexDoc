@@ -64,7 +64,7 @@ pub fn sanitize_for_prompt(input: &str) -> String {
 /// Validates LLM output before saving to database.
 ///
 /// # Security Properties
-/// - Enforces minimum and maximum report lengths
+/// - Enforces a minimum report length in characters and maximum size in bytes
 /// - Leaves report content intact for mandatory human review
 ///
 /// # Returns
@@ -81,17 +81,18 @@ pub fn sanitize_for_prompt(input: &str) -> String {
 /// save_report(llm_output)?;
 /// ```
 pub fn validate_report_output(output: &str) -> Result<(), crate::error::AppError> {
-    // Enforce maximum output length
+    // Enforce maximum output size in UTF-8 bytes.
     if output.len() > 50_000 {
-        log::warn!("LLM output too long: {} chars", output.len());
+        log::warn!("LLM output too large: {} bytes", output.len());
         return Err(crate::error::AppError::Llm(
-            "Report output exceeds maximum length".into(),
+            "Report output exceeds maximum size".into(),
         ));
     }
 
-    // Check for minimum output length (report should have substance)
-    if output.trim().len() < 50 {
-        log::warn!("LLM output too short: {} chars", output.trim().len());
+    // Enforce a minimum number of characters so multibyte text is measured correctly.
+    let trimmed_char_count = output.trim().chars().count();
+    if trimmed_char_count < 50 {
+        log::warn!("LLM output too short: {} characters", trimmed_char_count);
         return Err(crate::error::AppError::Llm(
             "Report output too short or empty".into(),
         ));
@@ -272,6 +273,12 @@ mod tests {
     #[test]
     fn test_validate_output_too_long() {
         let report = "A".repeat(60_000);
+        assert!(validate_report_output(&report).is_err());
+    }
+
+    #[test]
+    fn test_validate_output_minimum_is_measured_in_characters() {
+        let report = "ä".repeat(49);
         assert!(validate_report_output(&report).is_err());
     }
 
