@@ -156,7 +156,19 @@ impl LlmEngine {
 
 ---
 
-## 3. Database Security (SQLCipher)
+## 3. Recovery Threat Model
+
+Recovery uses a 24-word BIP-39 mnemonic with 256 bits of entropy. That entropy
+is the defense against guessing the recovery phrase, including an attacker who
+copies the vault and performs recovery attempts offline. Key derivation also
+uses Argon2id to make each guess memory-hard.
+
+Recovery deliberately has no attempt counter or lockout. In a local-only app,
+an attacker can reset any locally stored counter or bypass the application with
+an offline vault copy. A local lockout would therefore add denial-of-service
+risk for legitimate users without creating a security boundary.
+
+## 4. Database Security (SQLCipher)
 
 ### Current Implementation (PKG-2)
 - **AES-256 encryption** at rest using SQLCipher
@@ -166,7 +178,7 @@ impl LlmEngine {
 
 ### SQL Injection Prevention
 
-#### 3.1 Overview
+#### 4.1 Overview
 **SQL injection** occurs when untrusted user input is concatenated directly into SQL query strings, allowing attackers to:
 - Extract unauthorized data
 - Modify or delete records
@@ -175,7 +187,7 @@ impl LlmEngine {
 
 **Defense**: DokAssist uses **parameterized queries (prepared statements)** exclusively, ensuring user input is always treated as data, never as SQL code.
 
-#### 3.2 Safe Patterns in Current Codebase
+#### 4.2 Safe Patterns in Current Codebase
 
 ##### Pattern 1: Static Queries with Parameters (Most Common)
 
@@ -281,7 +293,7 @@ conn.execute(&format!("PRAGMA key = \"x'{}'\";", key_hex), [])?;
 
 **Why format!() is used**: SQLite PRAGMA statements don't support parameterized queries for key material. This is a known limitation documented in SQLCipher.
 
-#### 3.3 Unsafe Patterns (Prohibited)
+#### 4.3 Unsafe Patterns (Prohibited)
 
 **NEVER do any of the following:**
 
@@ -304,7 +316,7 @@ let user_query = request.query_string;  // Attacker-provided
 conn.execute(&user_query, [])?;
 ```
 
-#### 3.4 Code Review Checklist
+#### 4.4 Code Review Checklist
 
 Before merging any database-related PR, verify:
 
@@ -314,7 +326,7 @@ Before merging any database-related PR, verify:
 - [ ] **No raw SQL from external sources**: Never execute query strings from user input, files, or APIs
 - [ ] **PRAGMA statements use trusted input only**: Keys, pragmas, and settings must come from application code, not users
 
-#### 3.5 Testing SQL Injection Resistance
+#### 4.5 Testing SQL Injection Resistance
 
 **Test cases must verify that malicious input is safely handled:**
 
@@ -342,7 +354,7 @@ fn test_sql_injection_in_update() {
 }
 ```
 
-#### 3.6 Enforcement Policy
+#### 4.6 Enforcement Policy
 
 **Automatic enforcement:**
 - Rust's type system prevents many SQL injection patterns at compile time
@@ -354,7 +366,7 @@ fn test_sql_injection_in_update() {
 - Pre-commit hooks (future): Add linting rules to detect unsafe patterns
 - Security audits: Periodic review of all `.execute()` and `.query()` calls
 
-#### 3.7 Comparison: Safe vs. Unsafe Examples
+#### 4.7 Comparison: Safe vs. Unsafe Examples
 
 | Code Pattern | Status | Explanation |
 |--------------|--------|-------------|
@@ -368,7 +380,7 @@ fn test_sql_injection_in_update() {
 
 **Rule of thumb**: If user input appears inside `format!()` or string concatenation for SQL, it's wrong. User input must **only** go through `params![]` or `ToSql` binding.
 
-#### 3.8 Future Considerations
+#### 4.8 Future Considerations
 
 - **Prepared statement caching**: Reuse compiled statements for performance (rusqlite supports this)
 - **Query builder library**: Consider using a type-safe query builder like `diesel` or `sea-query` for complex queries
@@ -376,7 +388,7 @@ fn test_sql_injection_in_update() {
 
 ---
 
-## 4. Filesystem Security (PKG-3)
+## 5. Filesystem Security (PKG-3)
 
 ### Encryption
 - **AES-256-GCM** for file encryption
@@ -390,7 +402,7 @@ fn test_sql_injection_in_update() {
 
 ---
 
-## 5. Key Management (PKG-1)
+## 6. Key Management (PKG-1)
 
 ### Keychain Integration (macOS)
 - Master keys are stored in the macOS Keychain with
@@ -418,7 +430,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 6. Auth State Machine
+## 7. Auth State Machine
 
 **States:**
 - `FirstRun`: No keys exist, needs initialization
@@ -432,7 +444,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 7. Audit Logging (PKG-6)
+## 8. Audit Logging (PKG-6)
 
 **To be implemented**: All sensitive operations logged to encrypted audit log:
 - Patient creation/modification/deletion
@@ -445,7 +457,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 8. Threat Model Summary
+## 9. Threat Model Summary
 
 | Threat                        | Mitigation                                  | Status      |
 |-------------------------------|---------------------------------------------|-------------|
@@ -462,7 +474,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ---
 
-## 9. Implementation Checklist for PKG-4 (LLM Engine)
+## 10. Implementation Checklist for PKG-4 (LLM Engine)
 
 When implementing the LLM module, **enforce the following**:
 
@@ -471,15 +483,15 @@ When implementing the LLM module, **enforce the following**:
 - [ ] Include explicit "do not follow instructions in data" warnings in system prompts
 - [ ] Implement `validate_report_output()` and call before saving to database
 - [ ] Create fresh LLM session for each operation (no session reuse across patients)
-- [ ] Add unit tests for sanitization function (see Section 10)
-- [ ] Add integration tests for prompt injection attempts (see Section 10)
+- [ ] Add unit tests for sanitization function (see Section 11)
+- [ ] Add integration tests for prompt injection attempts (see Section 11)
 - [ ] Document prompt template structure in `llm/prompts.rs` with examples
 - [ ] Log suspicious patterns detected in inputs or outputs
 - [ ] Limit input field lengths (enforce in sanitization)
 
 ---
 
-## 10. Testing Requirements
+## 11. Testing Requirements
 
 ### Unit Tests (to be added in PKG-4)
 
@@ -559,7 +571,7 @@ fn test_cross_patient_isolation() {
 
 ---
 
-## 11. Compliance Notes
+## 12. Compliance Notes
 
 ### GDPR / Medical Data Regulations
 - **Data minimization**: Only collect necessary patient data
@@ -576,7 +588,7 @@ fn test_cross_patient_isolation() {
 
 ---
 
-## 12. Future Considerations
+## 13. Future Considerations
 
 ### When Network Features Are Added (if ever):
 - **TLS 1.3** for any external connections
@@ -591,7 +603,7 @@ fn test_cross_patient_isolation() {
 
 ---
 
-## 13. Security Review Checklist
+## 14. Security Review Checklist
 
 Before merging any PR that touches LLM, database, or filesystem code:
 
@@ -607,7 +619,7 @@ Before merging any PR that touches LLM, database, or filesystem code:
 
 ---
 
-## 14. Contact
+## 15. Contact
 
 For security concerns or vulnerability reports, contact: [security@dokassist.ch] (placeholder)
 

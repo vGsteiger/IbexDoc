@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main", "develop" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prettier:
     name: Frontend Formatting
@@ -14,28 +18,25 @@ jobs:
     steps:
     - uses: actions/checkout@v7.0.1
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version: '20'
-
     - name: Setup pnpm
       uses: pnpm/action-setup@v6.0.9
       with:
         version: 9
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '20'
+        cache: pnpm
+        cache-dependency-path: dokassist/pnpm-lock.yaml
+
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --prefer-offline
 
     - name: Check formatting (Prettier)
       working-directory: ./dokassist
-      run: |
-        if pnpm list prettier 2>/dev/null; then
-          pnpm exec prettier --check "src/**/*.{js,ts,svelte,json,css}"
-        else
-          echo "Prettier not found, skipping format check"
-        fi
+      run: pnpm format:check
       continue-on-error: true
 
   eslint:
@@ -45,28 +46,25 @@ jobs:
     steps:
     - uses: actions/checkout@v7.0.1
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version: '20'
-
     - name: Setup pnpm
       uses: pnpm/action-setup@v6.0.9
       with:
         version: 9
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '20'
+        cache: pnpm
+        cache-dependency-path: dokassist/pnpm-lock.yaml
+
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --prefer-offline
 
     - name: Run ESLint
       working-directory: ./dokassist
-      run: |
-        if pnpm list eslint 2>/dev/null; then
-          pnpm exec eslint "src/**/*.{js,ts,svelte}"
-        else
-          echo "ESLint not found, skipping lint check"
-        fi
+      run: pnpm lint
       continue-on-error: true
 
   typos:
