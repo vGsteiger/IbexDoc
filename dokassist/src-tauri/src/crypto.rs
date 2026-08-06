@@ -60,9 +60,11 @@ pub fn decrypt(key: &[u8; 32], ciphertext: &[u8]) -> Result<Vec<u8>, AppError> {
         return decrypt_gcm_siv(key, ciphertext);
     }
     if ciphertext.starts_with(CIPHERTEXT_MAGIC) {
-        return Err(AppError::Crypto(
-            "Unsupported encrypted data format".to_string(),
-        ));
+        // Legacy ciphertext begins with a random nonce, which can coincidentally
+        // share the reserved magic prefix. Preserve compatibility by accepting
+        // it when legacy authentication succeeds.
+        return decrypt_legacy_gcm(key, ciphertext)
+            .map_err(|_| AppError::Crypto("Unsupported encrypted data format".to_string()));
     }
 
     decrypt_legacy_gcm(key, ciphertext)
@@ -191,6 +193,26 @@ mod tests {
         let key = generate_key();
         let plaintext = b"Data encrypted before the GCM-SIV migration";
         let nonce_bytes = [7u8; NONCE_LEN];
+        let cipher = Aes256Gcm::new((&key).into());
+        let nonce = Nonce::try_from(nonce_bytes.as_slice()).unwrap();
+        let encrypted = cipher.encrypt(&nonce, plaintext.as_slice()).unwrap();
+
+        let mut legacy_ciphertext = Vec::with_capacity(NONCE_LEN + encrypted.len());
+        legacy_ciphertext.extend_from_slice(&nonce_bytes);
+        legacy_ciphertext.extend_from_slice(&encrypted);
+
+        assert_eq!(decrypt(&key, &legacy_ciphertext).unwrap(), plaintext);
+    }
+
+    #[test]
+    fn test_decrypt_legacy_ciphertext_with_reserved_magic_nonce_prefix() {
+        let key = generate_key();
+        let plaintext = b"Legacy data whose nonce starts with the format magic";
+        let mut nonce_bytes = [7u8; NONCE_LEN];
+        nonce_bytes[..CIPHERTEXT_MAGIC.len()].copy_from_slice(CIPHERTEXT_MAGIC);
+        assert!(nonce_bytes.starts_with(CIPHERTEXT_MAGIC));
+        assert!(!nonce_bytes.starts_with(CIPHERTEXT_HEADER));
+
         let cipher = Aes256Gcm::new((&key).into());
         let nonce = Nonce::try_from(nonce_bytes.as_slice()).unwrap();
         let encrypted = cipher.encrypt(&nonce, plaintext.as_slice()).unwrap();
