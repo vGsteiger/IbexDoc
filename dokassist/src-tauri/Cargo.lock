@@ -1454,7 +1454,7 @@ dependencies = [
 
 [[package]]
 name = "dokassist"
-version = "0.11.9"
+version = "0.11.10"
 dependencies = [
  "aes-gcm",
  "aes-gcm-siv",
