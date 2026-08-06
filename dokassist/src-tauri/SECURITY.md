@@ -446,7 +446,7 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 
 ## 8. Audit Logging (PKG-6)
 
-**To be implemented**: All sensitive operations logged to encrypted audit log:
+Audit records are stored in the encrypted `audit_log`. Intended coverage includes:
 - Patient creation/modification/deletion
 - File uploads/downloads
 - Report generation
@@ -454,6 +454,25 @@ All sensitive key material uses `zeroize::Zeroizing` to ensure memory is overwri
 - Failed unlock attempts
 
 **Purpose**: Compliance with medical data handling regulations (GDPR, HIPAA-equivalent).
+
+### Integrity boundary
+
+Migration `002_audit_append_only.sql` installs triggers that reject `UPDATE` and
+`DELETE` operations on `audit_log`. This makes the table append-only through normal
+application and SQL access while the triggers remain installed. It does **not** make
+the audit history cryptographically tamper-proof.
+
+The unlocked application holds the SQLCipher database key. An attacker with that key
+and write access to the database can create a replacement database that omits selected
+rows (and can omit the triggers). Because audit rows have no chained MAC and there is
+no independently protected or external checkpoint, the application cannot distinguish
+that replacement from an authentic history.
+
+Where a compliance profile requires independently verifiable completeness or
+authenticity, add a chained MAC over canonical audit-row data and the preceding MAC,
+and protect or checkpoint the chain state outside the database. Keeping the MAC key
+beside the database key in the same application trust boundary does not address an
+attacker who compromises both.
 
 ---
 
@@ -577,7 +596,8 @@ fn test_cross_patient_isolation() {
 - **Data minimization**: Only collect necessary patient data
 - **Encryption at rest**: SQLCipher + file vault
 - **Access control**: Password + keychain auth
-- **Audit trail**: PKG-6 will log all data access
+- **Audit trail**: PKG-6 logs sensitive data access; its local append-only enforcement
+  is not an independently verifiable integrity guarantee (see Section 8)
 - **Data portability**: Export functionality (PKG-11)
 - **Right to erasure**: Patient deletion cascades to all data
 

@@ -33,7 +33,7 @@ commit prefixes such as `feat:` / `fix:`).
 - **Full-Text Search** — encrypted FTS5 search with proper operator escaping
 - **Local LLM Integration** — on-device report generation via llama.cpp with Metal GPU acceleration
 - **Clinical Workflows** — sessions, diagnoses (ICD-10), medications, file attachments, reports
-- **Audit Logging** — append-only compliance audit trail enforced by SQLite triggers
+- **Audit Logging** — application-level append-only audit trail enforced by SQLite triggers
 - **Security First** — macOS Keychain integration, zeroised key material, BIP-39 recovery
 
 ## Security
@@ -45,7 +45,7 @@ RamDoc is designed with a defence-in-depth approach:
 | Data at rest | AES-256-GCM for all vault files; SQLCipher for the database |
 | Key storage | macOS Keychain (`ch.dokassist.app`) — keys never touch disk unencrypted |
 | Recovery | 24-word BIP-39 mnemonic with 256 bits of entropy and Argon2id key derivation |
-| Audit trail | Append-only `audit_log` SQLite table; deletion blocked by DB trigger |
+| Audit trail | Application-level append-only `audit_log`; UPDATE/DELETE blocked by DB triggers (not cryptographically tamper-proof) |
 | Input sanitisation | AHV validation, FTS5 query escaping, LLM prompt sanitisation (fence + fullwidth variants) |
 | File safety | 500 MiB upload cap, symlink-escape prevention via `canonicalize()`, UUID temp filenames |
 | Model integrity | SHA-256 verification on every GGUF model download; 60 GiB cap |

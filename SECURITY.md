@@ -50,3 +50,22 @@ Out of scope:
 
 For an overview of the cryptographic design, key storage, and threat model, see the internal security architecture document:
 [`dokassist/src-tauri/SECURITY.md`](dokassist/src-tauri/SECURITY.md)
+
+## Known Security Limitations
+
+### Audit-log integrity
+
+The audit log is append-only during normal database operation: SQLite triggers reject
+`UPDATE` and `DELETE` statements against `audit_log`. This protects against accidental
+or application-level modification while those triggers are active, but it is not a
+cryptographic proof that the history is complete or authentic.
+
+RamDoc must hold the SQLCipher database key while unlocked. An attacker who obtains
+that key and can replace the local database could rebuild it without selected audit
+rows or triggers. The current schema has no per-row MAC/hash chain and no independently
+protected checkpoint, so RamDoc cannot detect that replacement afterward.
+
+Deployments that require independently verifiable audit integrity need an additional
+design, such as a chained MAC with a key outside the database plus a forward-secure or
+external checkpoint. A chain keyed only with another value available to the same local
+application would not protect against an attacker who compromises that value as well.

@@ -1,8 +1,9 @@
 -- Migration 002: Enforce append-only audit log (CRIT-5)
 --
--- The audit_log table must be immutable for healthcare compliance.
--- These triggers raise a hard error on any UPDATE or DELETE attempt,
--- regardless of which code path invokes the statement.
+-- These triggers enforce application-level append-only behavior by raising a hard
+-- error on UPDATE or DELETE while the triggers are installed. They are not a
+-- cryptographic integrity mechanism: a party with the database key and filesystem
+-- access can replace the database or remove the triggers. See SECURITY.md, Section 8.
 --
 -- Note: INSERT and SELECT are still permitted.
 
