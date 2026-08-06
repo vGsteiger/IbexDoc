@@ -5,15 +5,13 @@
 
 use super::agent::{AgentScope, ToolCallRequest};
 use super::sanitize::sanitize_for_prompt;
-use super::utf8;
 use crate::error::AppError;
 use crate::llm::embed::EmbedEngine;
 use crate::llm::LlmEngine;
-use crate::models::diagnosis::{self, CreateDiagnosis};
-use crate::models::email as email_model;
-use crate::models::medication::{self, CreateMedication};
+use crate::models::diagnosis;
+use crate::models::medication;
 use crate::models::patient;
-use crate::models::session::{self, CreateSession};
+use crate::models::session;
 use crate::models::treatment_plan;
 use crate::search;
 use rusqlite::Connection;
@@ -72,6 +70,21 @@ fn enforce_patient_scope(scope: &AgentScope, patient_id: &str) -> Result<(), App
     Ok(())
 }
 
+/// Return a validated write proposal without persisting it.
+///
+/// Agent input can include untrusted patient documents, so an agent must never
+/// be able to mutate a clinical record directly. The UI (or an existing
+/// clinician-operated form) must explicitly submit the proposal through the
+/// command named by `action` before any database write occurs.
+fn proposed_write(action: &str, proposal: Value) -> Value {
+    json!({
+        "status": "pending_clinician_confirmation",
+        "action": action,
+        "proposal": proposal,
+        "message": "Dieser Vorschlag wurde nicht gespeichert. Bitte prüfen und über die Benutzeroberfläche ausdrücklich bestätigen.",
+    })
+}
+
 fn tool_get_patient(
     conn: &Connection,
     scope: &AgentScope,
@@ -116,7 +129,7 @@ fn tool_get_calendar_events(
 }
 
 fn tool_create_calendar_event(
-    conn: &Connection,
+    _conn: &Connection,
     scope: &AgentScope,
     args: &Value,
 ) -> Result<Value, AppError> {
@@ -167,19 +180,18 @@ fn tool_create_calendar_event(
 
     let notes = opt_str_arg(args, "notes").map(sanitize_for_prompt);
 
-    let created = session::create_session(
-        conn,
-        CreateSession {
-            patient_id,
-            session_date: date,
-            session_type,
-            duration_minutes,
-            scheduled_time: None,
-            notes,
-            amdp_data: None,
-        },
-    )?;
-    Ok(serde_json::to_value(created).unwrap_or(json!({"error": "serialize"})))
+    Ok(proposed_write(
+        "create_session",
+        json!({
+            "patient_id": patient_id,
+            "session_date": date,
+            "session_type": session_type,
+            "duration_minutes": duration_minutes,
+            "scheduled_time": null,
+            "notes": notes,
+            "amdp_data": null,
+        }),
+    ))
 }
 
 fn tool_search(conn: &Connection, args: &Value) -> Result<Value, AppError> {
@@ -331,24 +343,17 @@ fn tool_write_report(
 
     crate::llm::sanitize::validate_report_output(&content)?;
 
-    // Persist the report
-    let report = crate::models::report::create_report(
-        conn,
-        crate::models::report::CreateReport {
-            patient_id: patient_id.clone(),
-            report_type: report_type_raw.to_string(),
-            content: content.clone(),
-            model_name: None,
-            prompt_hash: None,
-            session_ids: None,
-        },
-    )?;
-
-    let preview_end = utf8::find_boundary_backward(&content, content.len().min(500));
-    Ok(json!({
-        "report_id": report.id,
-        "content_preview": &content[..preview_end],
-    }))
+    Ok(proposed_write(
+        "create_report",
+        json!({
+            "patient_id": patient_id,
+            "report_type": report_type_raw,
+            "content": content,
+            "model_name": null,
+            "prompt_hash": null,
+            "session_ids": null,
+        }),
+    ))
 }
 
 /// Validate YYYY-MM-DD format (same check as in tool_create_calendar_event).
@@ -381,7 +386,7 @@ fn tool_list_diagnoses(
 }
 
 fn tool_create_diagnosis(
-    conn: &Connection,
+    _conn: &Connection,
     scope: &AgentScope,
     args: &Value,
 ) -> Result<Value, AppError> {
@@ -432,19 +437,18 @@ fn tool_create_diagnosis(
     }
     let notes = opt_str_arg(args, "notes").map(sanitize_for_prompt);
 
-    let created = diagnosis::create_diagnosis(
-        conn,
-        CreateDiagnosis {
-            patient_id,
-            icd10_code,
-            description,
-            status: Some(status_raw.to_string()),
-            diagnosed_date,
-            resolved_date: None,
-            notes,
-        },
-    )?;
-    Ok(serde_json::to_value(created).unwrap_or(json!({"error": "serialize"})))
+    Ok(proposed_write(
+        "create_diagnosis",
+        json!({
+            "patient_id": patient_id,
+            "icd10_code": icd10_code,
+            "description": description,
+            "status": status_raw,
+            "diagnosed_date": diagnosed_date,
+            "resolved_date": null,
+            "notes": notes,
+        }),
+    ))
 }
 
 fn tool_list_medications(
@@ -459,7 +463,7 @@ fn tool_list_medications(
 }
 
 fn tool_create_medication(
-    conn: &Connection,
+    _conn: &Connection,
     scope: &AgentScope,
     args: &Value,
 ) -> Result<Value, AppError> {
@@ -473,19 +477,18 @@ fn tool_create_medication(
     validate_date(&start_date)?;
     let notes = opt_str_arg(args, "notes").map(sanitize_for_prompt);
 
-    let created = medication::create_medication(
-        conn,
-        CreateMedication {
-            patient_id,
-            substance,
-            dosage,
-            frequency,
-            start_date,
-            end_date: None,
-            notes,
-        },
-    )?;
-    Ok(serde_json::to_value(created).unwrap_or(json!({"error": "serialize"})))
+    Ok(proposed_write(
+        "create_medication",
+        json!({
+            "patient_id": patient_id,
+            "substance": substance,
+            "dosage": dosage,
+            "frequency": frequency,
+            "start_date": start_date,
+            "end_date": null,
+            "notes": notes,
+        }),
+    ))
 }
 
 fn tool_compare_medications(app: &tauri::AppHandle, args: &Value) -> Result<Value, AppError> {
@@ -555,7 +558,7 @@ fn tool_compare_medications(app: &tauri::AppHandle, args: &Value) -> Result<Valu
 }
 
 fn tool_draft_email(
-    conn: &Connection,
+    _conn: &Connection,
     scope: &AgentScope,
     args: &Value,
 ) -> Result<Value, AppError> {
@@ -577,16 +580,15 @@ fn tool_draft_email(
     let subject = sanitize_for_prompt(str_arg(args, "subject")?);
     let body = sanitize_for_prompt(str_arg(args, "body")?);
 
-    let created = email_model::create_email(
-        conn,
-        email_model::CreateEmail {
-            patient_id,
-            recipient_email,
-            subject,
-            body,
-        },
-    )?;
-    Ok(serde_json::to_value(created).unwrap_or(json!({"error": "serialize"})))
+    Ok(proposed_write(
+        "create_email",
+        json!({
+            "patient_id": patient_id,
+            "recipient_email": recipient_email,
+            "subject": subject,
+            "body": body,
+        }),
+    ))
 }
 
 fn tool_list_treatment_plans(
@@ -603,6 +605,14 @@ fn tool_list_treatment_plans(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_write_proposal_requires_clinician_confirmation() {
+        let result = proposed_write("create_diagnosis", json!({"patient_id": "p1"}));
+        assert_eq!(result["status"], "pending_clinician_confirmation");
+        assert_eq!(result["action"], "create_diagnosis");
+        assert_eq!(result["proposal"]["patient_id"], "p1");
+    }
 
     #[test]
     fn test_enforce_patient_scope_same_id() {
