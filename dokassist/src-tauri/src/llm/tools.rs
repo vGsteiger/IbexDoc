@@ -329,6 +329,8 @@ fn tool_write_report(
         crate::llm::SYSTEM_PROMPT_DE,
     )?;
 
+    crate::llm::sanitize::validate_report_output(&content)?;
+
     // Persist the report
     let report = crate::models::report::create_report(
         conn,
