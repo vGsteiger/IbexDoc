@@ -1,6 +1,7 @@
 use crate::error::AppError;
 use bip39::{Language, Mnemonic};
 use rand::RngExt;
+use ring::hmac;
 use std::fs;
 use std::path::Path;
 use zeroize::Zeroize;
@@ -9,8 +10,12 @@ use zeroize::Zeroize;
 const KDF_SALT: &[u8; 16] = b"dokassist-v1-key";
 
 type RecoveryKeys = (Vec<String>, [u8; 32], [u8; 32]);
-/// Vault file format version byte.
-const VAULT_VERSION: u8 = 1;
+/// Legacy vaults contain only this version byte and cannot validate a mnemonic.
+const VAULT_VERSION_V1: u8 = 1;
+/// Version 2 vaults bind the marker to the mnemonic-derived database key.
+const VAULT_VERSION: u8 = 2;
+const VAULT_AUTH_LEN: usize = 32;
+const VAULT_AUTH_MESSAGE: &[u8] = b"dokassist recovery vault v2";
 
 /// Derive db_key and fs_key deterministically from 32-byte mnemonic entropy.
 ///
@@ -35,9 +40,9 @@ fn derive_keys_from_entropy(entropy: &[u8; 32]) -> Result<([u8; 32], [u8; 32]), 
 
 /// Generate a BIP-39 24-word mnemonic and derive db_key / fs_key from it.
 ///
-/// Returns `(mnemonic_words, db_key, fs_key)` and writes a 1-byte vault marker
+/// Returns `(mnemonic_words, db_key, fs_key)` and writes a versioned vault marker
 /// to `vault_path`. The marker's existence signals "app initialized" to `state.rs`;
-/// its version byte enables future vault-format migrations.
+/// its HMAC lets recovery reject a different, but otherwise valid, mnemonic.
 pub fn create_recovery(vault_path: &Path) -> Result<RecoveryKeys, AppError> {
     // Generate 256 bits of entropy for a 24-word mnemonic
     let mut entropy = [0u8; 32];
@@ -53,8 +58,15 @@ pub fn create_recovery(vault_path: &Path) -> Result<RecoveryKeys, AppError> {
     // Zeroize entropy after derivation
     entropy.zeroize();
 
-    // Write 1-byte vault marker (signals "app initialized" to state.rs)
-    fs::write(vault_path, [VAULT_VERSION]).map_err(|e| {
+    // Bind the vault marker to the derived key so a wrong valid mnemonic can be
+    // rejected before attempting to decrypt the database.
+    let signing_key = hmac::Key::new(hmac::HMAC_SHA256, &db_key);
+    let authenticator = hmac::sign(&signing_key, VAULT_AUTH_MESSAGE);
+    let mut vault_bytes = Vec::with_capacity(1 + authenticator.as_ref().len());
+    vault_bytes.push(VAULT_VERSION);
+    vault_bytes.extend_from_slice(authenticator.as_ref());
+
+    fs::write(vault_path, vault_bytes).map_err(|e| {
         AppError::Filesystem(std::io::Error::new(
             e.kind(),
             format!("Failed to write recovery vault: {}", e),
@@ -96,22 +108,40 @@ pub fn recover_from_mnemonic(
     entropy.copy_from_slice(&entropy_vec);
     entropy_vec.zeroize();
 
-    // Read vault marker and verify version byte
-    let vault_bytes = fs::read(vault_path).map_err(|e| {
-        AppError::Filesystem(std::io::Error::new(
-            e.kind(),
-            format!("Failed to read recovery vault: {}", e),
-        ))
-    })?;
-    if vault_bytes.first() != Some(&VAULT_VERSION) {
-        entropy.zeroize();
-        return Err(AppError::InvalidRecoveryPhrase);
-    }
-
-    // Derive keys from entropy and return
+    // Read the vault marker. Version 1 had no authenticator, so it remains
+    // recoverable but cannot distinguish a wrong valid mnemonic.
+    let vault_bytes = match fs::read(vault_path) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            entropy.zeroize();
+            return Err(AppError::Filesystem(std::io::Error::new(
+                e.kind(),
+                format!("Failed to read recovery vault: {}", e),
+            )));
+        }
+    };
     let result = derive_keys_from_entropy(&entropy);
     entropy.zeroize();
-    result
+    let (mut db_key, mut fs_key) = result?;
+
+    match vault_bytes.as_slice() {
+        [VAULT_VERSION_V1] => Ok((db_key, fs_key)),
+        [VAULT_VERSION, authenticator @ ..] if authenticator.len() == VAULT_AUTH_LEN => {
+            let signing_key = hmac::Key::new(hmac::HMAC_SHA256, &db_key);
+            if hmac::verify(&signing_key, VAULT_AUTH_MESSAGE, authenticator).is_ok() {
+                Ok((db_key, fs_key))
+            } else {
+                db_key.zeroize();
+                fs_key.zeroize();
+                Err(AppError::InvalidRecoveryPhrase)
+            }
+        }
+        _ => {
+            db_key.zeroize();
+            fs_key.zeroize();
+            Err(AppError::InvalidRecoveryPhrase)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -130,8 +160,11 @@ mod tests {
         // Verify we got 24 words
         assert_eq!(words.len(), 24);
 
-        // Verify vault marker was written
+        // Verify the authenticated v2 vault marker was written
         assert!(vault_path.exists());
+        let vault_bytes = std::fs::read(&vault_path).unwrap();
+        assert_eq!(vault_bytes.len(), 33);
+        assert_eq!(vault_bytes[0], VAULT_VERSION);
 
         // Recover keys using only the mnemonic and vault marker
         let (recovered_db_key, recovered_fs_key) =
@@ -143,12 +176,12 @@ mod tests {
     }
 
     #[test]
-    fn test_recover_wrong_mnemonic_gives_different_keys() {
+    fn test_recover_wrong_valid_mnemonic_is_rejected() {
         let temp_dir = TempDir::new().unwrap();
         let vault_path = temp_dir.path().join("recovery.vault");
 
         // Create recovery with one mnemonic
-        let (_, db_key, _) = create_recovery(&vault_path).unwrap();
+        create_recovery(&vault_path).unwrap();
 
         // Build a different valid mnemonic
         let mut wrong_entropy = [0u8; 32];
@@ -159,9 +192,20 @@ mod tests {
             .map(|w: &str| w.to_string())
             .collect();
 
-        // Recovery succeeds (valid mnemonic + existing vault), but keys differ
-        let (wrong_db_key, _) = recover_from_mnemonic(&wrong_words, &vault_path).unwrap();
-        assert_ne!(db_key, wrong_db_key);
+        let result = recover_from_mnemonic(&wrong_words, &vault_path);
+        assert!(matches!(result, Err(AppError::InvalidRecoveryPhrase)));
+    }
+
+    #[test]
+    fn test_recover_legacy_v1_vault() {
+        let temp_dir = TempDir::new().unwrap();
+        let vault_path = temp_dir.path().join("recovery.vault");
+
+        let (words, db_key, fs_key) = create_recovery(&vault_path).unwrap();
+        std::fs::write(&vault_path, [VAULT_VERSION_V1]).unwrap();
+
+        let recovered = recover_from_mnemonic(&words, &vault_path).unwrap();
+        assert_eq!(recovered, (db_key, fs_key));
     }
 
     #[test]
@@ -170,7 +214,7 @@ mod tests {
         let vault_path = temp_dir.path().join("recovery.vault");
 
         // Create a valid vault marker
-        std::fs::write(&vault_path, [VAULT_VERSION]).unwrap();
+        std::fs::write(&vault_path, [VAULT_VERSION_V1]).unwrap();
 
         // Try to recover with invalid mnemonic words
         let invalid_words = vec!["invalid".to_string(); 24];
@@ -215,6 +259,18 @@ mod tests {
         let result = recover_from_mnemonic(&words, &vault_path);
 
         // Should fail with InvalidRecoveryPhrase (version mismatch)
+        assert!(matches!(result, Err(AppError::InvalidRecoveryPhrase)));
+    }
+
+    #[test]
+    fn test_recover_truncated_v2_vault() {
+        let temp_dir = TempDir::new().unwrap();
+        let vault_path = temp_dir.path().join("recovery.vault");
+
+        let (words, _, _) = create_recovery(&vault_path).unwrap();
+        std::fs::write(&vault_path, [VAULT_VERSION]).unwrap();
+
+        let result = recover_from_mnemonic(&words, &vault_path);
         assert!(matches!(result, Err(AppError::InvalidRecoveryPhrase)));
     }
 }

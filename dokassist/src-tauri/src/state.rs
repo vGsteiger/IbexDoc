@@ -6,6 +6,10 @@ use crate::llm::{embed::EmbedEngine, LlmEngine};
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 
+pub(crate) fn llm_lock_poisoned() -> crate::error::AppError {
+    crate::error::AppError::Llm("LLM state mutex poisoned".to_string())
+}
+
 /// Application state shared across all Tauri commands.
 pub struct AppState {
     pub auth: Mutex<AuthState>,
@@ -272,6 +276,7 @@ fn auth_state_without_master_keys(vault_exists: bool, database_exists: bool) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::panic::{catch_unwind, AssertUnwindSafe};
 
     #[test]
     fn missing_keys_require_recovery_only_when_patient_data_exists() {
@@ -286,6 +291,25 @@ mod tests {
         assert!(matches!(
             auth_state_without_master_keys(false, false),
             AuthState::FirstRun
+        ));
+    }
+
+    #[test]
+    fn poisoned_llm_lock_maps_to_llm_error() {
+        let llm = Mutex::new(None::<Arc<LlmEngine>>);
+
+        let _ = catch_unwind(AssertUnwindSafe(|| {
+            let _guard = llm.lock().unwrap();
+            panic!("poison LLM mutex");
+        }));
+
+        let error = match llm.lock().map_err(|_| llm_lock_poisoned()) {
+            Ok(_) => panic!("poisoned LLM mutex unexpectedly locked"),
+            Err(error) => error,
+        };
+        assert!(matches!(
+            error,
+            crate::error::AppError::Llm(message) if message == "LLM state mutex poisoned"
         ));
     }
 }
