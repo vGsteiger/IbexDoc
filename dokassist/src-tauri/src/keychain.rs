@@ -13,9 +13,7 @@ use core_foundation::dictionary::CFDictionary;
 #[cfg(target_os = "macos")]
 use core_foundation::string::CFString;
 #[cfg(target_os = "macos")]
-use security_framework::passwords::{
-    delete_generic_password, get_generic_password, set_generic_password,
-};
+use security_framework::passwords::{delete_generic_password, get_generic_password};
 #[cfg(target_os = "macos")]
 use security_framework_sys::access_control::kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
 #[cfg(target_os = "macos")]
@@ -122,33 +120,6 @@ pub fn delete_key(service: &str, account: &str) -> Result<(), AppError> {
         .map_err(|e| AppError::Keychain(format!("Failed to delete key: {}", e)))
 }
 
-/// Store non-sensitive metadata in Keychain **without** biometric protection.
-///
-/// Uses the standard `set_generic_password` API which stores items with
-/// `kSecAttrAccessibleAfterFirstUnlock` accessibility — readable after device boot
-/// without Touch ID. Intended for data like recovery attempt counters that must be
-/// readable before the user has authenticated.
-#[cfg(target_os = "macos")]
-pub fn store_metadata(service: &str, account: &str, data: &[u8]) -> Result<(), AppError> {
-    set_generic_password(service, account, data)
-        .map_err(|e| AppError::Keychain(format!("Failed to store metadata: {}", e)))
-}
-
-/// Retrieve non-sensitive metadata from Keychain without triggering Touch ID.
-#[cfg(target_os = "macos")]
-pub fn retrieve_metadata(service: &str, account: &str) -> Result<Vec<u8>, AppError> {
-    get_generic_password(service, account)
-        .map(|p| p.to_vec())
-        .map_err(|e| AppError::Keychain(format!("Failed to retrieve metadata: {}", e)))
-}
-
-/// Delete non-sensitive metadata from Keychain.
-#[cfg(target_os = "macos")]
-pub fn delete_metadata(service: &str, account: &str) -> Result<(), AppError> {
-    delete_generic_password(service, account)
-        .map_err(|e| AppError::Keychain(format!("Failed to delete metadata: {}", e)))
-}
-
 /// Check if both master keys exist in the Keychain WITHOUT triggering Touch ID.
 ///
 /// Uses a `SecItemCopyMatching` query that requests only item attributes
@@ -215,27 +186,6 @@ pub fn retrieve_key(_service: &str, _account: &str) -> Result<Vec<u8>, AppError>
 
 #[cfg(not(target_os = "macos"))]
 pub fn delete_key(_service: &str, _account: &str) -> Result<(), AppError> {
-    Err(AppError::Keychain(
-        "Keychain operations are only supported on macOS".to_string(),
-    ))
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn store_metadata(_service: &str, _account: &str, _data: &[u8]) -> Result<(), AppError> {
-    Err(AppError::Keychain(
-        "Keychain operations are only supported on macOS".to_string(),
-    ))
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn retrieve_metadata(_service: &str, _account: &str) -> Result<Vec<u8>, AppError> {
-    Err(AppError::Keychain(
-        "Keychain operations are only supported on macOS".to_string(),
-    ))
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn delete_metadata(_service: &str, _account: &str) -> Result<(), AppError> {
     Err(AppError::Keychain(
         "Keychain operations are only supported on macOS".to_string(),
     ))

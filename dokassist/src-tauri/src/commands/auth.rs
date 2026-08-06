@@ -148,25 +148,9 @@ pub async fn recover_app(state: State<'_, AppState>, words: Vec<String>) -> Resu
         }
     }
 
-    // CRIT-1: Check rate limit before attempting recovery
-    recovery::check_recovery_rate_limit(&state.data_dir)?;
-
     // Recover keys from mnemonic
     let vault_path = state.data_dir.join(RECOVERY_FILENAME);
-    let result = recovery::recover_from_mnemonic(&words, &vault_path);
-
-    let (db_key, fs_key) = match result {
-        Ok(keys) => {
-            // Clear attempt counter on success
-            recovery::clear_recovery_attempts(&state.data_dir);
-            keys
-        }
-        Err(e) => {
-            // Record failed attempt (increments counter and updates lockout)
-            recovery::record_failed_attempt(&state.data_dir);
-            return Err(e);
-        }
-    };
+    let (db_key, fs_key) = recovery::recover_from_mnemonic(&words, &vault_path)?;
 
     // Store recovered keys in Keychain
     keychain::store_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT, &db_key)?;
