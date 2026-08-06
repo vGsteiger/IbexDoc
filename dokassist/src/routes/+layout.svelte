@@ -18,7 +18,7 @@
   let isCommandPaletteOpen = $state(false);
   let patients = $state<Patient[]>([]);
 
-  const authPaths = ['/', '/setup', '/unlock', '/recover'];
+  const authPaths = ['/', '/setup', '/unlock', '/recover', '/reset'];
   const layoutlessPaths = [...authPaths, '/onboarding/step1', '/onboarding/step2', '/onboarding/step3', '/onboarding/step4'];
   let showLayout = $derived(!layoutlessPaths.includes(currentPath));
 

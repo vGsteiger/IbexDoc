@@ -1033,8 +1033,16 @@
                 <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
                   {model.description}
                 </p>
+                {#if model.disclaimer}
+                  <p class="text-xs text-amber-700 dark:text-amber-300 mb-1">
+                    {model.disclaimer}
+                  </p>
+                {/if}
                 <p class="text-xs text-gray-500 dark:text-gray-500">
-                  Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB
+                  Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB • Native context: {Math.round(model.context_window_tokens / 1024)}K
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  {model.parameters} • {model.license}
                 </p>
               </div>
             </div>

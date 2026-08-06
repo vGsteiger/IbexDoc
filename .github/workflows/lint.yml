@@ -6,36 +6,37 @@ on:
   pull_request:
     branches: [ "main", "develop" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prettier:
     name: Frontend Formatting
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version: '20'
+    - uses: actions/checkout@v7.0.1
 
     - name: Setup pnpm
       uses: pnpm/action-setup@v6.0.9
       with:
         version: 9
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '20'
+        cache: pnpm
+        cache-dependency-path: dokassist/pnpm-lock.yaml
+
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --prefer-offline
 
     - name: Check formatting (Prettier)
       working-directory: ./dokassist
-      run: |
-        if pnpm list prettier 2>/dev/null; then
-          pnpm exec prettier --check "src/**/*.{js,ts,svelte,json,css}"
-        else
-          echo "Prettier not found, skipping format check"
-        fi
+      run: pnpm format:check
       continue-on-error: true
 
   eslint:
@@ -43,30 +44,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version: '20'
+    - uses: actions/checkout@v7.0.1
 
     - name: Setup pnpm
       uses: pnpm/action-setup@v6.0.9
       with:
         version: 9
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '20'
+        cache: pnpm
+        cache-dependency-path: dokassist/pnpm-lock.yaml
+
     - name: Install dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --prefer-offline
 
     - name: Run ESLint
       working-directory: ./dokassist
-      run: |
-        if pnpm list eslint 2>/dev/null; then
-          pnpm exec eslint "src/**/*.{js,ts,svelte}"
-        else
-          echo "ESLint not found, skipping lint check"
-        fi
+      run: pnpm lint
       continue-on-error: true
 
   typos:
@@ -74,11 +72,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7.0.1
 
     - name: Check for typos
       # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v1.44.0)
-      uses: crate-ci/typos@aca895bf05aec0cb7dffa6f94495e923224d9f17
+      uses: crate-ci/typos@bee27e3a4fd1ea2111cf90ab89cd076c870fce14
       with:
         files: |
           ./dokassist/src-tauri/src

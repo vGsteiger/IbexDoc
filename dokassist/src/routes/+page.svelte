@@ -50,12 +50,12 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-950 flex items-center justify-center p-8">
+<div class="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex items-center justify-center p-8">
   {#if error}
     <div class="text-center space-y-4 max-w-md">
-      <div class="bg-red-900/20 border border-red-500 rounded-lg p-6">
+      <div class="bg-red-50 border border-red-500 rounded-lg p-6 dark:bg-red-900/20">
         <h2 class="text-xl font-bold text-red-500 mb-2">{$t('auth.authError')}</h2>
-        <p class="text-gray-300">{error}</p>
+        <p class="text-gray-700 dark:text-gray-300">{error}</p>
       </div>
       <button
         onclick={handleRetry}
@@ -67,7 +67,7 @@
   {:else}
     <div class="text-center">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-      <p class="mt-4 text-gray-400">{$t('auth.loading')}</p>
+      <p class="mt-4 text-gray-600 dark:text-gray-400">{$t('auth.loading')}</p>
     </div>
   {/if}
 </div>

@@ -289,6 +289,10 @@ pub struct AvailableModel {
     pub size_bytes: u64,
     pub min_ram_gb: u64,
     pub description: String,
+    pub context_window_tokens: u64,
+    pub parameters: String,
+    pub license: String,
+    pub disclaimer: Option<String>,
     pub is_downloaded: bool,
     pub model_id: Option<String>,
 }
@@ -298,56 +302,23 @@ pub struct AvailableModel {
 pub async fn list_available_models(
     state: State<'_, AppState>,
 ) -> Result<Vec<AvailableModel>, AppError> {
-    const GB: u64 = 1024 * 1024 * 1024;
-
-    // Define all available models with their metadata
-    let available_models = vec![
-        AvailableModel {
-            name: "Gemma 4 26B A4B MoE Q4_K_M".to_string(),
-            filename: "gemma-4-26B-A4B-it-Q4_K_M.gguf".to_string(),
-            size_bytes: 16 * GB,
-            min_ram_gb: 32,
-            description: "High-quality 26B parameter Mixture-of-Experts model. Best for systems with 32GB+ RAM.".to_string(),
+    // The download whitelist is the single source of truth for picker metadata.
+    let available_models: Vec<AvailableModel> = download::MODELS
+        .iter()
+        .map(|entry| AvailableModel {
+            name: entry.name.to_string(),
+            filename: entry.filename.to_string(),
+            size_bytes: entry.size_bytes,
+            min_ram_gb: entry.min_ram_gb,
+            description: entry.description.to_string(),
+            context_window_tokens: entry.context_window_tokens,
+            parameters: entry.parameters.to_string(),
+            license: entry.license.to_string(),
+            disclaimer: entry.disclaimer.map(str::to_string),
             is_downloaded: false,
             model_id: None,
-        },
-        AvailableModel {
-            name: "Qwen3-30B-A3B MoE Q4_K_M".to_string(),
-            filename: "Qwen3-30B-A3B-Q4_K_M.gguf".to_string(),
-            size_bytes: 18 * GB,
-            min_ram_gb: 24,
-            description: "High-quality 30B parameter Mixture-of-Experts model. Best for systems with 24GB+ RAM.".to_string(),
-            is_downloaded: false,
-            model_id: None,
-        },
-        AvailableModel {
-            name: "Gemma 4 E4B Q8_0".to_string(),
-            filename: "gemma-4-E4B-it-Q8_0.gguf".to_string(),
-            size_bytes: 5 * GB,
-            min_ram_gb: 18,
-            description: "Dense 4B parameter model with 8-bit quantization. Good for systems with 18-24GB RAM.".to_string(),
-            is_downloaded: false,
-            model_id: None,
-        },
-        AvailableModel {
-            name: "Qwen3-8B Q4_K_M".to_string(),
-            filename: "Qwen3-8B-Q4_K_M.gguf".to_string(),
-            size_bytes: 5 * GB,
-            min_ram_gb: 16,
-            description: "Good quality 8B parameter model. Suitable for systems with 16GB+ RAM.".to_string(),
-            is_downloaded: false,
-            model_id: None,
-        },
-        AvailableModel {
-            name: "Phi-4 Mini Q4_K_M".to_string(),
-            filename: "Phi-4-mini-instruct-Q4_K_M.gguf".to_string(),
-            size_bytes: 3 * GB,
-            min_ram_gb: 8,
-            description: "Compact mini model for systems with limited RAM (8GB+). Faster but lower quality.".to_string(),
-            is_downloaded: false,
-            model_id: None,
-        },
-    ];
+        })
+        .collect();
 
     // Check which models are already downloaded
     let db = state.get_db()?;

@@ -1,20 +1,26 @@
 name: Tauri Build
 
 on:
-  push:
-    tags: [ "v*" ]    # Only build on version tags — one run per release, no branch/PR noise
-  workflow_run:
-    workflows: ["Release"]
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      tag:
+        description: Version tag to build
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build
+        required: true
+        type: string
+
+concurrency:
+  group: tauri-build-${{ inputs.tag }}
+  cancel-in-progress: false
 
 jobs:
   tauri-build:
     name: Tauri Build - ${{ matrix.platform }}
-    # Run if: triggered by tag push OR triggered by successful Release workflow completion
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     strategy:
       fail-fast: false
       matrix:
@@ -28,36 +34,10 @@ jobs:
     steps:
     - name: Checkout code
       # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v4)
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
       with:
-        fetch-depth: 0  # Fetch all history including tags
-
-    - name: Determine tag to build
-      id: get_tag
-      run: |
-        if [ "${{ github.event_name }}" = "push" ]; then
-          # Triggered by tag push - use the tag from the ref
-          TAG="${GITHUB_REF#refs/tags/}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Building tag from push event: $TAG"
-        else
-          # Triggered by workflow_run - get the latest tag
-          git fetch --tags
-          TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
-          if [ -z "$TAG" ]; then
-            echo "Error: No version tag found"
-            exit 1
-          fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Building latest tag from workflow_run: $TAG"
-          git checkout "$TAG"
-        fi
-
-    - name: Setup Node.js
-      # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v4)
-      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
-      with:
-        node-version: '20'
+        fetch-depth: 1
+        ref: ${{ inputs.tag }}
 
     - name: Setup pnpm
       # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v4.2.0)
@@ -65,32 +45,36 @@ jobs:
       with:
         version: 9
 
+    - name: Setup Node.js
+      # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v4)
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
+      with:
+        node-version: '20'
+        cache: pnpm
+        cache-dependency-path: dokassist/pnpm-lock.yaml
+
     - name: Setup Rust
       # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v1)
-      uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1
+      uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
       with:
         toolchain: stable
         target: ${{ matrix.rust-targets }}
 
-    - name: Cache pnpm store
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-      with:
-        path: ~/.pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
-
     - name: Cache cargo build
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: dokassist/src-tauri/target
-        key: ${{ runner.os }}-tauri-${{ hashFiles('**/Cargo.lock') }}
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          dokassist/src-tauri/target
+        key: ${{ runner.os }}-tauri-${{ matrix.rust-targets }}-${{ hashFiles('dokassist/src-tauri/Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-tauri-
+          ${{ runner.os }}-tauri-${{ matrix.rust-targets }}-${{ hashFiles('dokassist/src-tauri/Cargo.lock') }}-
+          ${{ runner.os }}-tauri-${{ matrix.rust-targets }}-
 
     - name: Install frontend dependencies
       working-directory: ./dokassist
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --prefer-offline
 
     - name: Build Tauri app
       working-directory: ./dokassist
@@ -114,36 +98,12 @@ jobs:
     name: Upload Release Assets
     needs: tauri-build
     runs-on: ubuntu-latest
-    # Run when tauri-build completes (whether triggered by tag push or workflow_run)
+    # Upload only after the requested release build succeeds.
     if: always() && needs.tauri-build.result == 'success'
     permissions:
       contents: write
 
     steps:
-    - name: Checkout code
-      # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v4)
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
-      with:
-        fetch-depth: 0  # Fetch all tags
-
-    - name: Determine release tag
-      id: get_tag
-      run: |
-        if [ "${{ github.event_name }}" = "push" ]; then
-          # Triggered by tag push - use the tag from the ref
-          TAG="${GITHUB_REF#refs/tags/}"
-        else
-          # Triggered by workflow_run - get the latest tag
-          git fetch --tags
-          TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
-          if [ -z "$TAG" ]; then
-            echo "Error: No version tag found"
-            exit 1
-          fi
-        fi
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        echo "Using tag for release: $TAG"
-
     - name: Download macOS artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
@@ -155,7 +115,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        TAG="${{ steps.get_tag.outputs.tag }}"
+        TAG="${{ inputs.tag }}"
         VERSION="${TAG#v}"
         REPO="${{ github.repository }}"
         BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
@@ -171,7 +131,7 @@ jobs:
         # Upload DMG as release asset for fresh installs
         if [ -f "$ARM_DMG" ]; then
           echo "Uploading ARM64 DMG: $(basename "$ARM_DMG")"
-          gh release upload "$TAG" "$ARM_DMG" --clobber
+          gh release upload "$TAG" "$ARM_DMG" --clobber --repo "$REPO"
         else
           echo "Warning: No aarch64 DMG found in artifacts"
         fi
@@ -179,7 +139,7 @@ jobs:
         # Upload .app.tar.gz bundle (used by Tauri updater)
         if [ -f "$ARM_TAR" ]; then
           echo "Uploading ARM64 app.tar.gz: $(basename "$ARM_TAR")"
-          gh release upload "$TAG" "$ARM_TAR" --clobber
+          gh release upload "$TAG" "$ARM_TAR" --clobber --repo "$REPO"
           ARM_URL="${BASE_URL}/$(basename "$ARM_TAR")"
         else
           echo "Warning: No aarch64 .app.tar.gz found in artifacts"
@@ -190,7 +150,7 @@ jobs:
         # Generate and upload latest.json for Tauri updater
         # NOTE: Tauri v2 requires plain semver (no "v" prefix)
         # URL must point to .app.tar.gz (not .dmg) — that is what the updater downloads
-        RELEASE_NOTES=$(gh release view "$TAG" --json body -q .body 2>/dev/null || echo "")
+        RELEASE_NOTES=$(gh release view "$TAG" --repo "$REPO" --json body -q .body 2>/dev/null || echo "")
         RELEASE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
         cat > latest.json <<EOF
@@ -210,5 +170,5 @@ jobs:
         echo "Generated latest.json:"
         cat latest.json
 
-        gh release upload "$TAG" latest.json --clobber
+        gh release upload "$TAG" latest.json --clobber --repo "$REPO"
         echo "Uploaded latest.json to release $TAG"

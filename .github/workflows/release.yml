@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Checkout code
         # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v4)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
@@ -155,5 +155,11 @@ jobs:
             --title "Release v$NEW_VERSION" \
             --notes "$RELEASE_NOTES"
 
-  # NOTE: Binary building and latest.json upload are handled by tauri-build.yml,
-  # which triggers automatically when this workflow pushes the version tag.
+  build-release:
+    name: Build release artifacts
+    needs: semantic-release
+    if: needs.semantic-release.outputs.should_release == 'true'
+    uses: ./.github/workflows/tauri-build.yml
+    with:
+      tag: v${{ needs.semantic-release.outputs.new_version }}
+    secrets: inherit

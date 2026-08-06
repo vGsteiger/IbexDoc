@@ -1,10 +1,11 @@
+use super::download;
 use crate::error::AppError;
 use encoding_rs::UTF_8;
 use llama_cpp_2::context::params::LlamaContextParams;
 use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::model::params::LlamaModelParams;
-use llama_cpp_2::model::{AddBos, LlamaModel};
+use llama_cpp_2::model::{AddBos, LlamaChatMessage, LlamaChatTemplate, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
@@ -14,8 +15,10 @@ use std::time::Instant;
 
 /// Sentinel value for n_gpu_layers that offloads all layers to Metal GPU.
 const ALL_GPU_LAYERS: u32 = 999;
-/// Token context window size used for all inference calls.
-const N_CTX: usize = 8192;
+const MIN_CONTEXT_SIZE: usize = 16_384;
+const STANDARD_CONTEXT_SIZE: usize = 32_768;
+const LARGE_CONTEXT_SIZE: usize = 65_536;
+const PROMPT_BATCH_SIZE: u32 = 2_048;
 
 /// Performance metrics recorded after each generation call.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,6 +41,8 @@ pub struct LlmEngine {
     model: Option<LlamaModel>,
     model_path: PathBuf,
     model_name: String,
+    chat_template: LlamaChatTemplate,
+    context_size: usize,
     backend: LlamaBackend,
     last_stats: Mutex<Option<GenerationStats>>,
 }
@@ -78,12 +83,28 @@ impl LlmEngine {
 
         let model = LlamaModel::load_from_file(&backend, &model_path, &model_params)
             .map_err(|e| AppError::Llm(format!("Failed to load model: {e}")))?;
+        let chat_template = model.chat_template(None).map_err(|e| {
+            AppError::Llm(format!(
+                "Model '{}' has no usable embedded chat template: {e}",
+                model_name
+            ))
+        })?;
+        let native_context = model.n_ctx_train() as usize;
+        let ram = Self::total_ram();
+        let requested_context = runtime_context_for_ram(ram);
+        let context_size = if native_context == 0 {
+            requested_context
+        } else {
+            requested_context.min(native_context)
+        };
 
         Ok(Self {
             backend,
             model: Some(model),
             model_path,
             model_name,
+            chat_template,
+            context_size,
             last_stats: Mutex::new(None),
         })
     }
@@ -125,36 +146,53 @@ impl LlmEngine {
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
 
-        let prompt = format_chatml(system_prompt, user_message);
+        let prompt = self.format_chat_history(
+            system_prompt,
+            &[AgentMessage {
+                role: "user".to_string(),
+                content: user_message.to_string(),
+            }],
+        )?;
 
         // 1. Tokenise
         let tokens = model
             .str_to_token(&prompt, AddBos::Always)
             .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
 
-        // 2. Context (4 096-token window)
+        // 2. Context sized to the machine, with bounded prompt batches so long
+        // contexts do not require an equally large temporary compute buffer.
         let ctx_params = LlamaContextParams::default()
-            .with_n_ctx(NonZeroU32::new(N_CTX as u32))
-            .with_n_batch(N_CTX as u32);
+            .with_n_ctx(NonZeroU32::new(self.context_size as u32))
+            .with_n_batch(PROMPT_BATCH_SIZE);
         let mut ctx = model
             .new_context(&self.backend, ctx_params)
             .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
 
-        // 3. Decode prompt in one batch
+        // 3. Decode the prompt in bounded batches.
         let n_prompt = tokens.len();
-        if n_prompt >= N_CTX {
+        if n_prompt >= self.context_size {
             return Err(AppError::Llm(format!(
-                "Prompt too long ({n_prompt} tokens), exceeds context window ({N_CTX})"
+                "Prompt too long ({n_prompt} tokens), exceeds context window ({})",
+                self.context_size
             )));
         }
-        let mut batch = LlamaBatch::new(N_CTX, 1);
-        batch
-            .add_sequence(&tokens, 0, false)
-            .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
+        let mut batch = LlamaBatch::new(PROMPT_BATCH_SIZE as usize, 1);
 
         let wall_start = Instant::now();
-        ctx.decode(&mut batch)
-            .map_err(|e| AppError::Llm(format!("Failed to decode prompt: {e}")))?;
+        for (chunk_index, chunk) in tokens.chunks(PROMPT_BATCH_SIZE as usize).enumerate() {
+            batch.clear();
+            let start = chunk_index * PROMPT_BATCH_SIZE as usize;
+            for (offset, token) in chunk.iter().enumerate() {
+                let position = i32::try_from(start + offset)
+                    .map_err(|_| AppError::Llm("Prompt position exceeds i32".to_string()))?;
+                let needs_logits = start + offset + 1 == n_prompt;
+                batch
+                    .add(*token, position, &[0], needs_logits)
+                    .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
+            }
+            ctx.decode(&mut batch)
+                .map_err(|e| AppError::Llm(format!("Failed to decode prompt: {e}")))?;
+        }
         let gen_phase_start = Instant::now();
 
         // 4. Sampler chain: temp → top-k → top-p → dist (terminal)
@@ -196,7 +234,7 @@ impl LlmEngine {
             completion_tokens += 1;
 
             // Advance context with the new token
-            if n_cur + 1 >= N_CTX as i32 {
+            if n_cur + 1 >= self.context_size as i32 {
                 break;
             }
             batch.clear();
@@ -263,26 +301,36 @@ impl LlmEngine {
             .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
 
         let ctx_params = LlamaContextParams::default()
-            .with_n_ctx(NonZeroU32::new(N_CTX as u32))
-            .with_n_batch(N_CTX as u32);
+            .with_n_ctx(NonZeroU32::new(self.context_size as u32))
+            .with_n_batch(PROMPT_BATCH_SIZE);
         let mut ctx = model
             .new_context(&self.backend, ctx_params)
             .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
 
         let n_prompt = tokens.len();
-        if n_prompt >= N_CTX {
+        if n_prompt >= self.context_size {
             return Err(AppError::Llm(format!(
-                "Prompt too long ({n_prompt} tokens), exceeds context window ({N_CTX})"
+                "Prompt too long ({n_prompt} tokens), exceeds context window ({})",
+                self.context_size
             )));
         }
-        let mut batch = LlamaBatch::new(N_CTX, 1);
-        batch
-            .add_sequence(&tokens, 0, false)
-            .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
+        let mut batch = LlamaBatch::new(PROMPT_BATCH_SIZE as usize, 1);
 
         let wall_start = Instant::now();
-        ctx.decode(&mut batch)
-            .map_err(|e| AppError::Llm(format!("Failed to decode prompt: {e}")))?;
+        for (chunk_index, chunk) in tokens.chunks(PROMPT_BATCH_SIZE as usize).enumerate() {
+            batch.clear();
+            let start = chunk_index * PROMPT_BATCH_SIZE as usize;
+            for (offset, token) in chunk.iter().enumerate() {
+                let position = i32::try_from(start + offset)
+                    .map_err(|_| AppError::Llm("Prompt position exceeds i32".to_string()))?;
+                let needs_logits = start + offset + 1 == n_prompt;
+                batch
+                    .add(*token, position, &[0], needs_logits)
+                    .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
+            }
+            ctx.decode(&mut batch)
+                .map_err(|e| AppError::Llm(format!("Failed to decode prompt: {e}")))?;
+        }
         let gen_phase_start = Instant::now();
 
         let mut sampler = LlamaSampler::chain_simple([
@@ -321,7 +369,7 @@ impl LlmEngine {
 
             completion_tokens += 1;
 
-            if n_cur + 1 >= N_CTX as i32 {
+            if n_cur + 1 >= self.context_size as i32 {
                 break;
             }
             batch.clear();
@@ -357,8 +405,32 @@ impl LlmEngine {
     }
 
     /// Returns the context window size used for all inference calls.
-    pub fn context_size() -> usize {
-        N_CTX
+    pub fn context_size(&self) -> usize {
+        self.context_size
+    }
+
+    /// Format conversation history with the template embedded in the loaded GGUF.
+    /// This is required for non-ChatML families such as gpt-oss (Harmony) and Gemma.
+    pub fn format_chat_history(
+        &self,
+        system_prompt: &str,
+        messages: &[AgentMessage],
+    ) -> Result<String, AppError> {
+        let mut chat = Vec::with_capacity(messages.len() + 1);
+        chat.push(new_chat_message("system", system_prompt)?);
+        for message in messages {
+            let role = match message.role.as_str() {
+                "tool_call" => "assistant",
+                "tool_result" => "user",
+                role => role,
+            };
+            chat.push(new_chat_message(role, &message.content)?);
+        }
+        self.model
+            .as_ref()
+            .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?
+            .apply_chat_template(&self.chat_template, &chat, true)
+            .map_err(|e| AppError::Llm(format!("Failed to apply model chat template: {e}")))
     }
 
     /// Returns stats from the most recent generation call, if any.
@@ -404,53 +476,63 @@ impl LlmEngine {
 
     /// Choose the best model for the available RAM.
     pub fn recommended_model() -> ModelChoice {
-        let ram = Self::total_ram();
-        const GB: u64 = 1024 * 1024 * 1024;
-
-        if ram >= 32 * GB {
-            ModelChoice {
-                name: "Gemma 4 26B A4B MoE Q4_K_M".to_string(),
-                filename: "gemma-4-26B-A4B-it-Q4_K_M.gguf".to_string(),
-                size_bytes: 16 * GB,
-                reason: "32 GB+ RAM: Gemma 4 26B MoE für sehr gute Qualität".to_string(),
-            }
-        } else if ram >= 24 * GB {
-            ModelChoice {
-                name: "Qwen3-30B-A3B MoE Q4_K_M".to_string(),
-                filename: "Qwen3-30B-A3B-Q4_K_M.gguf".to_string(),
-                size_bytes: 18 * GB,
-                reason: "24–32 GB RAM: Qwen3 30B MoE für beste Qualität".to_string(),
-            }
-        } else if ram >= 18 * GB {
-            ModelChoice {
-                name: "Gemma 4 E4B Q8_0".to_string(),
-                filename: "gemma-4-E4B-it-Q8_0.gguf".to_string(),
-                size_bytes: 5 * GB,
-                reason: "18–24 GB RAM: Gemma 4 E4B für sehr gute Qualität".to_string(),
-            }
-        } else if ram >= 16 * GB {
-            ModelChoice {
-                name: "Qwen3-8B Q4_K_M".to_string(),
-                filename: "Qwen3-8B-Q4_K_M.gguf".to_string(),
-                size_bytes: 5 * GB,
-                reason: "16–18 GB RAM: Qwen3 8B für gute Qualität".to_string(),
-            }
-        } else {
-            ModelChoice {
-                name: "Phi-4 Mini Q4_K_M".to_string(),
-                filename: "Phi-4-mini-instruct-Q4_K_M.gguf".to_string(),
-                size_bytes: 3 * GB,
-                reason: "Unter 16 GB RAM: Phi-4 Mini für minimale Ressourcen".to_string(),
-            }
-        }
+        recommended_model_for_ram(Self::total_ram())
     }
 }
 
-fn format_chatml(system_prompt: &str, user_message: &str) -> String {
-    format!(
-        "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
-        system_prompt, user_message,
-    )
+fn recommended_model_for_ram(ram: u64) -> ModelChoice {
+    const GB: u64 = 1024 * 1024 * 1024;
+
+    let preferred_filename = if ram >= 32 * GB {
+        "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
+    } else if ram >= 24 * GB {
+        "Qwen3.6-27B-Q4_K_M.gguf"
+    } else if ram >= 18 * GB {
+        "gpt-oss-20b-MXFP4.gguf"
+    } else if ram >= 16 * GB {
+        "Qwen3-8B-Q4_K_M.gguf"
+    } else if ram >= 12 * GB {
+        "gemma-4-E4B-it-Q4_0.gguf"
+    } else {
+        "gemma-4-E2B-it-Q4_0.gguf"
+    };
+    let entry = download::find_model(preferred_filename)
+        .expect("recommended model must exist in the download catalog");
+    let active_context = runtime_context_for_ram(ram).min(entry.context_window_tokens as usize);
+
+    ModelChoice {
+        name: entry.name.to_string(),
+        filename: entry.filename.to_string(),
+        size_bytes: entry.size_bytes,
+        reason: format!(
+            "Empfohlen für {} GB RAM: {}, {}K aktiver / {}K nativer Kontext, {} Modellgröße",
+            entry.min_ram_gb,
+            entry.parameters,
+            active_context / 1024,
+            entry.context_window_tokens / 1024,
+            format_gib(entry.size_bytes)
+        ),
+    }
+}
+
+fn format_gib(bytes: u64) -> String {
+    format!("{:.1} GiB", bytes as f64 / (1024_f64.powi(3)))
+}
+
+fn runtime_context_for_ram(ram: u64) -> usize {
+    const GB: u64 = 1024 * 1024 * 1024;
+    if ram >= 48 * GB {
+        LARGE_CONTEXT_SIZE
+    } else if ram >= 24 * GB {
+        STANDARD_CONTEXT_SIZE
+    } else {
+        MIN_CONTEXT_SIZE
+    }
+}
+
+fn new_chat_message(role: &str, content: &str) -> Result<LlamaChatMessage, AppError> {
+    LlamaChatMessage::new(role.to_string(), content.to_string())
+        .map_err(|e| AppError::Llm(format!("Invalid chat message: {e}")))
 }
 
 /// A message in an agent conversation history.
@@ -460,22 +542,34 @@ pub struct AgentMessage {
     pub content: String,
 }
 
-/// Format a multi-turn conversation as a ChatML prompt.
-/// `role` values: "user", "assistant", "tool_call", "tool_result"
-/// Tool call/result messages are rendered as assistant/user turns.
-pub fn format_chatml_history(system_prompt: &str, messages: &[AgentMessage]) -> String {
-    let mut out = format!("<|im_start|>system\n{}<|im_end|>\n", system_prompt);
-    for msg in messages {
-        let chatml_role = match msg.role.as_str() {
-            "tool_call" => "assistant",
-            "tool_result" => "user",
-            other => other,
-        };
-        out.push_str(&format!(
-            "<|im_start|>{}\n{}<|im_end|>\n",
-            chatml_role, msg.content
-        ));
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recommendations_cover_memory_tiers() {
+        const GB: u64 = 1024 * 1024 * 1024;
+        let cases = [
+            (8, "gemma-4-E2B-it-Q4_0.gguf"),
+            (12, "gemma-4-E4B-it-Q4_0.gguf"),
+            (16, "Qwen3-8B-Q4_K_M.gguf"),
+            (18, "gpt-oss-20b-MXFP4.gguf"),
+            (24, "Qwen3.6-27B-Q4_K_M.gguf"),
+            (32, "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"),
+        ];
+
+        for (ram_gb, expected) in cases {
+            let choice = recommended_model_for_ram(ram_gb * GB);
+            assert_eq!(choice.filename, expected);
+            assert!(download::find_model(&choice.filename).is_some());
+        }
     }
-    out.push_str("<|im_start|>assistant\n");
-    out
+
+    #[test]
+    fn runtime_context_scales_with_available_memory() {
+        const GB: u64 = 1024 * 1024 * 1024;
+        assert_eq!(runtime_context_for_ram(16 * GB), MIN_CONTEXT_SIZE);
+        assert_eq!(runtime_context_for_ram(24 * GB), STANDARD_CONTEXT_SIZE);
+        assert_eq!(runtime_context_for_ram(48 * GB), LARGE_CONTEXT_SIZE);
+    }
 }

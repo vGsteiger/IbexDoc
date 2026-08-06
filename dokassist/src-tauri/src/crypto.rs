@@ -19,11 +19,12 @@ pub fn encrypt(key: &[u8; 32], plaintext: &[u8]) -> Result<Vec<u8>, AppError> {
     // Generate random 12-byte nonce
     let mut nonce_bytes = [0u8; 12];
     rand::rng().fill(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::try_from(nonce_bytes.as_slice())
+        .map_err(|_| AppError::Crypto("Invalid nonce length".to_string()))?;
 
     // Encrypt
     let ciphertext = cipher
-        .encrypt(nonce, plaintext)
+        .encrypt(&nonce, plaintext)
         .map_err(|e| AppError::Crypto(format!("Encryption failed: {}", e)))?;
 
     // Format: [nonce || ciphertext+tag]
@@ -43,11 +44,12 @@ pub fn decrypt(key: &[u8; 32], ciphertext: &[u8]) -> Result<Vec<u8>, AppError> {
     let cipher = Aes256Gcm::new(key.into());
 
     // Extract nonce (first 12 bytes)
-    let nonce = Nonce::from_slice(&ciphertext[..12]);
+    let nonce = Nonce::try_from(&ciphertext[..12])
+        .map_err(|_| AppError::Crypto("Invalid nonce length".to_string()))?;
 
     // Decrypt remainder (ciphertext + tag)
     let plaintext = cipher
-        .decrypt(nonce, &ciphertext[12..])
+        .decrypt(&nonce, &ciphertext[12..])
         .map_err(|e| AppError::Crypto(format!("Decryption failed: {}", e)))?;
 
     Ok(plaintext)

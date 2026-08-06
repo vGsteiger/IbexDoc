@@ -3,25 +3,6 @@ use crate::constants::{DB_KEY_ACCOUNT, FS_KEY_ACCOUNT};
 use crate::error::AppError;
 
 #[cfg(target_os = "macos")]
-use security_framework::passwords::{
-    delete_generic_password, get_generic_password, set_generic_password,
-};
-#[cfg(target_os = "macos")]
-use security_framework_sys::access_control::kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
-#[cfg(target_os = "macos")]
-use security_framework_sys::base::errSecItemNotFound;
-#[cfg(target_os = "macos")]
-use security_framework_sys::item::{
-    kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword, kSecReturnAttributes,
-    kSecValueData,
-};
-// kSecAttrAccessible (the dict key for the accessibility level) is not exported
-// by security_framework_sys, so we declare it directly from Security.framework.
-#[cfg(target_os = "macos")]
-extern "C" {
-    static kSecAttrAccessible: core_foundation_sys::string::CFStringRef;
-}
-#[cfg(target_os = "macos")]
 use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
 #[cfg(target_os = "macos")]
 use core_foundation::boolean::CFBoolean;
@@ -32,17 +13,33 @@ use core_foundation::dictionary::CFDictionary;
 #[cfg(target_os = "macos")]
 use core_foundation::string::CFString;
 #[cfg(target_os = "macos")]
+use security_framework::passwords::{delete_generic_password, get_generic_password};
+#[cfg(target_os = "macos")]
+use security_framework_sys::access_control::kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
+#[cfg(target_os = "macos")]
+use security_framework_sys::base::errSecItemNotFound;
+#[cfg(target_os = "macos")]
+use security_framework_sys::item::{
+    kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword, kSecReturnAttributes,
+    kSecValueData,
+};
+#[cfg(target_os = "macos")]
 use security_framework_sys::keychain_item::{SecItemAdd, SecItemCopyMatching, SecItemDelete};
+
+#[cfg(target_os = "macos")]
+extern "C" {
+    // `kSecAttrAccessible` is not exported by security_framework_sys.
+    static kSecAttrAccessible: core_foundation_sys::string::CFStringRef;
+}
 
 /// Store a master key in macOS Keychain with device-bound protection.
 ///
-/// Uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`: the item is accessible
-/// only while the device is unlocked and is never synced to iCloud.
-///
-/// Biometric gating is enforced at the application level via `touch_id::authenticate`
-/// (LocalAuthentication framework) rather than via a `SecAccessControl` object.
-/// The `SecAccessControl` approach requires `keychain-access-groups` entitlements
-/// that are only available with a paid Apple Developer signing identity.
+/// The key is accessible only while the device is unlocked and is never synced
+/// to iCloud. Touch ID/device-password authentication is enforced by
+/// `touch_id::authenticate` before this key is read. A Keychain
+/// `SecAccessControl` policy is deliberately not used here: it returns
+/// `errSecMissingEntitlement` (-34018) for this application's current signing
+/// configuration.
 #[cfg(target_os = "macos")]
 pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppError> {
     // Delete any existing item first using a raw SecItemDelete query so we match
@@ -107,7 +104,13 @@ pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppErro
 pub fn retrieve_key(service: &str, account: &str) -> Result<Vec<u8>, AppError> {
     get_generic_password(service, account)
         .map(|p| p.to_vec())
-        .map_err(|e| AppError::Keychain(format!("Failed to retrieve key: {}", e)))
+        .map_err(|e| {
+            if e.code() == errSecItemNotFound {
+                AppError::KeychainItemMissing
+            } else {
+                AppError::Keychain(format!("Failed to retrieve key: {}", e))
+            }
+        })
 }
 
 /// Delete a key from Keychain.
@@ -115,33 +118,6 @@ pub fn retrieve_key(service: &str, account: &str) -> Result<Vec<u8>, AppError> {
 pub fn delete_key(service: &str, account: &str) -> Result<(), AppError> {
     delete_generic_password(service, account)
         .map_err(|e| AppError::Keychain(format!("Failed to delete key: {}", e)))
-}
-
-/// Store non-sensitive metadata in Keychain **without** biometric protection.
-///
-/// Uses the standard `set_generic_password` API which stores items with
-/// `kSecAttrAccessibleAfterFirstUnlock` accessibility — readable after device boot
-/// without Touch ID. Intended for data like recovery attempt counters that must be
-/// readable before the user has authenticated.
-#[cfg(target_os = "macos")]
-pub fn store_metadata(service: &str, account: &str, data: &[u8]) -> Result<(), AppError> {
-    set_generic_password(service, account, data)
-        .map_err(|e| AppError::Keychain(format!("Failed to store metadata: {}", e)))
-}
-
-/// Retrieve non-sensitive metadata from Keychain without triggering Touch ID.
-#[cfg(target_os = "macos")]
-pub fn retrieve_metadata(service: &str, account: &str) -> Result<Vec<u8>, AppError> {
-    get_generic_password(service, account)
-        .map(|p| p.to_vec())
-        .map_err(|e| AppError::Keychain(format!("Failed to retrieve metadata: {}", e)))
-}
-
-/// Delete non-sensitive metadata from Keychain.
-#[cfg(target_os = "macos")]
-pub fn delete_metadata(service: &str, account: &str) -> Result<(), AppError> {
-    delete_generic_password(service, account)
-        .map_err(|e| AppError::Keychain(format!("Failed to delete metadata: {}", e)))
 }
 
 /// Check if both master keys exist in the Keychain WITHOUT triggering Touch ID.
@@ -210,27 +186,6 @@ pub fn retrieve_key(_service: &str, _account: &str) -> Result<Vec<u8>, AppError>
 
 #[cfg(not(target_os = "macos"))]
 pub fn delete_key(_service: &str, _account: &str) -> Result<(), AppError> {
-    Err(AppError::Keychain(
-        "Keychain operations are only supported on macOS".to_string(),
-    ))
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn store_metadata(_service: &str, _account: &str, _data: &[u8]) -> Result<(), AppError> {
-    Err(AppError::Keychain(
-        "Keychain operations are only supported on macOS".to_string(),
-    ))
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn retrieve_metadata(_service: &str, _account: &str) -> Result<Vec<u8>, AppError> {
-    Err(AppError::Keychain(
-        "Keychain operations are only supported on macOS".to_string(),
-    ))
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn delete_metadata(_service: &str, _account: &str) -> Result<(), AppError> {
     Err(AppError::Keychain(
         "Keychain operations are only supported on macOS".to_string(),
     ))

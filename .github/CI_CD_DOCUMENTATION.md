@@ -13,7 +13,7 @@ The project uses GitHub Actions for continuous integration and deployment with m
 **Triggers:** Push to main/develop/claude branches, PRs to main/develop
 
 **Jobs:**
-- **Test Suite** - Single job running on macOS with stable and MSRV (1.88.0)
+- **Test Suite** - Single job running on macOS with stable and MSRV (1.95.0)
   - `cargo check --all-targets` - Build check
   - `cargo test --lib` - Unit tests
   - Example run (`cargo run --example test_audit`, continue-on-error)
@@ -21,7 +21,7 @@ The project uses GitHub Actions for continuous integration and deployment with m
   - `cargo fmt -- --check` - Format checking (stable only)
 
 **Key Features:**
-- Matrix testing across Rust versions (stable and MSRV 1.88.0)
+- Matrix testing across Rust versions (stable and MSRV 1.95.0)
 - Comprehensive caching for faster builds
 - All checks run in a single job for efficiency
 - macOS-specific testing environment
@@ -37,7 +37,8 @@ The project uses GitHub Actions for continuous integration and deployment with m
 **Key Features:**
 - pnpm dependency management
 - Build artifact verification
-- Caching for node_modules via pnpm store
+- Built-in pnpm store caching in every frontend quality job
+- Superseded runs are cancelled when a PR receives a newer commit
 
 ### 3. Security Audit (`security.yml`)
 
@@ -51,6 +52,7 @@ The project uses GitHub Actions for continuous integration and deployment with m
 
 **Key Features:**
 - Automated daily security scans
+- Cached audit binaries avoid compiling `cargo-audit` and `cargo-deny` on every run
 - SARIF report upload to GitHub Security tab
 - License compliance checking (MIT, Apache-2.0, BSD, etc.)
 - Advisory database checks against RustSec
@@ -85,20 +87,17 @@ The project uses GitHub Actions for continuous integration and deployment with m
 ### 6. Tauri Build (`tauri-build.yml`)
 
 **Triggers:**
-1. Direct push of version tags (v*)
-2. Successful completion of Release workflow (workflow_run event)
+1. Called exactly once by the Release workflow with the newly-created tag
+2. Manual dispatch with an explicit existing tag for recovery or rebuilds
 
 **Jobs:**
-- **Tauri Build** - Cross-platform Tauri app builds
-  - macOS ARM64 (Apple Silicon)
-  - macOS x86_64 (Intel)
-  - Linux x86_64 (AppImage + Deb)
+- **Tauri Build** - Signed macOS ARM64 (Apple Silicon) app and updater bundles
 - **Release** - Upload artifacts to GitHub release
 
 **Key Features:**
-- Multi-platform build matrix
-- Artifact uploads (DMG, AppImage, Deb packages)
-- Dual trigger paths for flexibility
+- Explicit target build matrix
+- DMG and signed updater artifact uploads
+- A single release trigger prevents duplicate builds and accidental rebuilds of the latest tag
 - Signing support (when keys are configured)
 
 ## Caching Strategy
@@ -106,23 +105,19 @@ The project uses GitHub Actions for continuous integration and deployment with m
 All workflows use intelligent caching:
 
 1. **Cargo Registry & Index** - Dependency metadata
-2. **Cargo Build** - Compiled artifacts
-3. **pnpm Store** - Node modules
+2. **Cargo Build** - Compiled test, coverage, and Tauri dependencies keyed by toolchain and lockfile
+3. **pnpm Store** - Package downloads resolved through `setup-node` using the lockfile
 4. **Platform-specific** - Different caches per OS
 
 This reduces build times from ~15 minutes to ~3-5 minutes for cached builds.
 
 ## Platform Support
 
-### Linux (Ubuntu 22.04)
-- ✅ Build and packaging (AppImage, Deb)
-- ✅ Supported for application builds via Tauri
-
 ### macOS (14 & Latest)
 - ✅ Full test suite including platform-specific features
 - ✅ DMG and App bundle creation
 - ✅ Metal GPU support for LLM inference
-- ✅ Both Intel and Apple Silicon targets
+- ✅ Apple Silicon target
 - ✅ Keychain integration
 
 ## Required Secrets (Optional)

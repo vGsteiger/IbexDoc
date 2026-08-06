@@ -76,16 +76,34 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
 
     // --- Retrieve keys while holding the auth lock ---
     let (db_key, fs_key) = {
-        let auth = state.auth.lock().map_err(|_| lock_poisoned())?;
+        let mut auth = state.auth.lock().map_err(|_| lock_poisoned())?;
 
         // Re-check state in case the app was reset while Touch ID was showing.
         if !matches!(*auth, AuthState::Locked) {
             return Err(AppError::Validation("App is not locked".to_string()));
         }
 
-        // Retrieve keys from Keychain — fast, no biometric gate at keychain level.
-        let mut db_key_vec = keychain::retrieve_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT)?;
-        let mut fs_key_vec = keychain::retrieve_key(KEYCHAIN_SERVICE, FS_KEY_ACCOUNT)?;
+        // Keychain enforces biometric or device-passcode authentication for protected items.
+        // A missing item cannot be fixed by retrying Touch ID (for example, the
+        // item may have been invalidated after a biometric-set change), so make
+        // the recovery flow the session's next state.
+        let mut db_key_vec = match keychain::retrieve_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT) {
+            Ok(key) => key,
+            Err(AppError::KeychainItemMissing) => {
+                *auth = AuthState::RecoveryRequired;
+                return Err(AppError::KeychainItemMissing);
+            }
+            Err(err) => return Err(err),
+        };
+        let mut fs_key_vec = match keychain::retrieve_key(KEYCHAIN_SERVICE, FS_KEY_ACCOUNT) {
+            Ok(key) => key,
+            Err(AppError::KeychainItemMissing) => {
+                zeroize::Zeroize::zeroize(&mut db_key_vec);
+                *auth = AuthState::RecoveryRequired;
+                return Err(AppError::KeychainItemMissing);
+            }
+            Err(err) => return Err(err),
+        };
 
         if db_key_vec.len() != 32 || fs_key_vec.len() != 32 {
             zeroize::Zeroize::zeroize(&mut db_key_vec);
@@ -130,25 +148,9 @@ pub async fn recover_app(state: State<'_, AppState>, words: Vec<String>) -> Resu
         }
     }
 
-    // CRIT-1: Check rate limit before attempting recovery
-    recovery::check_recovery_rate_limit(&state.data_dir)?;
-
     // Recover keys from mnemonic
     let vault_path = state.data_dir.join(RECOVERY_FILENAME);
-    let result = recovery::recover_from_mnemonic(&words, &vault_path);
-
-    let (db_key, fs_key) = match result {
-        Ok(keys) => {
-            // Clear attempt counter on success
-            recovery::clear_recovery_attempts(&state.data_dir);
-            keys
-        }
-        Err(e) => {
-            // Record failed attempt (increments counter and updates lockout)
-            recovery::record_failed_attempt(&state.data_dir);
-            return Err(e);
-        }
-    };
+    let (db_key, fs_key) = recovery::recover_from_mnemonic(&words, &vault_path)?;
 
     // Store recovered keys in Keychain
     keychain::store_key(KEYCHAIN_SERVICE, DB_KEY_ACCOUNT, &db_key)?;

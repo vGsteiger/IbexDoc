@@ -1,7 +1,8 @@
 //! Agentic loop: the LLM can call tools (patient data, calendar, search, reports)
 //! and converses with the user over multiple turns.
 
-use super::engine::{format_chatml_history, AgentMessage, LlmEngine};
+use super::engine::{AgentMessage, LlmEngine};
+use super::utf8;
 use crate::database::DbPool;
 use crate::error::AppError;
 use serde::{Deserialize, Serialize};
@@ -20,11 +21,6 @@ const PROBE_TEMP: f32 = 0.1;
 const ANSWER_TEMP: f32 = 0.7;
 /// Maximum chars of a tool result that are fed back into the LLM.
 const TOOL_RESULT_TRIM: usize = 4_000;
-/// Token context window (must match engine.rs N_CTX).
-const N_CTX: usize = 8192;
-/// Trigger summarization when estimated prompt tokens exceed this threshold.
-/// Leaves headroom for PROBE_MAX_TOKENS + ANSWER_MAX_TOKENS.
-const SUMMARIZE_THRESHOLD: usize = 3072;
 /// Tokens budget for the summarization call itself.
 const SUMMARY_MAX_TOKENS: usize = 512;
 /// Rough estimate: 1 token ≈ 3 UTF-8 bytes (conservative for German medical text).
@@ -86,33 +82,33 @@ fn build_system_prompt(scope: &AgentScope, patient_context: Option<&str>) -> Str
         AgentScope::Patient { .. } => concat!(
             "get_patient(patient_id: string) - Holt Patientendaten für eine gegebene ID.\n",
             "get_calendar_events(start?: string, end?: string, patient_id?: string) - Listet Therapiesitzungen. Datum im Format YYYY-MM-DD.\n",
-            "create_calendar_event(patient_id: string, date: string, session_type: string, duration_minutes: number, notes?: string) - Erstellt eine neue Therapiesitzung.\n",
+            "create_calendar_event(patient_id: string, date: string, session_type: string, duration_minutes: number, notes?: string) - Erstellt einen Vorschlag für eine neue Therapiesitzung; dieser wird erst nach ausdrücklicher Bestätigung durch den Behandler gespeichert.\n",
             "list_diagnoses(patient_id: string) - Listet ICD-10-Diagnosen des Patienten.\n",
-            "create_diagnosis(patient_id: string, icd10_code: string, description: string, diagnosed_date: string, status?: string, notes?: string) - Erstellt eine neue Diagnose. status: active | resolved | chronic.\n",
+            "create_diagnosis(patient_id: string, icd10_code: string, description: string, diagnosed_date: string, status?: string, notes?: string) - Erstellt nur einen Diagnosevorschlag; Speichern erfordert ausdrückliche Bestätigung durch den Behandler. status: active | resolved | chronic.\n",
             "list_medications(patient_id: string) - Listet aktuelle Medikationen des Patienten.\n",
-            "create_medication(patient_id: string, substance: string, dosage: string, frequency: string, start_date: string, notes?: string) - Dokumentiert ein Medikament (start_date: YYYY-MM-DD).\n",
+            "create_medication(patient_id: string, substance: string, dosage: string, frequency: string, start_date: string, notes?: string) - Erstellt nur einen Medikationsvorschlag; Speichern erfordert ausdrückliche Bestätigung durch den Behandler (start_date: YYYY-MM-DD).\n",
             "compare_medications(current_substance_id: string, replacement_substance_id: string) - Vergleicht zwei Medikamente anhand ihrer Kompendium-IDs. Gibt detaillierte Informationen zu beiden Medikamenten zurück (Indikation, Nebenwirkungen, Kontraindikationen) für eine fundierte Entscheidungsfindung bei Medikamentenwechsel.\n",
-            "draft_email(patient_id: string, recipient_email: string, subject: string, body: string) - Erstellt einen E-Mail-Entwurf (Status: draft, wird nicht gesendet). Falls die E-Mail-Adresse des Patienten fehlt (null), rufe dieses Tool NICHT auf – weise den Benutzer stattdessen darauf hin, die E-Mail-Adresse zuerst in den Patientendaten zu ergänzen.\n",
+            "draft_email(patient_id: string, recipient_email: string, subject: string, body: string) - Erstellt nur einen E-Mail-Vorschlag; Speichern als Entwurf erfordert ausdrückliche Bestätigung durch den Behandler. Falls die E-Mail-Adresse des Patienten fehlt (null), rufe dieses Tool NICHT auf – weise den Benutzer stattdessen darauf hin, die E-Mail-Adresse zuerst in den Patientendaten zu ergänzen.\n",
             "list_treatment_plans(patient_id: string) - Listet Behandlungspläne des Patienten.\n",
             "search(query: string) - Volltextsuche über Patienten, Diagnosen, Sitzungen und Berichte.\n",
             "search_literature(query: string) - Semantische Suche in Fachliteratur (z.B. Medikamentenrichtlinien, Behandlungsleitlinien). Gibt relevante Textausschnitte zurück.\n",
-            "write_report(patient_id: string, report_type: string, session_notes: string) - Generiert einen klinischen Bericht. report_type: Befundbericht | Verlaufsbericht | Ueberweisungsschreiben.",
+            "write_report(patient_id: string, report_type: string, session_notes: string) - Generiert nur einen Berichtsvorschlag; Speichern erfordert ausdrückliche Bestätigung durch den Behandler. report_type: Befundbericht | Verlaufsbericht | Ueberweisungsschreiben.",
         ),
         AgentScope::Global => concat!(
             "get_patient(patient_id: string) - Holt Patientendaten für eine gegebene ID.\n",
             "list_patients() - Listet alle Patienten auf.\n",
             "get_calendar_events(start?: string, end?: string, patient_id?: string) - Listet Therapiesitzungen. Datum im Format YYYY-MM-DD.\n",
-            "create_calendar_event(patient_id: string, date: string, session_type: string, duration_minutes: number, notes?: string) - Erstellt eine neue Therapiesitzung.\n",
+            "create_calendar_event(patient_id: string, date: string, session_type: string, duration_minutes: number, notes?: string) - Erstellt einen Vorschlag für eine neue Therapiesitzung; dieser wird erst nach ausdrücklicher Bestätigung durch den Behandler gespeichert.\n",
             "list_diagnoses(patient_id: string) - Listet ICD-10-Diagnosen des Patienten.\n",
-            "create_diagnosis(patient_id: string, icd10_code: string, description: string, diagnosed_date: string, status?: string, notes?: string) - Erstellt eine neue Diagnose. status: active | resolved | chronic.\n",
+            "create_diagnosis(patient_id: string, icd10_code: string, description: string, diagnosed_date: string, status?: string, notes?: string) - Erstellt nur einen Diagnosevorschlag; Speichern erfordert ausdrückliche Bestätigung durch den Behandler. status: active | resolved | chronic.\n",
             "list_medications(patient_id: string) - Listet aktuelle Medikationen des Patienten.\n",
-            "create_medication(patient_id: string, substance: string, dosage: string, frequency: string, start_date: string, notes?: string) - Dokumentiert ein Medikament (start_date: YYYY-MM-DD).\n",
+            "create_medication(patient_id: string, substance: string, dosage: string, frequency: string, start_date: string, notes?: string) - Erstellt nur einen Medikationsvorschlag; Speichern erfordert ausdrückliche Bestätigung durch den Behandler (start_date: YYYY-MM-DD).\n",
             "compare_medications(current_substance_id: string, replacement_substance_id: string) - Vergleicht zwei Medikamente anhand ihrer Kompendium-IDs. Gibt detaillierte Informationen zu beiden Medikamenten zurück (Indikation, Nebenwirkungen, Kontraindikationen) für eine fundierte Entscheidungsfindung bei Medikamentenwechsel.\n",
-            "draft_email(patient_id: string, recipient_email: string, subject: string, body: string) - Erstellt einen E-Mail-Entwurf (Status: draft, wird nicht gesendet). Falls die E-Mail-Adresse des Patienten fehlt (null), rufe dieses Tool NICHT auf – weise den Benutzer stattdessen darauf hin, die E-Mail-Adresse zuerst in den Patientendaten zu ergänzen.\n",
+            "draft_email(patient_id: string, recipient_email: string, subject: string, body: string) - Erstellt nur einen E-Mail-Vorschlag; Speichern als Entwurf erfordert ausdrückliche Bestätigung durch den Behandler. Falls die E-Mail-Adresse des Patienten fehlt (null), rufe dieses Tool NICHT auf – weise den Benutzer stattdessen darauf hin, die E-Mail-Adresse zuerst in den Patientendaten zu ergänzen.\n",
             "list_treatment_plans(patient_id: string) - Listet Behandlungspläne des Patienten.\n",
             "search(query: string) - Volltextsuche über Patienten, Diagnosen, Sitzungen und Berichte.\n",
             "search_literature(query: string) - Semantische Suche in Fachliteratur (z.B. Medikamentenrichtlinien, Behandlungsleitlinien). Gibt relevante Textausschnitte zurück.\n",
-            "write_report(patient_id: string, report_type: string, session_notes: string) - Generiert einen klinischen Bericht. report_type: Befundbericht | Verlaufsbericht | Ueberweisungsschreiben.",
+            "write_report(patient_id: string, report_type: string, session_notes: string) - Generiert nur einen Berichtsvorschlag; Speichern erfordert ausdrückliche Bestätigung durch den Behandler. report_type: Befundbericht | Verlaufsbericht | Ueberweisungsschreiben.",
         ),
     };
 
@@ -189,15 +185,15 @@ fn summarize_history(
         .join("\n");
 
     let summary_prompt = format!(
-        "{system_prompt}\n\n\
-         Fasse die folgende Gesprächshistorie in maximal 3 Sätzen auf Deutsch zusammen. \
+        "Fasse die folgende Gesprächshistorie in maximal 3 Sätzen auf Deutsch zusammen. \
          Antworte NUR mit der Zusammenfassung, ohne Einleitung:\n\n{digest}"
     );
 
     let mut summary = String::new();
     if engine
-        .generate_streaming_raw(
-            &format!("<|im_start|>system\n{summary_prompt}<|im_end|>\n<|im_start|>assistant\n"),
+        .generate_streaming(
+            system_prompt,
+            &summary_prompt,
             SUMMARY_MAX_TOKENS,
             0.3,
             |token| {
@@ -252,18 +248,22 @@ pub fn run_agent_loop(
     });
 
     let mut tool_calls_made: Vec<ExecutedToolCall> = Vec::new();
+    let summarize_threshold = engine
+        .context_size()
+        .saturating_sub(PROBE_MAX_TOKENS + ANSWER_MAX_TOKENS + 512);
 
     for iteration in 0..MAX_ITERATIONS {
         // Summarize history if it is getting too large to fit in the context window
-        let estimated_tokens = estimate_tokens(&format_chatml_history(&system_prompt, &history));
-        if estimated_tokens > SUMMARIZE_THRESHOLD {
+        let formatted = engine.format_chat_history(&system_prompt, &history)?;
+        let estimated_tokens = estimate_tokens(&formatted);
+        if estimated_tokens > summarize_threshold {
             log::warn!(
                 "Agent: prompt ~{estimated_tokens} tokens nears context limit, summarizing history"
             );
             history = summarize_history(engine, &system_prompt, history);
         }
 
-        let prompt = format_chatml_history(&system_prompt, &history);
+        let prompt = engine.format_chat_history(&system_prompt, &history)?;
 
         // Probe: collect output to check for tool call
         let mut probe_output = String::new();
@@ -294,10 +294,7 @@ pub fn run_agent_loop(
                 Ok(val) => {
                     let s = val.to_string();
                     if s.len() > TOOL_RESULT_TRIM {
-                        let end = (0..=TOOL_RESULT_TRIM)
-                            .rev()
-                            .find(|&i| s.is_char_boundary(i))
-                            .unwrap_or(0);
+                        let end = utf8::find_boundary_backward(&s, TOOL_RESULT_TRIM);
                         s[..end].to_string()
                     } else {
                         s
@@ -336,7 +333,7 @@ pub fn run_agent_loop(
         } else {
             // No tool call — this is the final answer. Stream it.
             // The probe already has partial output; start fresh for full answer.
-            let final_prompt = format_chatml_history(&system_prompt, &history);
+            let final_prompt = engine.format_chat_history(&system_prompt, &history)?;
             let mut final_answer = String::new();
 
             engine.generate_streaming_raw(
@@ -363,7 +360,7 @@ pub fn run_agent_loop(
     }
 
     // Exceeded MAX_ITERATIONS — force a final answer from accumulated history
-    let final_prompt = format_chatml_history(&system_prompt, &history);
+    let final_prompt = engine.format_chat_history(&system_prompt, &history)?;
     let mut final_answer = String::new();
     engine.generate_streaming_raw(&final_prompt, ANSWER_MAX_TOKENS, ANSWER_TEMP, |token| {
         final_answer.push_str(token);
