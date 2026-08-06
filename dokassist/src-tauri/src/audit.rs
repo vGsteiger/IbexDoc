@@ -323,12 +323,14 @@ pub fn log(
 }
 
 fn chain_rows(conn: &Connection) -> Result<Vec<ChainRow>, AppError> {
-    let mut stmt = conn.prepare(
-        "SELECT id, sequence, timestamp, action, entity_type, entity_id, details,
-                previous_mac, entry_mac
-         FROM audit_log
-         ORDER BY sequence ASC",
-    )?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, sequence, timestamp, action, entity_type, entity_id, details,
+                    previous_mac, entry_mac
+             FROM audit_log
+             ORDER BY sequence ASC",
+        )
+        .map_err(|err| AppError::AuditIntegrity(format!("failed to read audit chain rows: {err}")))?;
     let rows = stmt
         .query_map([], |row| {
             Ok(ChainRow {
@@ -342,8 +344,10 @@ fn chain_rows(conn: &Connection) -> Result<Vec<ChainRow>, AppError> {
                 previous_mac: row.get(7)?,
                 entry_mac: row.get(8)?,
             })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        })
+        .map_err(|err| AppError::AuditIntegrity(format!("failed to read audit chain rows: {err}")))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| AppError::AuditIntegrity(format!("failed to read audit chain rows: {err}")))?;
     Ok(rows)
 }
 
@@ -371,18 +375,6 @@ pub fn verify_chain(
             )));
         }
 
-        verify_entry_mac(
-            mac_key,
-            row.id,
-            row.sequence,
-            &row.timestamp,
-            &row.action,
-            &row.entity_type,
-            row.entity_id.as_deref(),
-            row.details.as_deref(),
-            &row.previous_mac,
-            &row.entry_mac,
-        )?;
         let expected_mac = compute_entry_mac(
             mac_key,
             row.id,
@@ -394,6 +386,13 @@ pub fn verify_chain(
             row.details.as_deref(),
             &row.previous_mac,
         )?;
+        ring::constant_time::verify_slices_are_equal(&expected_mac[..], row.entry_mac.as_slice())
+            .map_err(|_| {
+                AppError::AuditIntegrity(format!(
+                    "entry MAC mismatch at sequence {}",
+                    row.sequence
+                ))
+            })?;
 
         previous_mac = expected_mac;
         expected_sequence += 1;

@@ -59,10 +59,17 @@ pub fn store_key(service: &str, account: &str, key: &[u8]) -> Result<(), AppErro
 
     // Updating in place is atomic from the caller's perspective and avoids a
     // delete/add window where a crash could temporarily remove an audit checkpoint.
-    let update = CFDictionary::<CFString, _>::from_CFType_pairs(&[(
-        unsafe { CFString::wrap_under_get_rule(kSecValueData) },
-        CFData::from_buffer(key).as_CFType(),
-    )]);
+    let update = CFDictionary::<CFString, _>::from_CFType_pairs(&[
+        (
+            unsafe { CFString::wrap_under_get_rule(kSecValueData) },
+            CFData::from_buffer(key).as_CFType(),
+        ),
+        (
+            unsafe { CFString::wrap_under_get_rule(kSecAttrAccessible) },
+            unsafe { CFString::wrap_under_get_rule(kSecAttrAccessibleWhenUnlockedThisDeviceOnly) }
+                .as_CFType(),
+        ),
+    ]);
     let update_status = unsafe {
         SecItemUpdate(
             match_query.as_concrete_TypeRef(),
