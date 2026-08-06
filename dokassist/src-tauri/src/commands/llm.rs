@@ -3,7 +3,7 @@ use crate::llm::{
     self, download, embed::EmbedEngine, EngineStatus, LetterType, LlmEngine, ModelChoice,
     ReportType, SYSTEM_PROMPT_DE, SYSTEM_PROMPT_FR,
 };
-use crate::state::{AppState, AuthState};
+use crate::state::{llm_lock_poisoned, AppState, AuthState};
 use serde::Serialize;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
@@ -58,7 +58,7 @@ fn check_auth(state: &AppState) -> Result<(), AppError> {
 /// Return the current engine status (safe to call before a model is loaded).
 #[tauri::command]
 pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatus, AppError> {
-    let llm = state.llm.lock().unwrap();
+    let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
     match &*llm {
         Some(engine) => Ok(engine.status()),
         None => {
@@ -131,7 +131,7 @@ pub async fn load_model(
         .await
         .map_err(|e| AppError::Llm(format!("spawn_blocking error: {e}")))??;
 
-    *state.llm.lock().unwrap() = Some(Arc::new(engine));
+    *state.llm.lock().map_err(|_| llm_lock_poisoned())? = Some(Arc::new(engine));
     Ok(())
 }
 
@@ -148,7 +148,7 @@ pub async fn extract_file_metadata(
 
     // Acquire the engine handle under the mutex, but do not run inference while holding the lock.
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         let engine = llm
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
@@ -200,7 +200,7 @@ pub async fn generate_report(
 
     // Acquire the engine handle under the mutex, but do not run inference while holding the lock.
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         let engine = llm
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
@@ -291,7 +291,7 @@ pub async fn improve_text(
 
     // Acquire the engine handle under the mutex, but do not run inference while holding the lock.
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         let engine = llm
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
@@ -328,7 +328,7 @@ pub async fn generate_session_summary(
     check_auth(&state)?;
 
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         let engine = llm
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
@@ -389,7 +389,7 @@ pub async fn generate_letter(
     }
 
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         let engine = llm
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
@@ -449,7 +449,7 @@ pub async fn query_patient_history(
 
     // Acquire the engine handle under the mutex, but do not run inference while holding the lock.
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         let engine = llm
             .as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;

@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use crate::llm::{download, ModelChoice};
 use crate::models::model::{self, Model, TaskModel, TaskType};
-use crate::state::AppState;
+use crate::state::{llm_lock_poisoned, AppState};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 use uuid::Uuid;
@@ -31,7 +31,7 @@ pub async fn list_models(state: State<'_, AppState>) -> Result<Vec<ModelInfo>, A
 
     // Check which model is currently loaded
     let loaded_filename = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         llm.as_ref()
             .and_then(|engine| engine.status().downloaded_filename)
     };
@@ -71,7 +71,7 @@ pub async fn get_model_info(
     let m = model::get_model(&conn, &model_id)?;
 
     let loaded_filename = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         llm.as_ref()
             .and_then(|engine| engine.status().downloaded_filename)
     };
@@ -154,7 +154,7 @@ pub async fn delete_model(state: State<'_, AppState>, model_id: String) -> Resul
         let model = model::get_model(&conn, &model_id)?;
 
         let is_loaded = {
-            let llm = state.llm.lock().unwrap();
+            let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
             llm.as_ref()
                 .and_then(|engine| engine.status().downloaded_filename)
                 .as_ref()
