@@ -237,6 +237,9 @@ export interface AvailableModel {
   size_bytes: number;
   min_ram_gb: number;
   description: string;
+  context_window_tokens: number;
+  parameters: string;
+  license: string;
   disclaimer: string | null;
   is_downloaded: boolean;
   model_id: string | null;

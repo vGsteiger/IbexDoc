@@ -1,7 +1,7 @@
 //! Agentic loop: the LLM can call tools (patient data, calendar, search, reports)
 //! and converses with the user over multiple turns.
 
-use super::engine::{format_chatml_history, AgentMessage, LlmEngine};
+use super::engine::{AgentMessage, LlmEngine};
 use super::utf8;
 use crate::database::DbPool;
 use crate::error::AppError;
@@ -21,11 +21,6 @@ const PROBE_TEMP: f32 = 0.1;
 const ANSWER_TEMP: f32 = 0.7;
 /// Maximum chars of a tool result that are fed back into the LLM.
 const TOOL_RESULT_TRIM: usize = 4_000;
-/// Token context window (must match engine.rs N_CTX).
-const N_CTX: usize = 8192;
-/// Trigger summarization when estimated prompt tokens exceed this threshold.
-/// Leaves headroom for PROBE_MAX_TOKENS + ANSWER_MAX_TOKENS.
-const SUMMARIZE_THRESHOLD: usize = 3072;
 /// Tokens budget for the summarization call itself.
 const SUMMARY_MAX_TOKENS: usize = 512;
 /// Rough estimate: 1 token ≈ 3 UTF-8 bytes (conservative for German medical text).
@@ -190,15 +185,15 @@ fn summarize_history(
         .join("\n");
 
     let summary_prompt = format!(
-        "{system_prompt}\n\n\
-         Fasse die folgende Gesprächshistorie in maximal 3 Sätzen auf Deutsch zusammen. \
+        "Fasse die folgende Gesprächshistorie in maximal 3 Sätzen auf Deutsch zusammen. \
          Antworte NUR mit der Zusammenfassung, ohne Einleitung:\n\n{digest}"
     );
 
     let mut summary = String::new();
     if engine
-        .generate_streaming_raw(
-            &format!("<|im_start|>system\n{summary_prompt}<|im_end|>\n<|im_start|>assistant\n"),
+        .generate_streaming(
+            system_prompt,
+            &summary_prompt,
             SUMMARY_MAX_TOKENS,
             0.3,
             |token| {
@@ -253,18 +248,22 @@ pub fn run_agent_loop(
     });
 
     let mut tool_calls_made: Vec<ExecutedToolCall> = Vec::new();
+    let summarize_threshold = engine
+        .context_size()
+        .saturating_sub(PROBE_MAX_TOKENS + ANSWER_MAX_TOKENS + 512);
 
     for iteration in 0..MAX_ITERATIONS {
         // Summarize history if it is getting too large to fit in the context window
-        let estimated_tokens = estimate_tokens(&format_chatml_history(&system_prompt, &history));
-        if estimated_tokens > SUMMARIZE_THRESHOLD {
+        let formatted = engine.format_chat_history(&system_prompt, &history)?;
+        let estimated_tokens = estimate_tokens(&formatted);
+        if estimated_tokens > summarize_threshold {
             log::warn!(
                 "Agent: prompt ~{estimated_tokens} tokens nears context limit, summarizing history"
             );
             history = summarize_history(engine, &system_prompt, history);
         }
 
-        let prompt = format_chatml_history(&system_prompt, &history);
+        let prompt = engine.format_chat_history(&system_prompt, &history)?;
 
         // Probe: collect output to check for tool call
         let mut probe_output = String::new();
@@ -334,7 +333,7 @@ pub fn run_agent_loop(
         } else {
             // No tool call — this is the final answer. Stream it.
             // The probe already has partial output; start fresh for full answer.
-            let final_prompt = format_chatml_history(&system_prompt, &history);
+            let final_prompt = engine.format_chat_history(&system_prompt, &history)?;
             let mut final_answer = String::new();
 
             engine.generate_streaming_raw(
@@ -361,7 +360,7 @@ pub fn run_agent_loop(
     }
 
     // Exceeded MAX_ITERATIONS — force a final answer from accumulated history
-    let final_prompt = format_chatml_history(&system_prompt, &history);
+    let final_prompt = engine.format_chat_history(&system_prompt, &history)?;
     let mut final_answer = String::new();
     engine.generate_streaming_raw(&final_prompt, ANSWER_MAX_TOKENS, ANSWER_TEMP, |token| {
         final_answer.push_str(token);
