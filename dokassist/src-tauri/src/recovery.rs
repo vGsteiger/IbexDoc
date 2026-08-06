@@ -110,12 +110,16 @@ pub fn recover_from_mnemonic(
 
     // Read the vault marker. Version 1 had no authenticator, so it remains
     // recoverable but cannot distinguish a wrong valid mnemonic.
-    let vault_bytes = fs::read(vault_path).map_err(|e| {
-        AppError::Filesystem(std::io::Error::new(
-            e.kind(),
-            format!("Failed to read recovery vault: {}", e),
-        ))
-    })?;
+    let vault_bytes = match fs::read(vault_path) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            entropy.zeroize();
+            return Err(AppError::Filesystem(std::io::Error::new(
+                e.kind(),
+                format!("Failed to read recovery vault: {}", e),
+            )));
+        }
+    };
     let result = derive_keys_from_entropy(&entropy);
     entropy.zeroize();
     let (mut db_key, mut fs_key) = result?;
