@@ -341,6 +341,8 @@ fn tool_write_report(
         crate::llm::SYSTEM_PROMPT_DE,
     )?;
 
+    crate::llm::sanitize::validate_report_output(&content)?;
+
     Ok(proposed_write(
         "create_report",
         json!({
