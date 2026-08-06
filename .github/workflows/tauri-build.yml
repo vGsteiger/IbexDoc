@@ -131,7 +131,7 @@ jobs:
         # Upload DMG as release asset for fresh installs
         if [ -f "$ARM_DMG" ]; then
           echo "Uploading ARM64 DMG: $(basename "$ARM_DMG")"
-          gh release upload "$TAG" "$ARM_DMG" --clobber
+          gh release upload "$TAG" "$ARM_DMG" --clobber --repo "$REPO"
         else
           echo "Warning: No aarch64 DMG found in artifacts"
         fi
@@ -139,7 +139,7 @@ jobs:
         # Upload .app.tar.gz bundle (used by Tauri updater)
         if [ -f "$ARM_TAR" ]; then
           echo "Uploading ARM64 app.tar.gz: $(basename "$ARM_TAR")"
-          gh release upload "$TAG" "$ARM_TAR" --clobber
+          gh release upload "$TAG" "$ARM_TAR" --clobber --repo "$REPO"
           ARM_URL="${BASE_URL}/$(basename "$ARM_TAR")"
         else
           echo "Warning: No aarch64 .app.tar.gz found in artifacts"
@@ -150,7 +150,7 @@ jobs:
         # Generate and upload latest.json for Tauri updater
         # NOTE: Tauri v2 requires plain semver (no "v" prefix)
         # URL must point to .app.tar.gz (not .dmg) — that is what the updater downloads
-        RELEASE_NOTES=$(gh release view "$TAG" --json body -q .body 2>/dev/null || echo "")
+        RELEASE_NOTES=$(gh release view "$TAG" --repo "$REPO" --json body -q .body 2>/dev/null || echo "")
         RELEASE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
         cat > latest.json <<EOF
@@ -170,5 +170,5 @@ jobs:
         echo "Generated latest.json:"
         cat latest.json
 
-        gh release upload "$TAG" latest.json --clobber
+        gh release upload "$TAG" latest.json --clobber --repo "$REPO"
         echo "Uploaded latest.json to release $TAG"
