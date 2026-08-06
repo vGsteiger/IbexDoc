@@ -13,9 +13,7 @@ use core_foundation::dictionary::CFDictionary;
 #[cfg(target_os = "macos")]
 use core_foundation::string::CFString;
 #[cfg(target_os = "macos")]
-use security_framework::passwords::{
-    delete_generic_password, get_generic_password, set_generic_password,
-};
+use security_framework::passwords::{delete_generic_password, get_generic_password};
 #[cfg(target_os = "macos")]
 use security_framework_sys::access_control::kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
 #[cfg(target_os = "macos")]
