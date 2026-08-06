@@ -4,9 +4,13 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "shell:allow-open",
     "dialog:allow-save",
-    "fs:allow-write-text-file",
-    "fs:allow-write"
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        { "path": "$APPDATA/exports/*" },
+        { "path": "$TEMP/*" }
+      ]
+    }
   ]
 }
