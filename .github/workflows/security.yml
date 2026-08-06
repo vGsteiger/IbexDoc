@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v7.0.1
 
     - name: Install Rust toolchain
       # CRIT-7: Pinned to commit SHA for supply-chain security (tag: v1)
@@ -96,7 +96,7 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v7.0.1
 
     - name: Dependency Review
       uses: actions/dependency-review-action@v5
@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v7.0.1
 
     - name: Run Trivy vulnerability scanner
       # CRIT-7: Pinned to commit SHA for supply-chain security (tag: 0.34.1)
