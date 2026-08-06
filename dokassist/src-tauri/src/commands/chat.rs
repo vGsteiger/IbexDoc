@@ -3,7 +3,7 @@ use crate::llm::agent::{run_agent_loop, AgentScope};
 use crate::llm::engine::AgentMessage;
 use crate::models::chat::{self, ChatMessageRow, ChatSession, CreateChatMessage};
 use crate::models::patient;
-use crate::state::{AppState, AuthState};
+use crate::state::{llm_lock_poisoned, AppState, AuthState};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
@@ -39,7 +39,7 @@ pub async fn run_agent_turn(
 
     // Acquire engine (must be loaded)
     let engine = {
-        let llm = state.llm.lock().unwrap();
+        let llm = state.llm.lock().map_err(|_| llm_lock_poisoned())?;
         llm.as_ref()
             .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))
             .map(Arc::clone)?
