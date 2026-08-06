@@ -51,21 +51,34 @@ Out of scope:
 For an overview of the cryptographic design, key storage, and threat model, see the internal security architecture document:
 [`dokassist/src-tauri/SECURITY.md`](dokassist/src-tauri/SECURITY.md)
 
-## Known Security Limitations
+## Audit-log Integrity
 
-### Audit-log integrity
+Every audit row has an HMAC-SHA-256 over its canonical, length-prefixed contents and
+the preceding row's MAC. The signing key is domain-separated from both master keys,
+so neither the SQLCipher nor filesystem key alone can derive it. The latest head is stored
+outside the database in two alternating, device-bound macOS Keychain items.
 
-The audit log is append-only during normal database operation: SQLite triggers reject
-`UPDATE` and `DELETE` statements against `audit_log`. This protects against accidental
-or application-level modification while those triggers are active, but it is not a
-cryptographic proof that the history is complete or authentic.
+On database open, RamDoc verifies the complete chain and requires the trusted
+Keychain checkpoint to occur in it. This detects modified, inserted, reordered, or
+middle-deleted rows as well as truncation or replacement with an older database.
+Audit reads verify the complete chain again. SQLite triggers reject structurally
+invalid inserts plus all updates and deletions, while the HMAC function is restricted
+to direct application statements so attacker-supplied triggers cannot use the key.
 
-RamDoc must hold the SQLCipher database key while unlocked. An attacker who obtains
-that key and can replace the local database could rebuild it without selected audit
-rows or triggers. The current schema has no per-row MAC/hash chain and no independently
-protected checkpoint, so RamDoc cannot detect that replacement afterward.
+### Residual limitation
 
-Deployments that require independently verifiable audit integrity need an additional
-design, such as a chained MAC with a key outside the database plus a forward-secure or
-external checkpoint. A chain keyed only with another value available to the same local
-application would not protect against an attacker who compromises that value as well.
+No fully local audit system is literally tamper-proof against an attacker who controls
+the running application and all of its secrets. Such an attacker can use both the
+audit MAC key and Keychain access to forge a new history and checkpoint. The design
+instead separates the database and audit-integrity trust boundaries, protecting
+against possession of the database/key alone and against offline database tampering.
+
+Mnemonic recovery and an explicitly authorized backup restore can establish a new
+checkpoint after the remaining chain verifies. That action necessarily establishes a
+new truncation-detection baseline and must remain an explicit user-authorized flow.
+
+SQLite and Keychain cannot participate in one atomic transaction. RamDoc checkpoints
+immediately after a committed database operation, but forced process termination in
+the interval between those two writes can leave the newest valid suffix unanchored.
+That suffix is verified and anchored on the next open; deletion within that narrow
+crash interval cannot be distinguished from a transaction that never committed.

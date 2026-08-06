@@ -457,22 +457,57 @@ Audit records are stored in the encrypted `audit_log`. Intended coverage include
 
 ### Integrity boundary
 
-Migration `002_audit_append_only.sql` installs triggers that reject `UPDATE` and
-`DELETE` operations on `audit_log`. This makes the table append-only through normal
-application and SQL access while the triggers remain installed. It does **not** make
-the audit history cryptographically tamper-proof.
+Migration `002_audit_append_only.sql` installs the original `UPDATE`/`DELETE` guards.
+Migration `014_audit_hmac_chain.sql` upgrades existing rows and adds three integrity
+fields: a contiguous sequence, the preceding row's MAC, and the current row's MAC.
 
-The unlocked application holds the SQLCipher database key. An attacker with that key
-and write access to the database can create a replacement database that omits selected
-rows (and can omit the triggers). Because audit rows have no chained MAC and there is
-no independently protected or external checkpoint, the application cannot distinguish
-that replacement from an authentic history.
+Each HMAC-SHA-256 covers a version byte; row ID and sequence; length-prefixed timestamp,
+action, and entity type; explicitly tagged optional entity ID and details; and the
+preceding MAC. This canonical encoding prevents field-boundary ambiguity. The audit
+MAC key is domain-separated using both the SQLCipher and filesystem master keys, so
+possession of either one alone does not permit forging entries. Mnemonic recovery can
+reproduce the key.
 
-Where a compliance profile requires independently verifiable completeness or
-authenticity, add a chained MAC over canonical audit-row data and the preceding MAC,
-and protect or checkpoint the chain state outside the database. Keeping the MAC key
-beside the database key in the same application trust boundary does not address an
-attacker who compromises both.
+The authenticated chain head is stored outside SQLCipher in two alternating macOS
+Keychain items using `WhenUnlockedThisDeviceOnly`. Alternating slots retain the prior
+checkpoint if a Keychain replacement is interrupted. The database is rejected when
+the checkpoint MAC differs or its sequence is missing, detecting tail truncation and
+replacement with an older database. A valid chain may be ahead of the checkpoint only
+after a crash between the SQLite commit and Keychain write; RamDoc verifies that suffix
+before advancing the checkpoint.
+
+On every open RamDoc:
+
+1. registers the HMAC function as direct-call-only with the in-memory audit key and
+   disables trusted-schema access to application-defined functions;
+2. reinstalls the trusted insert/update/delete triggers;
+3. verifies the complete chain;
+4. verifies and, if needed, safely advances the Keychain checkpoint.
+
+Audit queries also verify the complete chain before returning rows. A checkpoint is
+advanced when a database connection guard is released after its transaction has
+committed, so a rollback cannot move the external anchor ahead of SQLite.
+
+Mnemonic recovery and an explicitly authorized backup restore may re-anchor only
+after the restored chain verifies. This intentionally starts a new truncation-detection
+baseline because restoring an older valid backup is otherwise indistinguishable from
+rollback.
+
+### Residual threat
+
+This is the strongest integrity design available within RamDoc's offline-only trust
+model, but it is tamper-evident rather than mathematically tamper-proof. An attacker
+who controls the running application, the filesystem master key, and write access to
+the application's Keychain items can forge both a replacement chain and checkpoint.
+An integrity guarantee against that threat requires an external append-only/WORM
+anchor or independently administered signing system, which would no longer be a
+completely self-contained local application.
+
+SQLite and macOS Keychain do not support a shared atomic transaction. RamDoc writes
+the checkpoint immediately after a SQLite commit, but a forced process termination
+between those writes leaves the newest valid suffix temporarily unanchored. The suffix
+is verified and anchored on the next open. Deleting it during that narrow crash window
+is indistinguishable from the originating transaction never having committed.
 
 ---
 
@@ -596,8 +631,8 @@ fn test_cross_patient_isolation() {
 - **Data minimization**: Only collect necessary patient data
 - **Encryption at rest**: SQLCipher + file vault
 - **Access control**: Password + keychain auth
-- **Audit trail**: PKG-6 logs sensitive data access; its local append-only enforcement
-  is not an independently verifiable integrity guarantee (see Section 8)
+- **Audit trail**: PKG-6 uses a chained HMAC with a device-bound Keychain head;
+  see Section 8 for the offline trust boundary
 - **Data portability**: Export functionality (PKG-11)
 - **Right to erasure**: Patient deletion cascades to all data
 
