@@ -1420,7 +1420,7 @@ dependencies = [
 
 [[package]]
 name = "dokassist"
-version = "0.11.5"
+version = "0.11.6"
 dependencies = [
  "aes-gcm",
  "argon2",
