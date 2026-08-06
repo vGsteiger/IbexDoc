@@ -9,6 +9,10 @@ on:
     # Run security audit daily at 00:00 UTC
     - cron: '0 0 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   audit:
     name: Dependency Audit
@@ -23,16 +27,25 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
+    - name: Cache security tools
+      id: security-tools
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cargo/bin/cargo-audit
+          ~/.cargo/bin/cargo-deny
+        key: ${{ runner.os }}-cargo-security-tools-v1
+
+    - name: Install cargo-audit and cargo-deny
+      if: steps.security-tools.outputs.cache-hit != 'true'
+      run: |
+        cargo install cargo-audit --locked
+        cargo install cargo-deny --locked
 
     - name: Run cargo audit
       working-directory: ./dokassist/src-tauri
       run: cargo audit --deny warnings
       continue-on-error: true  # Don't fail on advisories initially
-
-    - name: Install cargo-deny
-      run: cargo install cargo-deny
 
     - name: Create deny.toml config
       working-directory: ./dokassist/src-tauri

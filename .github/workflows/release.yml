@@ -155,5 +155,11 @@ jobs:
             --title "Release v$NEW_VERSION" \
             --notes "$RELEASE_NOTES"
 
-  # NOTE: Binary building and latest.json upload are handled by tauri-build.yml,
-  # which triggers automatically when this workflow pushes the version tag.
+  build-release:
+    name: Build release artifacts
+    needs: semantic-release
+    if: needs.semantic-release.outputs.should_release == 'true'
+    uses: ./.github/workflows/tauri-build.yml
+    with:
+      tag: v${{ needs.semantic-release.outputs.new_version }}
+    secrets: inherit
