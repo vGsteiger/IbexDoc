@@ -1039,7 +1039,10 @@
                   </p>
                 {/if}
                 <p class="text-xs text-gray-500 dark:text-gray-500">
-                  Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB
+                  Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB • Native context: {Math.round(model.context_window_tokens / 1024)}K
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  {model.parameters} • {model.license}
                 </p>
               </div>
             </div>

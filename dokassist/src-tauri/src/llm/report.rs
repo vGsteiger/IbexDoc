@@ -1,5 +1,5 @@
 use super::{
-    engine::LlmEngine,
+    engine::{AgentMessage, LlmEngine},
     prompts::{self, LetterType, ReportType},
     sanitize::{build_delimited_prompt, sanitize_for_prompt},
     utf8,
@@ -11,10 +11,6 @@ use tauri::Emitter;
 /// is force-closed and generation continues with the actual report/letter/summary.
 const MAX_THINK_TOKENS: usize = 1024;
 
-/// Maximum combined input tokens (prompt + system) before triggering pre-summarization.
-/// Derived from N_CTX (8192) minus max generation budget (4096) minus overhead (256).
-const MAX_INPUT_TOKENS: usize = 3840;
-
 /// Max tokens for the condensed-context summary output.
 const SUMMARIZE_MAX_TOKENS: usize = 800;
 
@@ -22,20 +18,23 @@ const SUMMARIZE_MAX_TOKENS: usize = 800;
 const MAX_CONTEXT_CHARS: usize = 16_000;
 const MAX_NOTES_CHARS: usize = 6_000;
 
-/// Returns `true` when the formatted ChatML prompt for the given inputs would
-/// exceed `MAX_INPUT_TOKENS`, meaning pre-summarization is required.
+/// Returns `true` when the model-formatted prompt would leave insufficient
+/// output headroom in the active context window.
 fn needs_summarization(
     engine: &LlmEngine,
     system_prompt: &str,
     patient_context: &str,
     session_notes: &str,
-) -> bool {
-    let combined = format!(
-        "<|im_start|>system\n{system_prompt}<|im_end|>\n\
-         <|im_start|>user\nPatientenkontext:\n{patient_context}\n\n\
-         Sitzungsnotizen:\n{session_notes}<|im_end|>\n<|im_start|>assistant\n"
-    );
-    engine.count_tokens(&combined) > MAX_INPUT_TOKENS
+) -> Result<bool, AppError> {
+    let message = AgentMessage {
+        role: "user".to_string(),
+        content: format!(
+            "Patientenkontext:\n{patient_context}\n\nSitzungsnotizen:\n{session_notes}"
+        ),
+    };
+    let formatted = engine.format_chat_history(system_prompt, &[message])?;
+    let max_input_tokens = engine.context_size().saturating_sub(4_096 + 256);
+    Ok(engine.count_tokens(&formatted) > max_input_tokens)
 }
 
 /// Condenses `patient_context` + `session_notes` into a shorter summary string
@@ -58,8 +57,7 @@ fn run_summarization(
 /// consumed before `</think>` appears, generation stops early.
 ///
 /// **Phase 2** (only if budget was hit) – a `</think>` marker is injected into
-/// the output stream, then generation resumes from the accumulated context using
-/// `generate_streaming_raw` so the model can write the actual content.
+/// the output stream, then generation resumes through the GGUF's own chat template.
 fn generate_with_think_budget(
     engine: &LlmEngine,
     system_prompt: &str,
@@ -120,15 +118,19 @@ fn generate_with_think_budget(
         output.push_str(close_tag);
         emit(close_tag);
 
-        // Resume generation from the full context including the injected close tag.
-        // ChatML format: system → user → assistant (partial, everything generated so far).
+        // Continue through the model's own embedded chat template. Supplying a new
+        // continuation turn works across ChatML, Harmony, Gemma, and Phi templates.
+        let tail_start = output.len().saturating_sub(1_200);
+        let tail_start = utf8::find_boundary_forward(&output, tail_start);
         let continuation = format!(
-            "<|im_start|>system\n{system_prompt}<|im_end|>\n\
-             <|im_start|>user\n{user_message}<|im_end|>\n\
-             <|im_start|>assistant\n{output}",
+            "Setze die Antwort auf die folgende ursprüngliche Aufgabe unmittelbar fort. \
+             Wiederhole nichts und gib nur den fertigen Inhalt aus.\n\nAufgabe:\n{user_message}\n\n\
+             Bisheriges Ende:\n{}",
+            &output[tail_start..]
         );
 
-        engine.generate_streaming_raw(
+        engine.generate_streaming(
+            system_prompt,
             &continuation,
             max_tokens.saturating_sub(MAX_THINK_TOKENS),
             temperature,
@@ -139,9 +141,9 @@ fn generate_with_think_budget(
             },
         )?;
     } else if let Some(stats) = phase1_stats {
-        // Detect context-window overflow: when n_cur + 1 >= N_CTX the loop breaks,
-        // so prompt_tokens + completion_tokens == N_CTX - 1.
-        let ctx_size = LlmEngine::context_size();
+        // Detect context-window overflow when prompt + completion reach the
+        // active per-engine context limit.
+        let ctx_size = engine.context_size();
         let was_cut_off = stats.completion_tokens > 0
             && stats.prompt_tokens + stats.completion_tokens + 10 >= ctx_size;
 
@@ -204,7 +206,7 @@ pub fn generate_report_streaming_with_prompt(
     instructions: Option<&str>,
     system_prompt: &str,
 ) -> Result<String, AppError> {
-    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, session_notes)
+    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, session_notes)?
     {
         let _ = app.emit("report-summarizing", ());
         Some(run_summarization(
@@ -290,7 +292,7 @@ pub fn generate_session_summary_streaming_with_prompt(
     session_notes: &str,
     system_prompt: &str,
 ) -> Result<String, AppError> {
-    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, session_notes)
+    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, session_notes)?
     {
         let _ = app.emit("session-summary-summarizing", ());
         Some(run_summarization(
@@ -330,7 +332,7 @@ pub fn generate_letter_streaming_with_prompt(
     system_prompt: &str,
 ) -> Result<String, AppError> {
     let summary_opt =
-        if needs_summarization(engine, system_prompt, patient_context, clinical_summary) {
+        if needs_summarization(engine, system_prompt, patient_context, clinical_summary)? {
             let _ = app.emit("letter-summarizing", ());
             Some(run_summarization(
                 engine,
@@ -388,7 +390,7 @@ pub fn generate_patient_history_response_streaming_with_prompt(
 ) -> Result<String, AppError> {
     // Use `question` as the second input; it is typically short so summarization
     // will only trigger when the patient_context itself is very large.
-    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, question) {
+    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, question)? {
         let _ = app.emit("patient-history-summarizing", ());
         Some(run_summarization(
             engine,
