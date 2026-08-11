@@ -86,7 +86,7 @@ impl MemoryGovernor {
             number(&gguf, &format!("{prefix}.context_length")).unwrap_or(0) as usize;
         let recurrent = matches!(prefix, "mamba" | "rwkv" | "jamba")
             || number(&gguf, &format!("{prefix}.ssm.conv_kernel")).is_some();
-        if layers == 0 || embedding_length == 0 || attention_heads == 0 || kv_heads == 0 {
+        if native_context == 0 || layers == 0 || embedding_length == 0 || attention_heads == 0 || kv_heads == 0 {
             return Err(AppError::Llm(format!(
                 "GGUF '{}' is missing architecture dimensions required for safe memory planning",
                 path.display()
