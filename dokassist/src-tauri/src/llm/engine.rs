@@ -642,12 +642,10 @@ impl LlmEngine {
             pool.telemetry.invalidations += stale as u64;
         }
 
-        let mut cache_hit = pool.entries.iter().any(|entry| entry.key == key);
+        let entry_found = pool.entries.iter().any(|entry| entry.key == key);
         let index = if let Some(index) = pool.entries.iter().position(|entry| entry.key == key) {
-            pool.telemetry.hits += 1;
             index
         } else {
-            pool.telemetry.misses += 1;
             while pool.entries.len() >= pool.telemetry.max_contexts.max(1) {
                 if let Some((oldest, _)) = pool
                     .entries
@@ -674,7 +672,6 @@ impl LlmEngine {
                 key,
                 last_used: use_clock,
             });
-            cache_hit = false;
             pool.entries.len() - 1
         };
 
@@ -694,6 +691,15 @@ impl LlmEngine {
             pool.entries[index].context.clear_kv_cache();
         }
         pool.entries[index].tokens.truncate(reused);
+        // A resident entry is only a real cache hit when at least one prompt
+        // token survives validation and rollback. This keeps UI and telemetry
+        // aligned with actual prefill work avoided.
+        let cache_hit = entry_found && reused > 0;
+        if cache_hit {
+            pool.telemetry.hits += 1;
+        } else {
+            pool.telemetry.misses += 1;
+        }
 
         let wall_start = Instant::now();
         let prompt_batch_size = pool.entries[index].context.n_batch() as usize;

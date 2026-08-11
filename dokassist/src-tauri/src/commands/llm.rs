@@ -138,8 +138,20 @@ pub async fn load_model(
     if let Some(previous_engine) = previous_engine {
         // Removing it from AppState prevents new leases. Existing inference
         // tasks retain an Arc and are allowed to finish before memory is freed.
-        while Arc::strong_count(&previous_engine) > 1 {
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        let drain = async {
+            while Arc::strong_count(&previous_engine) > 1 {
+                tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+            }
+        };
+        if tokio::time::timeout(std::time::Duration::from_secs(120), drain)
+            .await
+            .is_err()
+        {
+            // Keep the application usable when an inference task is stuck.
+            *state.llm.lock().map_err(|_| llm_lock_poisoned())? = Some(previous_engine);
+            return Err(AppError::Llm(
+                "Timed out waiting for active inference leases before model swap".to_string(),
+            ));
         }
         drop(previous_engine);
     }
