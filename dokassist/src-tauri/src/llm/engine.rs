@@ -4,6 +4,7 @@ use super::inference::{
     validate_context_budget, FlashAttentionMode, InferenceDiagnostics, InferenceProfile,
     KvCacheQuantization,
 };
+use super::memory_governor::{MemoryGovernor, MemoryGovernorDiagnostics};
 use crate::error::AppError;
 use encoding_rs::UTF_8;
 use llama_cpp_2::context::params::LlamaContextParams;
@@ -105,6 +106,7 @@ struct InferenceRuntime {
     profile: InferenceProfile,
     fallback: Option<String>,
     fallback_code: Option<String>,
+    memory_governor: Option<MemoryGovernorDiagnostics>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -145,6 +147,10 @@ impl LlmEngine {
         profile_name: &str,
     ) -> Result<Self, AppError> {
         let model_hash = sha256_file(&model_path)?;
+        let ram = Self::total_ram();
+        // Parse the GGUF header before loading tensors so unsafe models are
+        // rejected before unified-memory pressure can destabilise macOS.
+        let governor = MemoryGovernor::inspect(&model_path, ram)?;
         let backend = LlamaBackend::init()
             .map_err(|e| AppError::Llm(format!("Failed to init llama backend: {e}")))?;
 
@@ -183,16 +189,24 @@ impl LlmEngine {
                 model_name
             ))
         })?;
-        let native_context = model.n_ctx_train() as usize;
-        let ram = Self::total_ram();
-        let requested_context = runtime_context_for_ram(ram);
-        let requested_profile = InferenceProfile::named(profile_name, requested_context)?;
-        let profile = requested_profile.resolved_for_model(native_context)?;
-        let fallback = (profile.n_ctx != requested_profile.n_ctx).then(|| {
-            format!(
-                "Requested {}-token context capped to model native context of {} tokens",
-                requested_profile.n_ctx, profile.n_ctx
-            )
+        let requested_profile = match profile_name {
+            "governed" | "auto" => None,
+            name => Some(InferenceProfile::named(name, runtime_context_for_ram(ram))?),
+        };
+        let (profile, governor_diagnostics) = governor.plan(requested_profile.as_ref());
+        if !governor_diagnostics.safe {
+            return Err(AppError::Llm(format!(
+                "Refusing to load model: {}. Select a smaller model or use a research override after freeing memory.",
+                governor_diagnostics.reason
+            )));
+        }
+        let fallback = requested_profile.as_ref().and_then(|requested| {
+            (profile.n_ctx != requested.n_ctx).then(|| {
+                format!(
+                    "Requested {}-token context capped to model native context of {} tokens",
+                    requested.n_ctx, profile.n_ctx
+                )
+            })
         });
         let fallback_code = fallback.as_ref().map(|_| "native_context_cap".to_string());
         let context_size = profile.n_ctx;
@@ -210,6 +224,7 @@ impl LlmEngine {
                 profile,
                 fallback,
                 fallback_code,
+                memory_governor: Some(governor_diagnostics),
             }),
             model_hash,
             chat_template_hash,
@@ -520,6 +535,7 @@ impl LlmEngine {
                     &runtime.profile,
                     runtime.fallback.clone(),
                     runtime.fallback_code.clone(),
+                    runtime.memory_governor.clone(),
                 )
             }),
             context_cache: self

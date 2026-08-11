@@ -1,3 +1,4 @@
+use super::memory_governor::MemoryGovernorDiagnostics;
 use crate::error::AppError;
 use llama_cpp_2::context::params::KvCacheType;
 use serde::{Deserialize, Serialize};
@@ -141,6 +142,7 @@ pub struct InferenceDiagnostics {
     pub fallback: Option<String>,
     /// Stable code used by clients to localize the fallback diagnostic.
     pub fallback_code: Option<String>,
+    pub memory_governor: Option<MemoryGovernorDiagnostics>,
 }
 
 impl InferenceDiagnostics {
@@ -148,6 +150,7 @@ impl InferenceDiagnostics {
         profile: &InferenceProfile,
         fallback: Option<String>,
         fallback_code: Option<String>,
+        memory_governor: Option<MemoryGovernorDiagnostics>,
     ) -> Self {
         Self {
             profile: profile.name.clone(),
@@ -160,6 +163,7 @@ impl InferenceDiagnostics {
             completion_headroom: profile.completion_headroom,
             fallback,
             fallback_code,
+            memory_governor,
         }
     }
 }
