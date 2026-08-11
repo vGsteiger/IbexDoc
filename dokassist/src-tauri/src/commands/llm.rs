@@ -78,6 +78,7 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
                 },
                 last_generation_stats: None,
                 inference_config: None,
+                context_cache: Default::default(),
             })
         }
     }
@@ -129,6 +130,19 @@ pub async fn load_model(
     let model_path = state.data_dir.join("models").join(&model_filename);
     let model_name = model_filename.clone();
     let inference_profile = inference_profile.unwrap_or_else(|| "conservative".to_string());
+
+    // Only one swap may run at a time. Drop the state-owned old engine before
+    // loading the replacement so two model/context allocations cannot overlap.
+    let _swap_lease = state.llm_swap.lock().await;
+    let previous_engine = state.llm.lock().map_err(|_| llm_lock_poisoned())?.take();
+    if let Some(previous_engine) = previous_engine {
+        // Removing it from AppState prevents new leases. Existing inference
+        // tasks retain an Arc and are allowed to finish before memory is freed.
+        while Arc::strong_count(&previous_engine) > 1 {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        drop(previous_engine);
+    }
 
     let engine = tokio::task::spawn_blocking(move || {
         LlmEngine::load_with_profile(model_path, model_name, &inference_profile)

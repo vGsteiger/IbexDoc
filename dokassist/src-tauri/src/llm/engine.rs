@@ -1,3 +1,4 @@
+use super::context_cache::{reusable_prefix, ContextCacheTelemetry, ContextKey, InferenceSession};
 use super::download;
 use super::inference::{
     validate_context_budget, FlashAttentionMode, InferenceDiagnostics, InferenceProfile,
@@ -12,7 +13,11 @@ use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::model::params::LlamaModelParams;
 use llama_cpp_2::model::{AddBos, LlamaChatMessage, LlamaChatTemplate, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
+use llama_cpp_2::token::LlamaToken;
+use ring::digest::{Context as DigestContext, SHA256};
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Read;
 use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -35,19 +40,62 @@ pub struct GenerationStats {
     pub completion_tokens: usize,
     /// Number of tokens in the prompt.
     pub prompt_tokens: usize,
+    pub evaluated_prompt_tokens: usize,
+    pub reused_prompt_tokens: usize,
+    pub cache_hit: bool,
+    pub prefill_ms: f64,
+    pub estimated_prefill_saved_ms: f64,
+    pub total_latency_ms: f64,
+    pub peak_rss_bytes: u64,
+}
+
+struct CachedContext {
+    context: LlamaContext<'static>,
+    tokens: Vec<LlamaToken>,
+    key: ContextKey,
+    last_used: u64,
+}
+
+// llama.cpp permits a context to move between threads when calls are
+// serialized. ContextPool never exposes one outside its mutex lease.
+unsafe impl Send for CachedContext {}
+
+struct ContextPool {
+    entries: Vec<CachedContext>,
+    clock: u64,
+    telemetry: ContextCacheTelemetry,
+    evaluated_prefill_ms: f64,
+}
+
+impl ContextPool {
+    fn new(max_contexts: usize) -> Self {
+        Self {
+            entries: Vec::new(),
+            clock: 0,
+            telemetry: ContextCacheTelemetry {
+                max_contexts,
+                ..ContextCacheTelemetry::default()
+            },
+            evaluated_prefill_ms: 0.0,
+        }
+    }
 }
 
 pub struct LlmEngine {
     // IMPORTANT: field declaration order controls drop order in Rust.
+    // The pool is dropped first, before the boxed model its contexts borrow.
+    contexts: Mutex<ContextPool>,
     // `model` must be dropped before `backend` — the LlamaModel holds a
     // raw pointer into the LlamaBackend, so freeing the backend first
     // causes a use-after-free crash in the llama.cpp C code at shutdown.
-    model: Option<LlamaModel>,
+    model: Option<Box<LlamaModel>>,
     model_path: PathBuf,
     model_name: String,
     chat_template: LlamaChatTemplate,
     context_size: usize,
     inference: Mutex<InferenceRuntime>,
+    model_hash: String,
+    chat_template_hash: String,
     backend: LlamaBackend,
     last_stats: Mutex<Option<GenerationStats>>,
 }
@@ -81,6 +129,7 @@ pub struct EngineStatus {
     pub last_generation_stats: Option<GenerationStats>,
     /// Effective llama.cpp context parameters and any explicit fallback.
     pub inference_config: Option<InferenceDiagnostics>,
+    pub context_cache: ContextCacheTelemetry,
 }
 
 impl LlmEngine {
@@ -95,6 +144,7 @@ impl LlmEngine {
         model_name: String,
         profile_name: &str,
     ) -> Result<Self, AppError> {
+        let model_hash = sha256_file(&model_path)?;
         let backend = LlamaBackend::init()
             .map_err(|e| AppError::Llm(format!("Failed to init llama backend: {e}")))?;
 
@@ -123,8 +173,10 @@ impl LlmEngine {
             })?
         };
 
-        let model = LlamaModel::load_from_file(&backend, &model_path, &model_params)
-            .map_err(|e| AppError::Llm(format!("Failed to load model: {e}")))?;
+        let model = Box::new(
+            LlamaModel::load_from_file(&backend, &model_path, &model_params)
+                .map_err(|e| AppError::Llm(format!("Failed to load model: {e}")))?,
+        );
         let chat_template = model.chat_template(None).map_err(|e| {
             AppError::Llm(format!(
                 "Model '{}' has no usable embedded chat template: {e}",
@@ -144,8 +196,10 @@ impl LlmEngine {
         });
         let fallback_code = fallback.as_ref().map(|_| "native_context_cap".to_string());
         let context_size = profile.n_ctx;
+        let chat_template_hash = sha256_bytes(chat_template.as_c_str().to_bytes());
 
         Ok(Self {
+            contexts: Mutex::new(ContextPool::new(max_persistent_contexts_for_ram(ram))),
             backend,
             model: Some(model),
             model_path,
@@ -157,6 +211,8 @@ impl LlmEngine {
                 fallback,
                 fallback_code,
             }),
+            model_hash,
+            chat_template_hash,
             last_stats: Mutex::new(None),
         })
     }
@@ -296,6 +352,26 @@ impl LlmEngine {
         user_message: &str,
         max_tokens: usize,
         temperature: f32,
+        on_token: impl FnMut(&str) -> bool,
+    ) -> Result<(), AppError> {
+        let prompt = self.format_chat_history(
+            system_prompt,
+            &[AgentMessage {
+                role: "user".to_string(),
+                content: user_message.to_string(),
+            }],
+        )?;
+        self.generate_streaming_raw(&prompt, max_tokens, temperature, on_token)
+    }
+
+    /// Reference cold path retained for equivalence tests and benchmarks.
+    #[allow(dead_code)]
+    fn generate_streaming_cold(
+        &self,
+        system_prompt: &str,
+        user_message: &str,
+        max_tokens: usize,
+        temperature: f32,
         mut on_token: impl FnMut(&str) -> bool,
     ) -> Result<(), AppError> {
         let model = self
@@ -412,6 +488,13 @@ impl LlmEngine {
                     tps,
                     completion_tokens,
                     prompt_tokens: n_prompt,
+                    evaluated_prompt_tokens: n_prompt,
+                    reused_prompt_tokens: 0,
+                    cache_hit: false,
+                    prefill_ms: gen_phase_start.duration_since(wall_start).as_secs_f64() * 1000.0,
+                    estimated_prefill_saved_ms: 0.0,
+                    total_latency_ms: wall_start.elapsed().as_secs_f64() * 1000.0,
+                    peak_rss_bytes: peak_rss_bytes(),
                 });
             }
         }
@@ -439,6 +522,11 @@ impl LlmEngine {
                     runtime.fallback_code.clone(),
                 )
             }),
+            context_cache: self
+                .contexts
+                .lock()
+                .map(|pool| pool.telemetry.clone())
+                .unwrap_or_default(),
         }
     }
 
@@ -446,6 +534,275 @@ impl LlmEngine {
     /// Like `generate_streaming` but bypasses `format_chatml` so callers can
     /// pass multi-turn history they have built themselves.
     pub fn generate_streaming_raw(
+        &self,
+        prompt: &str,
+        max_tokens: usize,
+        temperature: f32,
+        on_token: impl FnMut(&str) -> bool,
+    ) -> Result<(), AppError> {
+        let digest = sha256_bytes(prompt.as_bytes());
+        self.generate_streaming_cached(
+            &InferenceSession::isolated(format!("raw:{digest}")),
+            &digest,
+            prompt,
+            max_tokens,
+            temperature,
+            on_token,
+        )
+    }
+
+    /// Generate using a leased persistent context for a logical conversation.
+    pub fn generate_streaming_session(
+        &self,
+        session: &InferenceSession,
+        system_prompt: &str,
+        prompt: &str,
+        max_tokens: usize,
+        temperature: f32,
+        on_token: impl FnMut(&str) -> bool,
+    ) -> Result<(), AppError> {
+        self.generate_streaming_cached(
+            session,
+            &sha256_bytes(system_prompt.as_bytes()),
+            prompt,
+            max_tokens,
+            temperature,
+            on_token,
+        )
+    }
+
+    fn context_key(
+        &self,
+        session: &InferenceSession,
+        system_prompt_hash: &str,
+        runtime: &InferenceRuntime,
+    ) -> ContextKey {
+        ContextKey {
+            model_hash: self.model_hash.clone(),
+            chat_template_hash: self.chat_template_hash.clone(),
+            system_prompt_hash: system_prompt_hash.to_string(),
+            prompt_version: session.prompt_version.clone(),
+            adapter_hash: session.adapter_hash.clone(),
+            context_size: runtime.profile.n_ctx,
+            batch_size: runtime.profile.n_batch,
+            kv_config_hash: format!(
+                "{}:{}:{}",
+                runtime.profile.kv_cache.label(),
+                runtime.profile.n_ubatch,
+                runtime.profile.flash_attention.label()
+            ),
+            conversation_id: session.conversation_id.clone(),
+            patient_id: session.patient_id.clone(),
+            patient_revision: session.patient_revision.clone(),
+        }
+    }
+
+    fn generate_streaming_cached(
+        &self,
+        session: &InferenceSession,
+        system_prompt_hash: &str,
+        prompt: &str,
+        max_tokens: usize,
+        temperature: f32,
+        mut on_token: impl FnMut(&str) -> bool,
+    ) -> Result<(), AppError> {
+        let model = self
+            .model
+            .as_ref()
+            .ok_or_else(|| AppError::Llm("Model not loaded".to_string()))?;
+        let tokens = model
+            .str_to_token(prompt, AddBos::Always)
+            .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
+        let runtime = self.inference_runtime()?;
+        validate_context_budget(
+            self.context_size,
+            tokens.len(),
+            max_tokens,
+            runtime.profile.completion_headroom,
+        )?;
+        let mut key = self.context_key(session, system_prompt_hash, &runtime);
+
+        // Holding this guard is the context lease. It serializes inference and
+        // context creation, bounding transient model/KV memory during swaps.
+        let mut pool = self
+            .contexts
+            .lock()
+            .map_err(|_| AppError::Llm("Inference context pool mutex poisoned".to_string()))?;
+        pool.clock = pool.clock.wrapping_add(1);
+        let use_clock = pool.clock;
+
+        let stale = pool
+            .entries
+            .iter()
+            .filter(|entry| entry.key.same_logical_context(&key) && entry.key != key)
+            .count();
+        if stale > 0 {
+            pool.entries
+                .retain(|entry| !entry.key.same_logical_context(&key) || entry.key == key);
+            pool.telemetry.invalidations += stale as u64;
+        }
+
+        let mut cache_hit = pool.entries.iter().any(|entry| entry.key == key);
+        let index = if let Some(index) = pool.entries.iter().position(|entry| entry.key == key) {
+            pool.telemetry.hits += 1;
+            index
+        } else {
+            pool.telemetry.misses += 1;
+            while pool.entries.len() >= pool.telemetry.max_contexts.max(1) {
+                if let Some((oldest, _)) = pool
+                    .entries
+                    .iter()
+                    .enumerate()
+                    .min_by_key(|(_, entry)| entry.last_used)
+                {
+                    pool.entries.remove(oldest);
+                    pool.telemetry.evictions += 1;
+                }
+            }
+
+            let context = self.create_context(model)?;
+            // SAFETY: the model is boxed, so its address remains stable. The
+            // context pool is declared before `model`, guaranteeing contexts
+            // are dropped first, and access is serialized by the pool mutex.
+            let context =
+                unsafe { std::mem::transmute::<LlamaContext<'_>, LlamaContext<'static>>(context) };
+            // Context creation may have selected a safe fallback profile.
+            key = self.context_key(session, system_prompt_hash, &self.inference_runtime()?);
+            pool.entries.push(CachedContext {
+                context,
+                tokens: Vec::new(),
+                key,
+                last_used: use_clock,
+            });
+            cache_hit = false;
+            pool.entries.len() - 1
+        };
+
+        pool.entries[index].last_used = use_clock;
+        let mut reused = reusable_prefix(&pool.entries[index].tokens, &tokens);
+        if reused > 0 {
+            let rollback_ok = pool.entries[index]
+                .context
+                .clear_kv_cache_seq(Some(0), Some(reused as u32), None)
+                .map_err(|e| AppError::Llm(format!("KV-cache rollback failed: {e}")))?;
+            if !rollback_ok {
+                pool.entries[index].context.clear_kv_cache();
+                pool.telemetry.invalidations += 1;
+                reused = 0;
+            }
+        } else if !pool.entries[index].tokens.is_empty() {
+            pool.entries[index].context.clear_kv_cache();
+        }
+        pool.entries[index].tokens.truncate(reused);
+
+        let wall_start = Instant::now();
+        let prompt_batch_size = pool.entries[index].context.n_batch() as usize;
+        let mut batch = LlamaBatch::new(prompt_batch_size, 1);
+        for chunk in tokens[reused..].chunks(prompt_batch_size) {
+            batch.clear();
+            let start = pool.entries[index].tokens.len();
+            for (offset, token) in chunk.iter().enumerate() {
+                let position = i32::try_from(start + offset)
+                    .map_err(|_| AppError::Llm("Prompt position exceeds i32".to_string()))?;
+                let needs_logits = start + offset + 1 == tokens.len();
+                batch
+                    .add(*token, position, &[0], needs_logits)
+                    .map_err(|e| AppError::Llm(format!("Failed to build batch: {e}")))?;
+            }
+            pool.entries[index]
+                .context
+                .decode(&mut batch)
+                .map_err(|e| AppError::Llm(format!("Failed to decode prompt suffix: {e}")))?;
+            pool.entries[index].tokens.extend_from_slice(chunk);
+        }
+        let prefill_ms = wall_start.elapsed().as_secs_f64() * 1000.0;
+        let evaluated = tokens.len().saturating_sub(reused);
+        let historical_ms_per_token = if pool.telemetry.evaluated_tokens == 0 {
+            0.0
+        } else {
+            pool.evaluated_prefill_ms / pool.telemetry.evaluated_tokens as f64
+        };
+        let estimated_saved_ms = reused as f64 * historical_ms_per_token;
+        let gen_phase_start = Instant::now();
+
+        let mut sampler = LlamaSampler::chain_simple([
+            LlamaSampler::temp(temperature),
+            LlamaSampler::top_k(40),
+            LlamaSampler::top_p(0.9, 1),
+            LlamaSampler::dist(0),
+        ]);
+        let mut utf8_dec = UTF_8.new_decoder();
+        let mut ttft_ms = 0.0;
+        let mut completion_tokens = 0usize;
+
+        for _ in 0..max_tokens {
+            let token = sampler.sample(&pool.entries[index].context, -1);
+            sampler.accept(token);
+            if model.is_eog_token(token) {
+                break;
+            }
+            let piece = model
+                .token_to_piece(token, &mut utf8_dec, false, None)
+                .map_err(|e| AppError::Llm(format!("Token decode failed: {e}")))?;
+            if completion_tokens == 0 {
+                ttft_ms = wall_start.elapsed().as_secs_f64() * 1000.0;
+            }
+            if !on_token(&piece) {
+                break;
+            }
+            let position = pool.entries[index].tokens.len();
+            if position + 1 >= self.context_size {
+                break;
+            }
+            batch.clear();
+            batch
+                .add(token, position as i32, &[0], true)
+                .map_err(|e| AppError::Llm(format!("Failed to add token: {e}")))?;
+            pool.entries[index]
+                .context
+                .decode(&mut batch)
+                .map_err(|e| AppError::Llm(format!("Failed to decode token: {e}")))?;
+            pool.entries[index].tokens.push(token);
+            completion_tokens += 1;
+        }
+
+        let gen_elapsed = gen_phase_start.elapsed().as_secs_f64();
+        let tps = if gen_elapsed > 0.0 {
+            completion_tokens as f64 / gen_elapsed
+        } else {
+            0.0
+        };
+        pool.telemetry.reused_tokens += reused as u64;
+        pool.telemetry.evaluated_tokens += evaluated as u64;
+        pool.telemetry.estimated_prefill_saved_ms += estimated_saved_ms;
+        pool.evaluated_prefill_ms += prefill_ms;
+        pool.telemetry.resident_contexts = pool.entries.len();
+        log::info!(
+            "LLM context cache: hit={cache_hit}, reused={reused}, evaluated={evaluated}, prompt={}",
+            tokens.len()
+        );
+
+        if let Ok(mut stats) = self.last_stats.lock() {
+            *stats = Some(GenerationStats {
+                ttft_ms,
+                tps,
+                completion_tokens,
+                prompt_tokens: tokens.len(),
+                evaluated_prompt_tokens: evaluated,
+                reused_prompt_tokens: reused,
+                cache_hit,
+                prefill_ms,
+                estimated_prefill_saved_ms: estimated_saved_ms,
+                total_latency_ms: wall_start.elapsed().as_secs_f64() * 1000.0,
+                peak_rss_bytes: peak_rss_bytes(),
+            });
+        }
+        Ok(())
+    }
+
+    /// Reference cold path retained for equivalence tests and benchmarks.
+    #[allow(dead_code)]
+    fn generate_streaming_raw_cold(
         &self,
         prompt: &str,
         max_tokens: usize,
@@ -551,6 +908,13 @@ impl LlmEngine {
                     tps,
                     completion_tokens,
                     prompt_tokens: n_prompt,
+                    evaluated_prompt_tokens: n_prompt,
+                    reused_prompt_tokens: 0,
+                    cache_hit: false,
+                    prefill_ms: gen_phase_start.duration_since(wall_start).as_secs_f64() * 1000.0,
+                    estimated_prefill_saved_ms: 0.0,
+                    total_latency_ms: wall_start.elapsed().as_secs_f64() * 1000.0,
+                    peak_rss_bytes: peak_rss_bytes(),
                 });
             }
         }
@@ -688,6 +1052,53 @@ fn runtime_context_for_ram(ram: u64) -> usize {
     }
 }
 
+fn max_persistent_contexts_for_ram(ram: u64) -> usize {
+    const GB: u64 = 1024 * 1024 * 1024;
+    if ram >= 48 * GB {
+        2
+    } else {
+        1
+    }
+}
+
+fn sha256_bytes(bytes: &[u8]) -> String {
+    hex::encode(ring::digest::digest(&SHA256, bytes).as_ref())
+}
+
+fn sha256_file(path: &std::path::Path) -> Result<String, AppError> {
+    let mut file = File::open(path)
+        .map_err(|e| AppError::Llm(format!("Failed to hash model '{}': {e}", path.display())))?;
+    let mut digest = DigestContext::new(&SHA256);
+    let mut buffer = [0u8; 1024 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(|e| {
+            AppError::Llm(format!("Failed to hash model '{}': {e}", path.display()))
+        })?;
+        if read == 0 {
+            break;
+        }
+        digest.update(&buffer[..read]);
+    }
+    Ok(hex::encode(digest.finish().as_ref()))
+}
+
+fn peak_rss_bytes() -> u64 {
+    let mut usage = std::mem::MaybeUninit::<libc::rusage>::zeroed();
+    let ok = unsafe { libc::getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr()) } == 0;
+    if !ok {
+        return 0;
+    }
+    let rss = unsafe { usage.assume_init() }.ru_maxrss.max(0) as u64;
+    #[cfg(target_os = "macos")]
+    {
+        rss
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        rss.saturating_mul(1024)
+    }
+}
+
 fn new_chat_message(role: &str, content: &str) -> Result<LlamaChatMessage, AppError> {
     LlamaChatMessage::new(role.to_string(), content.to_string())
         .map_err(|e| AppError::Llm(format!("Invalid chat message: {e}")))
@@ -729,5 +1140,87 @@ mod tests {
         assert_eq!(runtime_context_for_ram(16 * GB), MIN_CONTEXT_SIZE);
         assert_eq!(runtime_context_for_ram(24 * GB), STANDARD_CONTEXT_SIZE);
         assert_eq!(runtime_context_for_ram(48 * GB), LARGE_CONTEXT_SIZE);
+    }
+
+    #[test]
+    fn persistent_context_count_stays_within_memory_tiers() {
+        const GB: u64 = 1024 * 1024 * 1024;
+        assert_eq!(max_persistent_contexts_for_ram(16 * GB), 1);
+        assert_eq!(max_persistent_contexts_for_ram(32 * GB), 1);
+        assert_eq!(max_persistent_contexts_for_ram(48 * GB), 2);
+    }
+
+    /// Hardware benchmark harness for issue #400. It is ignored because CI has
+    /// no approved GGUF; run it on a target Mac with RAMDOC_BENCH_MODEL set.
+    #[test]
+    #[ignore = "requires a local GGUF model"]
+    fn benchmark_cold_and_warm_contexts() {
+        let path = std::env::var("RAMDOC_BENCH_MODEL").expect("RAMDOC_BENCH_MODEL is required");
+        let path = PathBuf::from(path);
+        let model_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("benchmark.gguf")
+            .to_string();
+        let engine = LlmEngine::load(path, model_name).unwrap();
+        let prompt = engine
+            .format_chat_history(
+                "You are a concise clinical assistant.",
+                &[AgentMessage {
+                    role: "user".into(),
+                    content: "Summarize: sleep improved and anxiety decreased.".into(),
+                }],
+            )
+            .unwrap();
+
+        let mut cold_answer = String::new();
+        engine
+            .generate_streaming_raw_cold(&prompt, 64, 0.0, |piece| {
+                cold_answer.push_str(piece);
+                true
+            })
+            .unwrap();
+        let cold = engine.last_generation_stats().unwrap();
+
+        let session = InferenceSession::agent(
+            "benchmark-session",
+            Some("patient-a".into()),
+            Some("revision-1".into()),
+        );
+        let mut first_answer = String::new();
+        engine
+            .generate_streaming_session(
+                &session,
+                "You are a concise clinical assistant.",
+                &prompt,
+                64,
+                0.0,
+                |piece| {
+                    first_answer.push_str(piece);
+                    true
+                },
+            )
+            .unwrap();
+        let mut warm_answer = String::new();
+        engine
+            .generate_streaming_session(
+                &session,
+                "You are a concise clinical assistant.",
+                &prompt,
+                64,
+                0.0,
+                |piece| {
+                    warm_answer.push_str(piece);
+                    true
+                },
+            )
+            .unwrap();
+        let warm = engine.last_generation_stats().unwrap();
+
+        assert_eq!(cold_answer, first_answer);
+        assert_eq!(first_answer, warm_answer);
+        assert!(warm.cache_hit);
+        assert!(warm.reused_prompt_tokens > 0);
+        println!("{}", serde_json::json!({"cold": cold, "warm": warm}));
     }
 }

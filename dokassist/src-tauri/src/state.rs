@@ -16,6 +16,9 @@ pub struct AppState {
     pub data_dir: std::path::PathBuf,
     pub db: Mutex<Option<DbPool>>,
     pub llm: Mutex<Option<Arc<LlmEngine>>>,
+    /// Serializes model/context swaps so the old allocation is released before
+    /// a replacement model begins loading.
+    pub llm_swap: tokio::sync::Mutex<()>,
     /// Embedding engine for semantic search.  Populated lazily by `process_file`.
     pub embed: Mutex<Option<Arc<Mutex<EmbedEngine>>>>,
     /// Unencrypted medication reference SQLite (public AIPS data).
@@ -63,6 +66,7 @@ impl AppState {
             data_dir,
             db: Mutex::new(None),
             llm: Mutex::new(None),
+            llm_swap: tokio::sync::Mutex::new(()),
             embed: Mutex::new(None),
             medication_ref: Mutex::new(medication_ref),
         }

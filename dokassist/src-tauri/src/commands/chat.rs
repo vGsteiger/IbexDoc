@@ -1,5 +1,6 @@
 use crate::error::AppError;
-use crate::llm::agent::{run_agent_loop, AgentScope};
+use crate::llm::agent::{run_agent_loop, AgentScope, AgentTurnInput};
+use crate::llm::context_cache::InferenceSession;
 use crate::llm::engine::AgentMessage;
 use crate::models::chat::{self, ChatMessageRow, ChatSession, CreateChatMessage};
 use crate::models::patient;
@@ -48,7 +49,7 @@ pub async fn run_agent_turn(
     let pool = state.get_db()?;
 
     // Determine scope from session and pre-fetch patient context if applicable
-    let (scope, patient_context, history) = {
+    let (scope, patient_context, patient_revision, history) = {
         let conn = pool.conn()?;
         let session = chat::get_chat_session(&conn, &session_id)?;
         let scope = if session.scope == "patient" {
@@ -64,14 +65,15 @@ pub async fn run_agent_turn(
 
         // Pre-fetch patient data so the model knows who it's talking about
         // without needing a get_patient tool call.
-        let patient_context: Option<String> = if let AgentScope::Patient { ref patient_id } = scope
-        {
-            patient::get_patient(&conn, patient_id)
-                .ok()
-                .and_then(|p| serde_json::to_string(&p).ok())
+        let patient_record = if let AgentScope::Patient { ref patient_id } = scope {
+            patient::get_patient(&conn, patient_id).ok()
         } else {
             None
         };
+        let patient_revision = patient_record.as_ref().map(|p| p.updated_at.clone());
+        let patient_context = patient_record
+            .as_ref()
+            .and_then(|p| serde_json::to_string(p).ok());
 
         // Load existing messages as AgentMessages
         let msgs = chat::list_chat_messages(&conn, &session_id)?;
@@ -96,21 +98,32 @@ pub async fn run_agent_turn(
             },
         )?;
 
-        (scope, patient_context, history)
+        (scope, patient_context, patient_revision, history)
     };
 
     // Run the agent loop on a blocking thread
     let app_clone = app.clone();
     let session_id_clone = session_id.clone();
+    let inference_session = InferenceSession::agent(
+        session_id.clone(),
+        match &scope {
+            AgentScope::Patient { patient_id } => Some(patient_id.clone()),
+            AgentScope::Global => None,
+        },
+        patient_revision,
+    );
     let result = tokio::task::spawn_blocking(move || {
         run_agent_loop(
             &app_clone,
             &engine,
             &pool,
-            scope,
-            patient_context,
-            history,
-            user_message,
+            AgentTurnInput {
+                inference_session,
+                scope,
+                patient_context,
+                history,
+                user_message,
+            },
         )
     })
     .await
