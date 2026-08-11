@@ -34,6 +34,7 @@
     getMedicationReferenceVersion,
     downloadMedicationReference,
     type LlmEngineStatus,
+    type InferenceFallbackCode,
     type InferenceProfile,
     type GenerationStats,
     type ModelChoice,
@@ -121,12 +122,7 @@
       getEmbedStatus(),
       getMedicationReferenceVersion().catch(() => null),
     ]);
-    if (
-      status.inference_config &&
-      ['conservative', 'f16-32k', 'q8-32k', 'q4-32k'].includes(status.inference_config.profile)
-    ) {
-      inferenceProfile = status.inference_config.profile as InferenceProfile;
-    }
+    if (status.inference_config) inferenceProfile = status.inference_config.profile;
     if (status.is_loaded) phase = 'done';
     if (embedStatus.is_loaded) embedPhase = 'done';
 
@@ -260,7 +256,7 @@
     return `${gb.toFixed(1)} GB`;
   }
 
-  function inferenceFallbackLabel(code: string): string {
+  function inferenceFallbackLabel(code: InferenceFallbackCode): string | null {
     switch (code) {
       case 'native_context_cap':
         return $t('settings.fallbackNativeContext');
@@ -271,8 +267,13 @@
       case 'kv_f16_flash_auto':
         return $t('settings.fallbackKvF16FlashAuto');
       default:
-        return '';
+        return null;
     }
+  }
+
+  function inferenceFallbackDiagnostic(config: NonNullable<LlmEngineStatus['inference_config']>) {
+    if (!config.fallback_code) return config.fallback;
+    return inferenceFallbackLabel(config.fallback_code) || config.fallback;
   }
 
   async function handleDownload() {
@@ -923,6 +924,7 @@
 
     {#if status?.inference_config}
       {@const config = status.inference_config}
+      {@const fallbackDiagnostic = inferenceFallbackDiagnostic(config)}
       <div class="border-t border-gray-300 dark:border-gray-700 pt-3 mb-3">
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
           {$t('settings.activeInferenceConfiguration')}
@@ -949,11 +951,11 @@
             String(config.completion_headroom),
           )}
         </p>
-        {#if config.fallback_code}
+        {#if fallbackDiagnostic}
           <p
             class="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-md px-2.5 py-2 mt-2"
           >
-            {inferenceFallbackLabel(config.fallback_code)}
+            {fallbackDiagnostic}
           </p>
         {/if}
       </div>

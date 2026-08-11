@@ -120,18 +120,24 @@ export interface LlmEngineStatus {
 }
 
 export type InferenceProfile = 'conservative' | 'f16-32k' | 'q8-32k' | 'q4-32k';
+export type FlashAttentionMode = 'enabled' | 'auto';
+export type InferenceFallbackCode =
+  | 'native_context_cap'
+  | 'flash_auto'
+  | 'kv_f16'
+  | 'kv_f16_flash_auto';
 
 export interface InferenceDiagnostics {
-  profile: string;
+  profile: InferenceProfile;
   context_size: number;
   kv_cache_k: string;
   kv_cache_v: string;
   n_batch: number;
   n_ubatch: number;
-  flash_attention: string;
+  flash_attention: FlashAttentionMode;
   completion_headroom: number;
   fallback: string | null;
-  fallback_code: string | null;
+  fallback_code: InferenceFallbackCode | null;
 }
 
 export interface EmbedStatus {
