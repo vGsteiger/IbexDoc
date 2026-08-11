@@ -55,7 +55,7 @@ libc = "0.2"
 dirs = "6"
 
 # PDF (PKG-3)
-pdf-extract = "0.10"
+pdf-extract = "0.12"
 
 # Embeddings (PKG-semantic-search)
 fastembed = { version = "5", default-features = false, features = ["ort-download-binaries", "hf-hub"] }
