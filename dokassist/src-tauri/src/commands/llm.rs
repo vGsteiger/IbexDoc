@@ -77,6 +77,7 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
                     None
                 },
                 last_generation_stats: None,
+                inference_config: None,
             })
         }
     }
@@ -120,16 +121,20 @@ pub async fn download_model(
 pub async fn load_model(
     state: State<'_, AppState>,
     model_filename: String,
+    inference_profile: Option<String>,
 ) -> Result<(), AppError> {
     // Validate filename to prevent path traversal
     validate_model_filename(&model_filename)?;
 
     let model_path = state.data_dir.join("models").join(&model_filename);
     let model_name = model_filename.clone();
+    let inference_profile = inference_profile.unwrap_or_else(|| "conservative".to_string());
 
-    let engine = tokio::task::spawn_blocking(move || LlmEngine::load(model_path, model_name))
-        .await
-        .map_err(|e| AppError::Llm(format!("spawn_blocking error: {e}")))??;
+    let engine = tokio::task::spawn_blocking(move || {
+        LlmEngine::load_with_profile(model_path, model_name, &inference_profile)
+    })
+    .await
+    .map_err(|e| AppError::Llm(format!("spawn_blocking error: {e}")))??;
 
     *state.llm.lock().map_err(|_| llm_lock_poisoned())? = Some(Arc::new(engine));
     Ok(())

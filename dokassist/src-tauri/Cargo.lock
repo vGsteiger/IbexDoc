@@ -1474,6 +1474,7 @@ dependencies = [
  "hex",
  "libc",
  "llama-cpp-2",
+ "llama-cpp-sys-2",
  "log",
  "minisign-verify",
  "pdf-extract",

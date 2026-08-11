@@ -4,6 +4,7 @@ pub mod download;
 pub mod embed;
 pub mod engine;
 mod extract;
+pub mod inference;
 pub mod patient_context;
 mod prompts;
 mod report;
