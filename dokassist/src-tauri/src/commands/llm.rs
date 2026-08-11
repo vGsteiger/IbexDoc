@@ -129,7 +129,9 @@ pub async fn load_model(
 
     let model_path = state.data_dir.join("models").join(&model_filename);
     let model_name = model_filename.clone();
-    let inference_profile = inference_profile.unwrap_or_else(|| "conservative".to_string());
+    // "governed" is the safe default. Named profiles remain available as
+    // explicit research overrides and are checked against the same budget.
+    let inference_profile = inference_profile.unwrap_or_else(|| "governed".to_string());
 
     // Only one swap may run at a time. Drop the state-owned old engine before
     // loading the replacement so two model/context allocations cannot overlap.

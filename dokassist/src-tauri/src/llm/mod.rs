@@ -6,6 +6,7 @@ pub mod embed;
 pub mod engine;
 mod extract;
 pub mod inference;
+pub mod memory_governor;
 pub mod patient_context;
 mod prompts;
 mod report;
