@@ -106,6 +106,25 @@ export interface GenerationStats {
   tps: number;
   completion_tokens: number;
   prompt_tokens: number;
+  evaluated_prompt_tokens: number;
+  reused_prompt_tokens: number;
+  cache_hit: boolean;
+  prefill_ms: number;
+  estimated_prefill_saved_ms: number;
+  total_latency_ms: number;
+  peak_rss_bytes: number;
+}
+
+export interface ContextCacheTelemetry {
+  hits: number;
+  misses: number;
+  invalidations: number;
+  evictions: number;
+  reused_tokens: number;
+  evaluated_tokens: number;
+  estimated_prefill_saved_ms: number;
+  resident_contexts: number;
+  max_contexts: number;
 }
 
 export interface LlmEngineStatus {
@@ -117,6 +136,7 @@ export interface LlmEngineStatus {
   downloaded_filename: string | null;
   last_generation_stats: GenerationStats | null;
   inference_config: InferenceDiagnostics | null;
+  context_cache: ContextCacheTelemetry;
 }
 
 export type InferenceProfile = 'conservative' | 'f16-32k' | 'q8-32k' | 'q4-32k';

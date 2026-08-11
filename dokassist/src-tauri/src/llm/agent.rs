@@ -1,6 +1,7 @@
 //! Agentic loop: the LLM can call tools (patient data, calendar, search, reports)
 //! and converses with the user over multiple turns.
 
+use super::context_cache::InferenceSession;
 use super::engine::{AgentMessage, LlmEngine};
 use super::utf8;
 use crate::database::DbPool;
@@ -57,6 +58,14 @@ pub struct ExecutedToolCall {
 pub struct AgentLoopResult {
     pub final_answer: String,
     pub tool_calls_made: Vec<ExecutedToolCall>,
+}
+
+pub struct AgentTurnInput {
+    pub inference_session: InferenceSession,
+    pub scope: AgentScope,
+    pub patient_context: Option<String>,
+    pub history: Vec<AgentMessage>,
+    pub user_message: String,
 }
 
 /// Build a scope-specific system prompt.
@@ -235,11 +244,15 @@ pub fn run_agent_loop(
     app: &tauri::AppHandle,
     engine: &Arc<LlmEngine>,
     pool: &DbPool,
-    scope: AgentScope,
-    patient_context: Option<String>,
-    mut history: Vec<AgentMessage>,
-    user_message: String,
+    input: AgentTurnInput,
 ) -> Result<AgentLoopResult, AppError> {
+    let AgentTurnInput {
+        inference_session,
+        scope,
+        patient_context,
+        mut history,
+        user_message,
+    } = input;
     let system_prompt = build_system_prompt(&scope, patient_context.as_deref());
 
     history.push(AgentMessage {
@@ -267,12 +280,19 @@ pub fn run_agent_loop(
 
         // Probe: collect output to check for tool call
         let mut probe_output = String::new();
-        engine.generate_streaming_raw(&prompt, PROBE_MAX_TOKENS, PROBE_TEMP, |token| {
-            probe_output.push_str(token);
-            // Stop early if we see the closing tag
-            !probe_output.contains("</tool_call>")
-                || !probe_output.contains("\n\n") && probe_output.len() < PROBE_MAX_TOKENS * 4
-        })?;
+        engine.generate_streaming_session(
+            &inference_session,
+            &system_prompt,
+            &prompt,
+            PROBE_MAX_TOKENS,
+            PROBE_TEMP,
+            |token| {
+                probe_output.push_str(token);
+                // Stop early if we see the closing tag
+                !probe_output.contains("</tool_call>")
+                    || !probe_output.contains("\n\n") && probe_output.len() < PROBE_MAX_TOKENS * 4
+            },
+        )?;
 
         let probe_trimmed = probe_output.trim();
 
@@ -336,7 +356,9 @@ pub fn run_agent_loop(
             let final_prompt = engine.format_chat_history(&system_prompt, &history)?;
             let mut final_answer = String::new();
 
-            engine.generate_streaming_raw(
+            engine.generate_streaming_session(
+                &inference_session,
+                &system_prompt,
                 &final_prompt,
                 ANSWER_MAX_TOKENS,
                 ANSWER_TEMP,
@@ -362,11 +384,18 @@ pub fn run_agent_loop(
     // Exceeded MAX_ITERATIONS — force a final answer from accumulated history
     let final_prompt = engine.format_chat_history(&system_prompt, &history)?;
     let mut final_answer = String::new();
-    engine.generate_streaming_raw(&final_prompt, ANSWER_MAX_TOKENS, ANSWER_TEMP, |token| {
-        final_answer.push_str(token);
-        let _ = app.emit("agent-chunk", token);
-        true
-    })?;
+    engine.generate_streaming_session(
+        &inference_session,
+        &system_prompt,
+        &final_prompt,
+        ANSWER_MAX_TOKENS,
+        ANSWER_TEMP,
+        |token| {
+            final_answer.push_str(token);
+            let _ = app.emit("agent-chunk", token);
+            true
+        },
+    )?;
     let _ = app.emit(
         "agent-done",
         serde_json::json!({"final_answer": final_answer}),

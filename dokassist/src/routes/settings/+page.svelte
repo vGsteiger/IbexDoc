@@ -984,6 +984,10 @@
         <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
           {s.prompt_tokens} prompt tokens · {s.completion_tokens} generated tokens
         </p>
+        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+          {s.cache_hit ? 'Warm context' : 'Cold context'} · {s.reused_prompt_tokens} reused ·
+          {s.evaluated_prompt_tokens} evaluated · {s.prefill_ms.toFixed(0)}ms prefill
+        </p>
       </div>
     {/if}
   </div>
