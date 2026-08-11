@@ -34,6 +34,7 @@
     getMedicationReferenceVersion,
     downloadMedicationReference,
     type LlmEngineStatus,
+    type InferenceProfile,
     type GenerationStats,
     type ModelChoice,
     type UpdateInfo,
@@ -90,6 +91,7 @@
   let selectedTaskModel = $state<Record<string, string>>({});
   let modelManagementError = $state('');
   let loadingModels = $state(false);
+  let inferenceProfile = $state<InferenceProfile>('conservative');
 
   // Embedding model state
   let embedStatus = $state<EmbedStatus | null>(null);
@@ -119,6 +121,12 @@
       getEmbedStatus(),
       getMedicationReferenceVersion().catch(() => null),
     ]);
+    if (
+      status.inference_config &&
+      ['conservative', 'f16-32k', 'q8-32k', 'q4-32k'].includes(status.inference_config.profile)
+    ) {
+      inferenceProfile = status.inference_config.profile as InferenceProfile;
+    }
     if (status.is_loaded) phase = 'done';
     if (embedStatus.is_loaded) embedPhase = 'done';
 
@@ -252,6 +260,21 @@
     return `${gb.toFixed(1)} GB`;
   }
 
+  function inferenceFallbackLabel(code: string): string {
+    switch (code) {
+      case 'native_context_cap':
+        return $t('settings.fallbackNativeContext');
+      case 'flash_auto':
+        return $t('settings.fallbackFlashAuto');
+      case 'kv_f16':
+        return $t('settings.fallbackKvF16');
+      case 'kv_f16_flash_auto':
+        return $t('settings.fallbackKvF16FlashAuto');
+      default:
+        return '';
+    }
+  }
+
   async function handleDownload() {
     if (!recommended) return;
     phase = 'downloading';
@@ -284,7 +307,7 @@
     phase = 'loading';
     errorMsg = '';
     try {
-      await loadModel(recommended.filename);
+      await loadModel(recommended.filename, inferenceProfile);
       status = await getEngineStatus();
       phase = 'done';
     } catch (e) {
@@ -330,7 +353,7 @@
     phase = 'loading';
     errorMsg = '';
     try {
-      await loadModel(filename);
+      await loadModel(filename, inferenceProfile);
       status = await getEngineStatus();
       await loadInstalledModels(); // Refresh list to show loaded badge
       phase = 'done';
@@ -855,6 +878,29 @@
     {$t('settings.modelManagement')}
   </h2>
 
+  <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6">
+    <label
+      for="inference-profile"
+      class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2"
+    >
+      {$t('settings.inferenceProfile')}
+    </label>
+    <select
+      id="inference-profile"
+      bind:value={inferenceProfile}
+      disabled={phase === 'loading'}
+      class="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+    >
+      <option value="conservative">{$t('settings.inferenceConservative')}</option>
+      <option value="f16-32k">{$t('settings.inferenceF16')}</option>
+      <option value="q8-32k">{$t('settings.inferenceQ8')}</option>
+      <option value="q4-32k">{$t('settings.inferenceQ4')}</option>
+    </select>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+      {$t('settings.inferenceProfileDescription')}
+    </p>
+  </div>
+
   <!-- Currently loaded model status -->
   <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6">
     <div class="flex items-center gap-3 mb-4">
@@ -874,6 +920,44 @@
         {/if}
       </div>
     </div>
+
+    {#if status?.inference_config}
+      {@const config = status.inference_config}
+      <div class="border-t border-gray-300 dark:border-gray-700 pt-3 mb-3">
+        <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {$t('settings.activeInferenceConfiguration')}
+        </p>
+        <p class="text-xs text-gray-600 dark:text-gray-400">
+          {$t('settings.inferenceConfigSummary')
+            .replace('{context}', String(Math.round(config.context_size / 1024)))
+            .replace('{key}', config.kv_cache_k)
+            .replace('{value}', config.kv_cache_v)
+            .replace('{batch}', String(config.n_batch))
+            .replace('{microBatch}', String(config.n_ubatch))
+            .replace(
+              '{flash}',
+              $t(
+                config.flash_attention === 'enabled'
+                  ? 'settings.flashEnabled'
+                  : 'settings.flashAuto',
+              ),
+            )}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+          {$t('settings.completionHeadroom').replace(
+            '{tokens}',
+            String(config.completion_headroom),
+          )}
+        </p>
+        {#if config.fallback_code}
+          <p
+            class="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-md px-2.5 py-2 mt-2"
+          >
+            {inferenceFallbackLabel(config.fallback_code)}
+          </p>
+        {/if}
+      </div>
+    {/if}
 
     {#if status?.last_generation_stats}
       {@const s = status.last_generation_stats}

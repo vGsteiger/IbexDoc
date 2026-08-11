@@ -116,6 +116,22 @@ export interface LlmEngineStatus {
   is_downloaded: boolean;
   downloaded_filename: string | null;
   last_generation_stats: GenerationStats | null;
+  inference_config: InferenceDiagnostics | null;
+}
+
+export type InferenceProfile = 'conservative' | 'f16-32k' | 'q8-32k' | 'q4-32k';
+
+export interface InferenceDiagnostics {
+  profile: string;
+  context_size: number;
+  kv_cache_k: string;
+  kv_cache_v: string;
+  n_batch: number;
+  n_ubatch: number;
+  flash_attention: string;
+  completion_headroom: number;
+  fallback: string | null;
+  fallback_code: string | null;
 }
 
 export interface EmbedStatus {
@@ -150,8 +166,13 @@ export async function downloadModel(model: ModelChoice): Promise<void> {
   return await invoke<void>('download_model', { model });
 }
 
-export async function loadModel(modelFilename: string): Promise<void> {
-  return await invoke<void>('load_model', { modelFilename });
+export async function loadModel(
+  modelFilename: string,
+  inferenceProfile?: InferenceProfile,
+): Promise<void> {
+  const args: { modelFilename: string; inferenceProfile?: InferenceProfile } = { modelFilename };
+  if (inferenceProfile) args.inferenceProfile = inferenceProfile;
+  return await invoke<void>('load_model', args);
 }
 
 // === Model Management ===

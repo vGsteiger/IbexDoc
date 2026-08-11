@@ -219,6 +219,15 @@ describe('loadModel', () => {
     });
   });
 
+  it('passes an explicitly selected inference profile', async () => {
+    mockInvoke.mockResolvedValueOnce(undefined);
+    await loadModel('Qwen3-8B-Q4_K_M.gguf', 'q8-32k');
+    expect(mockInvoke).toHaveBeenCalledWith('load_model', {
+      modelFilename: 'Qwen3-8B-Q4_K_M.gguf',
+      inferenceProfile: 'q8-32k',
+    });
+  });
+
   it('propagates invoke errors', async () => {
     mockInvoke.mockRejectedValueOnce({ code: 'LLM_ERROR', message: 'Model file not found' });
     await expect(loadModel('missing.gguf')).rejects.toMatchObject({ code: 'LLM_ERROR' });
@@ -2315,4 +2324,3 @@ describe('queryPatientHistory', () => {
     });
   });
 });
-

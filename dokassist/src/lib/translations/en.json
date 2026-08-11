@@ -121,7 +121,22 @@
     "report": "Report",
     "useDefaultModel": "-- Use default model --",
     "installModelFirst": "Install at least one model to configure task-specific assignments.",
-    "modelMissingOnDisk": "Model file missing on disk"
+    "modelMissingOnDisk": "Model file missing on disk",
+    "inferenceProfile": "Inference profile",
+    "inferenceConservative": "Conservative (automatic context, F16 KV)",
+    "inferenceF16": "32K experiment (F16 KV)",
+    "inferenceQ8": "32K experiment (Q8 KV)",
+    "inferenceQ4": "32K experiment (Q4 KV)",
+    "inferenceProfileDescription": "Applied the next time a model is loaded. Experimental KV quantization can affect output quality; unsupported settings fall back with an explicit diagnostic.",
+    "activeInferenceConfiguration": "Active inference configuration",
+    "inferenceConfigSummary": "{context}K context · {key}/{value} KV · {batch} batch · {microBatch} micro-batch · Flash Attention {flash}",
+    "completionHeadroom": "{tokens} tokens reserved for completion",
+    "flashEnabled": "enabled",
+    "flashAuto": "automatic",
+    "fallbackNativeContext": "The requested context was capped to the model's native limit.",
+    "fallbackFlashAuto": "Forced Flash Attention is unsupported by this backend/model; the automatic policy is active.",
+    "fallbackKvF16": "The requested quantized KV cache is unsupported by this backend/model; F16 KV is active.",
+    "fallbackKvF16FlashAuto": "The requested quantized KV cache and forced Flash Attention are unsupported; F16 KV and automatic Flash Attention are active."
   },
   "auth": {
     "welcomeToRamDoc": "Welcome to RamDoc",

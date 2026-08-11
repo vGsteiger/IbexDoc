@@ -1,7 +1,12 @@
 use super::download;
+use super::inference::{
+    validate_context_budget, FlashAttentionMode, InferenceDiagnostics, InferenceProfile,
+    KvCacheQuantization,
+};
 use crate::error::AppError;
 use encoding_rs::UTF_8;
 use llama_cpp_2::context::params::LlamaContextParams;
+use llama_cpp_2::context::LlamaContext;
 use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::model::params::LlamaModelParams;
@@ -18,7 +23,6 @@ const ALL_GPU_LAYERS: u32 = 999;
 const MIN_CONTEXT_SIZE: usize = 16_384;
 const STANDARD_CONTEXT_SIZE: usize = 32_768;
 const LARGE_CONTEXT_SIZE: usize = 65_536;
-const PROMPT_BATCH_SIZE: u32 = 2_048;
 
 /// Performance metrics recorded after each generation call.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,8 +47,16 @@ pub struct LlmEngine {
     model_name: String,
     chat_template: LlamaChatTemplate,
     context_size: usize,
+    inference: Mutex<InferenceRuntime>,
     backend: LlamaBackend,
     last_stats: Mutex<Option<GenerationStats>>,
+}
+
+#[derive(Debug, Clone)]
+struct InferenceRuntime {
+    profile: InferenceProfile,
+    fallback: Option<String>,
+    fallback_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,11 +79,22 @@ pub struct EngineStatus {
     pub downloaded_filename: Option<String>,
     /// Performance stats from the most recent generation, if any.
     pub last_generation_stats: Option<GenerationStats>,
+    /// Effective llama.cpp context parameters and any explicit fallback.
+    pub inference_config: Option<InferenceDiagnostics>,
 }
 
 impl LlmEngine {
     /// Load a GGUF model from disk, offloading all layers to Metal.
     pub fn load(model_path: PathBuf, model_name: String) -> Result<Self, AppError> {
+        Self::load_with_profile(model_path, model_name, "conservative")
+    }
+
+    /// Load a GGUF model with a named, validated inference profile.
+    pub fn load_with_profile(
+        model_path: PathBuf,
+        model_name: String,
+        profile_name: &str,
+    ) -> Result<Self, AppError> {
         let backend = LlamaBackend::init()
             .map_err(|e| AppError::Llm(format!("Failed to init llama backend: {e}")))?;
 
@@ -80,6 +103,25 @@ impl LlmEngine {
         // has validated the tensor layout.  The SHA-256 pre-download check (CRIT-3)
         // already ensures model integrity; this is an additional layer of defence.
         let model_params = LlamaModelParams::default().with_n_gpu_layers(ALL_GPU_LAYERS);
+        #[cfg(feature = "metal")]
+        let model_params = {
+            let metal_devices: Vec<usize> = llama_cpp_2::list_llama_ggml_backend_devices()
+                .into_iter()
+                .filter(|device| device.backend.eq_ignore_ascii_case("metal"))
+                .map(|device| device.index)
+                .collect();
+            if metal_devices.is_empty() {
+                return Err(AppError::Llm(
+                    "Metal inference was requested, but llama.cpp reported no Metal device; refusing a silent CPU downgrade"
+                        .to_string(),
+                ));
+            }
+            model_params.with_devices(&metal_devices).map_err(|error| {
+                AppError::Llm(format!(
+                    "Failed to select the Metal inference device: {error}"
+                ))
+            })?
+        };
 
         let model = LlamaModel::load_from_file(&backend, &model_path, &model_params)
             .map_err(|e| AppError::Llm(format!("Failed to load model: {e}")))?;
@@ -92,11 +134,16 @@ impl LlmEngine {
         let native_context = model.n_ctx_train() as usize;
         let ram = Self::total_ram();
         let requested_context = runtime_context_for_ram(ram);
-        let context_size = if native_context == 0 {
-            requested_context
-        } else {
-            requested_context.min(native_context)
-        };
+        let requested_profile = InferenceProfile::named(profile_name, requested_context)?;
+        let profile = requested_profile.resolved_for_model(native_context)?;
+        let fallback = (profile.n_ctx != requested_profile.n_ctx).then(|| {
+            format!(
+                "Requested {}-token context capped to model native context of {} tokens",
+                requested_profile.n_ctx, profile.n_ctx
+            )
+        });
+        let fallback_code = fallback.as_ref().map(|_| "native_context_cap".to_string());
+        let context_size = profile.n_ctx;
 
         Ok(Self {
             backend,
@@ -105,8 +152,118 @@ impl LlmEngine {
             model_name,
             chat_template,
             context_size,
+            inference: Mutex::new(InferenceRuntime {
+                profile,
+                fallback,
+                fallback_code,
+            }),
             last_stats: Mutex::new(None),
         })
+    }
+
+    fn context_params(profile: &InferenceProfile) -> LlamaContextParams {
+        let flash_policy = match profile.flash_attention {
+            FlashAttentionMode::Enabled => llama_cpp_sys_2::LLAMA_FLASH_ATTN_TYPE_ENABLED,
+            FlashAttentionMode::Auto => llama_cpp_sys_2::LLAMA_FLASH_ATTN_TYPE_AUTO,
+        };
+        LlamaContextParams::default()
+            .with_n_ctx(NonZeroU32::new(profile.n_ctx as u32))
+            .with_n_batch(profile.n_batch)
+            .with_n_ubatch(profile.n_ubatch)
+            .with_type_k(profile.kv_cache.llama_type())
+            .with_type_v(profile.kv_cache.llama_type())
+            .with_flash_attention_policy(flash_policy)
+    }
+
+    fn create_context<'a>(&self, model: &'a LlamaModel) -> Result<LlamaContext<'a>, AppError> {
+        let runtime = self
+            .inference
+            .lock()
+            .map_err(|_| AppError::Llm("Inference profile mutex poisoned".to_string()))?
+            .clone();
+
+        let attempt = |profile: &InferenceProfile| {
+            model.new_context(&self.backend, Self::context_params(profile))
+        };
+        let requested_error = match attempt(&runtime.profile) {
+            Ok(context) => return Ok(context),
+            Err(error) => error,
+        };
+
+        let mut auto_flash = runtime.profile.clone();
+        auto_flash.flash_attention = FlashAttentionMode::Auto;
+        if runtime.profile.flash_attention == FlashAttentionMode::Enabled {
+            if let Ok(context) = attempt(&auto_flash) {
+                self.record_fallback(
+                    auto_flash,
+                    "flash_auto",
+                    "Flash Attention was rejected by this backend/model; using llama.cpp auto policy"
+                        .to_string(),
+                )?;
+                return Ok(context);
+            }
+        }
+
+        if runtime.profile.kv_cache != KvCacheQuantization::F16 {
+            let mut f16_flash = runtime.profile.clone();
+            f16_flash.kv_cache = KvCacheQuantization::F16;
+            if let Ok(context) = attempt(&f16_flash) {
+                self.record_fallback(
+                    f16_flash,
+                    "kv_f16",
+                    format!(
+                        "{} KV cache was rejected by this backend/model; using F16 KV cache",
+                        runtime.profile.kv_cache.label()
+                    ),
+                )?;
+                return Ok(context);
+            }
+
+            let mut f16_auto = f16_flash;
+            f16_auto.flash_attention = FlashAttentionMode::Auto;
+            if let Ok(context) = attempt(&f16_auto) {
+                self.record_fallback(
+                    f16_auto,
+                    "kv_f16_flash_auto",
+                    format!(
+                        "{} KV cache and forced Flash Attention were rejected by this backend/model; using F16 KV cache with llama.cpp auto Flash Attention policy",
+                        runtime.profile.kv_cache.label()
+                    ),
+                )?;
+                return Ok(context);
+            }
+        }
+
+        Err(AppError::Llm(format!(
+            "Failed to create context for inference profile '{}': {requested_error}; conservative fallbacks were also rejected (GPU layer offload was not changed)",
+            runtime.profile.name
+        )))
+    }
+
+    fn record_fallback(
+        &self,
+        profile: InferenceProfile,
+        fallback_code: &str,
+        diagnostic: String,
+    ) -> Result<(), AppError> {
+        let mut runtime = self
+            .inference
+            .lock()
+            .map_err(|_| AppError::Llm("Inference profile mutex poisoned".to_string()))?;
+        runtime.profile = profile;
+        runtime.fallback_code = Some(fallback_code.to_string());
+        runtime.fallback = Some(match runtime.fallback.take() {
+            Some(existing) => format!("{existing}; {diagnostic}"),
+            None => diagnostic,
+        });
+        Ok(())
+    }
+
+    fn inference_runtime(&self) -> Result<InferenceRuntime, AppError> {
+        self.inference
+            .lock()
+            .map(|runtime| runtime.clone())
+            .map_err(|_| AppError::Llm("Inference profile mutex poisoned".to_string()))
     }
 
     /// Run blocking inference and return the full completion string.
@@ -161,27 +318,24 @@ impl LlmEngine {
 
         // 2. Context sized to the machine, with bounded prompt batches so long
         // contexts do not require an equally large temporary compute buffer.
-        let ctx_params = LlamaContextParams::default()
-            .with_n_ctx(NonZeroU32::new(self.context_size as u32))
-            .with_n_batch(PROMPT_BATCH_SIZE);
-        let mut ctx = model
-            .new_context(&self.backend, ctx_params)
-            .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
+        let mut ctx = self.create_context(model)?;
+        let runtime = self.inference_runtime()?;
 
         // 3. Decode the prompt in bounded batches.
         let n_prompt = tokens.len();
-        if n_prompt >= self.context_size {
-            return Err(AppError::Llm(format!(
-                "Prompt too long ({n_prompt} tokens), exceeds context window ({})",
-                self.context_size
-            )));
-        }
-        let mut batch = LlamaBatch::new(PROMPT_BATCH_SIZE as usize, 1);
+        validate_context_budget(
+            self.context_size,
+            n_prompt,
+            max_tokens,
+            runtime.profile.completion_headroom,
+        )?;
+        let prompt_batch_size = ctx.n_batch() as usize;
+        let mut batch = LlamaBatch::new(prompt_batch_size, 1);
 
         let wall_start = Instant::now();
-        for (chunk_index, chunk) in tokens.chunks(PROMPT_BATCH_SIZE as usize).enumerate() {
+        for (chunk_index, chunk) in tokens.chunks(prompt_batch_size).enumerate() {
             batch.clear();
-            let start = chunk_index * PROMPT_BATCH_SIZE as usize;
+            let start = chunk_index * prompt_batch_size;
             for (offset, token) in chunk.iter().enumerate() {
                 let position = i32::try_from(start + offset)
                     .map_err(|_| AppError::Llm("Prompt position exceeds i32".to_string()))?;
@@ -278,6 +432,13 @@ impl LlmEngine {
             is_downloaded: self.model.is_some(),
             downloaded_filename: self.model.as_ref().map(|_| self.model_name.clone()),
             last_generation_stats: self.last_stats.lock().ok().and_then(|g| g.clone()),
+            inference_config: self.inference.lock().ok().map(|runtime| {
+                InferenceDiagnostics::from_profile(
+                    &runtime.profile,
+                    runtime.fallback.clone(),
+                    runtime.fallback_code.clone(),
+                )
+            }),
         }
     }
 
@@ -300,26 +461,23 @@ impl LlmEngine {
             .str_to_token(prompt, AddBos::Always)
             .map_err(|e| AppError::Llm(format!("Tokenization failed: {e}")))?;
 
-        let ctx_params = LlamaContextParams::default()
-            .with_n_ctx(NonZeroU32::new(self.context_size as u32))
-            .with_n_batch(PROMPT_BATCH_SIZE);
-        let mut ctx = model
-            .new_context(&self.backend, ctx_params)
-            .map_err(|e| AppError::Llm(format!("Failed to create context: {e}")))?;
+        let mut ctx = self.create_context(model)?;
+        let runtime = self.inference_runtime()?;
 
         let n_prompt = tokens.len();
-        if n_prompt >= self.context_size {
-            return Err(AppError::Llm(format!(
-                "Prompt too long ({n_prompt} tokens), exceeds context window ({})",
-                self.context_size
-            )));
-        }
-        let mut batch = LlamaBatch::new(PROMPT_BATCH_SIZE as usize, 1);
+        validate_context_budget(
+            self.context_size,
+            n_prompt,
+            max_tokens,
+            runtime.profile.completion_headroom,
+        )?;
+        let prompt_batch_size = ctx.n_batch() as usize;
+        let mut batch = LlamaBatch::new(prompt_batch_size, 1);
 
         let wall_start = Instant::now();
-        for (chunk_index, chunk) in tokens.chunks(PROMPT_BATCH_SIZE as usize).enumerate() {
+        for (chunk_index, chunk) in tokens.chunks(prompt_batch_size).enumerate() {
             batch.clear();
-            let start = chunk_index * PROMPT_BATCH_SIZE as usize;
+            let start = chunk_index * prompt_batch_size;
             for (offset, token) in chunk.iter().enumerate() {
                 let position = i32::try_from(start + offset)
                     .map_err(|_| AppError::Llm("Prompt position exceeds i32".to_string()))?;

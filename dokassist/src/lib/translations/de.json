@@ -120,7 +120,22 @@
     "report": "Bericht",
     "useDefaultModel": "-- Standardmodell verwenden --",
     "installModelFirst": "Installieren Sie mindestens ein Modell, um aufgabenspezifische Zuweisungen zu konfigurieren.",
-    "modelMissingOnDisk": "Modelldatei fehlt auf der Festplatte"
+    "modelMissingOnDisk": "Modelldatei fehlt auf der Festplatte",
+    "inferenceProfile": "Inferenzprofil",
+    "inferenceConservative": "Konservativ (automatischer Kontext, F16-KV)",
+    "inferenceF16": "32K-Experiment (F16-KV)",
+    "inferenceQ8": "32K-Experiment (Q8-KV)",
+    "inferenceQ4": "32K-Experiment (Q4-KV)",
+    "inferenceProfileDescription": "Wird beim nächsten Laden eines Modells angewendet. Experimentelle KV-Quantisierung kann die Ausgabequalität beeinflussen; nicht unterstützte Einstellungen werden mit einem ausdrücklichen Diagnosehinweis zurückgesetzt.",
+    "activeInferenceConfiguration": "Aktive Inferenzkonfiguration",
+    "inferenceConfigSummary": "{context}K Kontext · {key}/{value} KV · {batch} Batch · {microBatch} Micro-Batch · Flash Attention {flash}",
+    "completionHeadroom": "{tokens} Tokens für die Vervollständigung reserviert",
+    "flashEnabled": "aktiviert",
+    "flashAuto": "automatisch",
+    "fallbackNativeContext": "Der angeforderte Kontext wurde auf die native Grenze des Modells beschränkt.",
+    "fallbackFlashAuto": "Erzwungenes Flash Attention wird von diesem Backend/Modell nicht unterstützt; die automatische Einstellung ist aktiv.",
+    "fallbackKvF16": "Der angeforderte quantisierte KV-Cache wird von diesem Backend/Modell nicht unterstützt; F16-KV ist aktiv.",
+    "fallbackKvF16FlashAuto": "Der angeforderte quantisierte KV-Cache und erzwungenes Flash Attention werden nicht unterstützt; F16-KV und automatisches Flash Attention sind aktiv."
   },
   "auth": {
     "welcomeToRamDoc": "Willkommen bei RamDoc",
