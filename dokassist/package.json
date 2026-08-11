@@ -29,7 +29,7 @@
     "@types/node": "^26",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.8.0",
-    "eslint-plugin-svelte": "^3.17.0",
+    "eslint-plugin-svelte": "^3.22.0",
     "globals": "^17.8.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.4",
@@ -52,6 +52,6 @@
     "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-updater": "^2.10.1",
     "lucide-svelte": "^1.0.1",
-    "marked": "^18.0.7"
+    "marked": "^18.0.9"
   }
 }
