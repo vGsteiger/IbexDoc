@@ -3,6 +3,11 @@
 Issue #403. Implemented in `dokassist/src-tauri/src/llm/evidence/`, schema in
 `migrations/015_evidence_provenance.sql`.
 
+The context this layer fills is planned by the
+[memory governor](local-inference-16gb-research.md): it decides how large a
+context a machine can afford, and `budget_for_context` sizes the evidence block
+inside it.
+
 A patient-history question must be answerable on a 16K-context local model
 without putting the raw record in the KV cache, and every sentence of the answer
 must be traceable to an exact, current source revision. This layer sits between
