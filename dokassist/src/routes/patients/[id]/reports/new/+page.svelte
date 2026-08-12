@@ -450,10 +450,12 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <!-- Section caption, not a control label: the file input below is wrapped
+                 by its own <label>. -->
+            <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {$t('reports.additionalContext')}
               <span class="text-gray-400 dark:text-gray-500">{$t('reports.additionalContextHint')}</span>
-            </label>
+            </p>
             {#if uploadedFileName}
               <div class="flex items-center gap-3 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg">
                 <svg class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

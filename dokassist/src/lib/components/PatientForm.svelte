@@ -16,38 +16,31 @@
     cancel: void;
   }>();
 
-  let formData = $state({
-    ahv_number: patient?.ahv_number || '',
-    first_name: patient?.first_name || '',
-    last_name: patient?.last_name || '',
-    date_of_birth: patient?.date_of_birth || '',
-    gender: patient?.gender || '',
-    address: patient?.address || '',
-    phone: patient?.phone || '',
-    email: patient?.email || '',
-    insurance: patient?.insurance || '',
-    gp_name: patient?.gp_name || '',
-    gp_address: patient?.gp_address || '',
-    notes: patient?.notes || '',
-  });
+  function toFormData(source: Patient | null) {
+    return {
+      ahv_number: source?.ahv_number || '',
+      first_name: source?.first_name || '',
+      last_name: source?.last_name || '',
+      date_of_birth: source?.date_of_birth || '',
+      gender: source?.gender || '',
+      address: source?.address || '',
+      phone: source?.phone || '',
+      email: source?.email || '',
+      insurance: source?.insurance || '',
+      gp_name: source?.gp_name || '',
+      gp_address: source?.gp_address || '',
+      notes: source?.notes || '',
+    };
+  }
+
+  // Snapshot the incoming patient for the initial render; the effect below keeps
+  // the form in sync when a different patient is passed in later.
+  let formData = $state(untrack(() => toFormData(patient)));
 
   $effect(() => {
     if (patient) {
       untrack(() => {
-        formData = {
-          ahv_number: patient!.ahv_number || '',
-          first_name: patient!.first_name || '',
-          last_name: patient!.last_name || '',
-          date_of_birth: patient!.date_of_birth || '',
-          gender: patient!.gender || '',
-          address: patient!.address || '',
-          phone: patient!.phone || '',
-          email: patient!.email || '',
-          insurance: patient!.insurance || '',
-          gp_name: patient!.gp_name || '',
-          gp_address: patient!.gp_address || '',
-          notes: patient!.notes || '',
-        };
+        formData = toFormData(patient);
       });
     }
   });

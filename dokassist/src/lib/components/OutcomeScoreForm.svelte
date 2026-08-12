@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { CreateOutcomeScore, UpdateOutcomeScore, OutcomeScore } from '$lib/api';
 
   interface Props {
@@ -10,10 +11,19 @@
 
   let { outcomeScore, sessionId, onSave, onCancel }: Props = $props();
 
-  let scaleType = $state(outcomeScore?.scale_type || 'PHQ-9');
-  let score = $state(outcomeScore?.score?.toString() || '');
-  let administeredAt = $state(outcomeScore?.administered_at || new Date().toISOString().split('T')[0]);
-  let notes = $state(outcomeScore?.notes || '');
+  // The form intentionally snapshots the score it was opened with; a different
+  // score is edited by remounting the form, not by swapping the prop.
+  const initial = untrack(() => ({
+    scaleType: outcomeScore?.scale_type || 'PHQ-9',
+    score: outcomeScore?.score?.toString() || '',
+    administeredAt: outcomeScore?.administered_at || new Date().toISOString().split('T')[0],
+    notes: outcomeScore?.notes || ''
+  }));
+
+  let scaleType = $state(initial.scaleType);
+  let score = $state(initial.score);
+  let administeredAt = $state(initial.administeredAt);
+  let notes = $state(initial.notes);
 
   const scaleOptions = [
     { value: 'PHQ-9', label: 'PHQ-9 (Depression)', max: 27 },
@@ -110,7 +120,7 @@
       rows="3"
       placeholder="Zusätzliche Beobachtungen..."
       class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-    />
+    ></textarea>
   </div>
 
   <div class="flex justify-end gap-3 pt-4">

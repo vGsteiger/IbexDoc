@@ -415,7 +415,7 @@
   let restoreInput = $state("");
   let restoreError = $state("");
   let selectedBackupFile: File | null = null;
-  let validatedBackupInfo: BackupInfo | null = null;
+  let validatedBackupInfo = $state<BackupInfo | null>(null);
 
   // CSV Import state
   let selectedCsvPath = $state<string | null>(null);
@@ -1585,11 +1585,13 @@
 
       <div class="mb-3">
         <label
+          for="restore-backup-file"
           class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2"
         >
           Select Backup File (.dokassist)
         </label>
         <input
+          id="restore-backup-file"
           type="file"
           accept=".dokassist"
           onchange={handleSelectRestoreFile}
