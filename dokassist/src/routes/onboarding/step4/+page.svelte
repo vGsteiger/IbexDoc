@@ -1,25 +1,17 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { completeOnboarding, parseError } from '$lib/api';
-  import {
-    ChevronLeft,
-    Users,
-    Mic,
-    Search,
-    FileText,
-    Calendar,
-    CheckCircle,
-  } from 'lucide-svelte';
+  import { ChevronLeft, Users, Mic, Search, FileText, Calendar, CheckCircle } from 'lucide-svelte';
 
   let isCompleting = $state(false);
   let error = $state<string | null>(null);
 
   const colorClasses: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-900/20', text: 'text-blue-500' },
-    green: { bg: 'bg-green-900/20', text: 'text-green-500' },
-    purple: { bg: 'bg-purple-900/20', text: 'text-purple-500' },
-    yellow: { bg: 'bg-yellow-900/20', text: 'text-yellow-500' },
-    red: { bg: 'bg-red-900/20', text: 'text-red-500' },
+    blue: { bg: 'bg-accent-subtle/20', text: 'text-accent-fg' },
+    green: { bg: 'bg-success-subtle/20', text: 'text-success-fg' },
+    purple: { bg: 'bg-accent-subtle/20', text: 'text-accent-fg' },
+    yellow: { bg: 'bg-warning-subtle/20', text: 'text-warning-fg' },
+    red: { bg: 'bg-danger-subtle/20', text: 'text-danger-fg' },
   };
 
   async function handleComplete() {
@@ -78,84 +70,90 @@
   ];
 </script>
 
-<div class="onboarding-theme min-h-screen bg-gray-950 flex items-center justify-center p-8">
+<div class="min-h-screen bg-surface flex items-center justify-center p-8">
   <div class="max-w-4xl w-full">
     <div class="mb-8 text-center">
-      <h1 class="text-3xl font-bold text-gray-100 mb-2">Welcome to RamDoc!</h1>
-      <p class="text-gray-400">
+      <h1 class="text-display font-semibold text-fg mb-2">Welcome to RamDoc!</h1>
+      <p class="text-fg-muted">
         Here's a quick overview of the key features to help you get started.
       </p>
       <div class="flex items-center justify-center gap-2 mt-4">
-        <div class="h-2 w-16 bg-blue-600 rounded-full"></div>
-        <div class="h-2 w-16 bg-blue-600 rounded-full"></div>
-        <div class="h-2 w-16 bg-blue-600 rounded-full"></div>
-        <div class="h-2 w-16 bg-blue-600 rounded-full"></div>
+        <div class="h-2 w-16 bg-accent rounded-full"></div>
+        <div class="h-2 w-16 bg-accent rounded-full"></div>
+        <div class="h-2 w-16 bg-accent rounded-full"></div>
+        <div class="h-2 w-16 bg-accent rounded-full"></div>
       </div>
     </div>
 
     {#if error}
-      <div class="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6">
-        <p class="text-red-500 text-sm">{error}</p>
+      <div class="bg-danger-subtle border border-danger-line rounded-card p-4 mb-6">
+        <p class="text-danger-fg text-body">{error}</p>
       </div>
     {/if}
 
-    <div class="bg-gray-900 border border-gray-800 rounded-lg p-8 space-y-6">
+    <div class="bg-surface-raised border border-line-subtle rounded-card p-8 space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {#each features as feature}
           {@const FeatureIcon = feature.icon}
-          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div
-              class="inline-block p-3 {colorClasses[feature.color].bg} rounded-lg mb-4"
-            >
+          <div class="bg-surface-hover rounded-card p-6 border border-line">
+            <div class="inline-block p-3 {colorClasses[feature.color].bg} rounded-card mb-4">
               <FeatureIcon size={28} class={colorClasses[feature.color].text} />
             </div>
-            <h3 class="text-gray-100 font-semibold mb-2">{feature.title}</h3>
-            <p class="text-gray-400 text-sm">{feature.description}</p>
+            <h3 class="text-fg font-semibold mb-2">{feature.title}</h3>
+            <p class="text-fg-muted text-body">{feature.description}</p>
           </div>
         {/each}
       </div>
 
-      <div class="bg-blue-900/20 border border-blue-800 rounded-lg p-6">
+      <div class="bg-accent-subtle border border-accent-line rounded-card p-6">
         <div class="flex items-start gap-4">
           <div class="flex-shrink-0">
-            <CheckCircle size={24} class="text-blue-500" />
+            <CheckCircle size={24} class="text-accent-fg" />
           </div>
           <div>
-            <h3 class="text-blue-400 font-semibold mb-2">Privacy & Security</h3>
-            <p class="text-gray-400 text-sm leading-relaxed">
-              All your data is encrypted at rest using SQLCipher with AES-256 encryption.
-              Patient files are stored in an encrypted vault. The AI model runs locally on
-              your machine, so patient data never leaves your device. Audit logs track all
-              data access for nDSG compliance.
+            <h3 class="text-accent-fg font-semibold mb-2">Privacy & Security</h3>
+            <p class="text-fg-muted text-body leading-relaxed">
+              All your data is encrypted at rest using SQLCipher with AES-256 encryption. Patient
+              files are stored in an encrypted vault. The AI model runs locally on your machine, so
+              patient data never leaves your device. Audit logs track all data access for nDSG
+              compliance.
             </p>
           </div>
         </div>
       </div>
 
-      <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h3 class="text-gray-100 font-semibold mb-3">Quick Keyboard Shortcuts</h3>
+      <div class="bg-surface-hover rounded-card p-6 border border-line">
+        <h3 class="text-fg font-semibold mb-3">Quick Keyboard Shortcuts</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="flex items-center justify-between">
-            <span class="text-gray-400 text-sm">Open command palette</span>
-            <kbd class="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-300 text-xs font-mono">
+            <span class="text-fg-muted text-body">Open command palette</span>
+            <kbd
+              class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
+            >
               Cmd+K
             </kbd>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-400 text-sm">Create new patient</span>
-            <kbd class="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-300 text-xs font-mono">
+            <span class="text-fg-muted text-body">Create new patient</span>
+            <kbd
+              class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
+            >
               Cmd+N
             </kbd>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-400 text-sm">Create new session</span>
-            <kbd class="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-300 text-xs font-mono">
+            <span class="text-fg-muted text-body">Create new session</span>
+            <kbd
+              class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
+            >
               Cmd+Shift+S
             </kbd>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-400 text-sm">Close command palette</span>
-            <kbd class="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-300 text-xs font-mono">
+            <span class="text-fg-muted text-body">Close command palette</span>
+            <kbd
+              class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
+            >
               Esc
             </kbd>
           </div>
@@ -167,7 +165,7 @@
       <button
         onclick={handleBack}
         disabled={isCompleting}
-        class="px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+        class="px-6 py-3 border border-line bg-surface-raised hover:bg-surface-hover disabled:bg-surface-hover disabled:cursor-not-allowed text-fg font-medium rounded-control transition-colors flex items-center gap-2"
       >
         <ChevronLeft size={20} />
         Back
@@ -176,7 +174,7 @@
       <button
         onclick={handleComplete}
         disabled={isCompleting}
-        class="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center gap-2 text-lg"
+        class="px-8 py-3 bg-accent hover:bg-accent-hover disabled:bg-surface-selected disabled:cursor-not-allowed text-on-accent font-semibold rounded-control transition-colors flex items-center gap-2 text-heading"
       >
         {#if isCompleting}
           Completing...

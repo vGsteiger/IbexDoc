@@ -80,9 +80,9 @@
 
     try {
       const session = await createChatSession('patient', patientId, 'Email Draft');
-      const userIntent = aiPrompt.trim() || 'Schreibe eine professionelle E-Mail für diesen Patienten.';
-      const prompt =
-        `Schreibe den Text einer E-Mail an den Patienten. Verwende KEIN Tool – gib nur den fertigen E-Mail-Text aus (ohne Betreff, nur den Nachrichtentext). Anweisung: ${userIntent}`;
+      const userIntent =
+        aiPrompt.trim() || 'Schreibe eine professionelle E-Mail für diesen Patienten.';
+      const prompt = `Schreibe den Text einer E-Mail an den Patienten. Verwende KEIN Tool – gib nur den fertigen E-Mail-Text aus (ohne Betreff, nur den Nachrichtentext). Anweisung: ${userIntent}`;
       await runAgentTurn(session.id, prompt);
     } catch (e) {
       isGenerating = false;
@@ -192,9 +192,9 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{$t('email.compose')}</h2>
+    <h2 class="text-display font-semibold text-fg mb-2">{$t('email.compose')}</h2>
     {#if patient}
-      <p class="text-gray-500 dark:text-gray-400">
+      <p class="text-fg-muted">
         {$t('email.forPatient')}
         {patient.first_name}
         {patient.last_name}
@@ -208,14 +208,9 @@
     </div>
   {/if}
 
-  <div
-    class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-4"
-  >
+  <div class="bg-surface-sunken rounded-card p-6 border border-line space-y-4">
     <div>
-      <label
-        for="recipient"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-      >
+      <label for="recipient" class="block text-body font-medium text-fg-muted mb-2">
         {$t('email.to')}
       </label>
       <input
@@ -223,12 +218,12 @@
         type="email"
         bind:value={recipientEmail}
         placeholder="recipient@example.com"
-        class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
 
     <div>
-      <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label for="subject" class="block text-body font-medium text-fg-muted mb-2">
         {$t('email.subject')}
       </label>
       <input
@@ -236,12 +231,12 @@
         type="text"
         bind:value={subject}
         placeholder={$t('email.subjectPlaceholder')}
-        class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
 
     <div>
-      <label for="body" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label for="body" class="block text-body font-medium text-fg-muted mb-2">
         {$t('email.message')}
       </label>
       <textarea
@@ -249,14 +244,14 @@
         bind:value={body}
         placeholder={$t('email.messagePlaceholder')}
         rows="15"
-        class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 font-mono"
       ></textarea>
     </div>
 
-    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+    <div class="border-t border-line pt-4">
       <button
         on:click={() => (showAiPanel = !showAiPanel)}
-        class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        class="text-body text-accent-fg hover:underline"
       >
         {$t('email.aiAssist')}
       </button>
@@ -264,21 +259,18 @@
       {#if showAiPanel}
         <div class="mt-3 space-y-3">
           {#if aiError}
-            <p class="text-sm text-red-600 dark:text-red-400">{aiError}</p>
+            <p class="text-body text-danger-fg">{aiError}</p>
           {/if}
 
           <div>
-            <label
-              for="ai-prompt"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
+            <label for="ai-prompt" class="block text-body font-medium text-fg-muted mb-1">
               {$t('email.aiPromptLabel')}
             </label>
             <textarea
               id="ai-prompt"
               bind:value={aiPrompt}
               rows="3"
-              class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             ></textarea>
           </div>
 
@@ -286,22 +278,28 @@
             <button
               on:click={handleGenerateDraft}
               disabled={isGenerating}
-              class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? $t('email.generating') : $t('email.generateDraft')}
             </button>
           {:else}
-            <p class="text-sm text-gray-500 dark:text-gray-400">{$t('email.modelNotLoaded')}</p>
+            <p class="text-body text-fg-muted">{$t('email.modelNotLoaded')}</p>
           {/if}
 
           {#if aiDraft || isGenerating}
             <div class="mt-3 space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('email.generatedDraft')}</span>
+                <span class="text-body font-medium text-fg-muted">{$t('email.generatedDraft')}</span
+                >
                 {#if aiDraft && !isGenerating}
                   <button
-                    on:click={() => { body = aiDraft; aiDraft = ''; aiThinking = ''; rawDraft = ''; }}
-                    class="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    on:click={() => {
+                      body = aiDraft;
+                      aiDraft = '';
+                      aiThinking = '';
+                      rawDraft = '';
+                    }}
+                    class="text-body h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                   >
                     {$t('email.applyToBody')}
                   </button>
@@ -311,7 +309,7 @@
                 readonly
                 value={aiDraft}
                 rows="8"
-                class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 font-mono text-sm focus:outline-none"
+                class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg font-mono text-body focus:outline-none"
               ></textarea>
             </div>
           {/if}
@@ -320,12 +318,16 @@
             <div class="mt-2">
               <button
                 on:click={() => (showThinking = !showThinking)}
-                class="text-xs text-gray-400 dark:text-gray-500 hover:underline"
+                class="text-caption text-fg-subtle hover:underline"
               >
-                {showThinking ? $t('email.hideReasoning') : $t('email.showReasoning')} ({aiThinking.split('\n').length} {$t('email.reasoningLines')})
+                {showThinking ? $t('email.hideReasoning') : $t('email.showReasoning')} ({aiThinking.split(
+                  '\n'
+                ).length}
+                {$t('email.reasoningLines')})
               </button>
               {#if showThinking}
-                <pre class="mt-2 p-3 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap overflow-auto max-h-48">{aiThinking}</pre>
+                <pre
+                  class="mt-2 p-3 bg-surface-sunken border border-line rounded-card text-caption text-fg-muted whitespace-pre-wrap overflow-auto max-h-48">{aiThinking}</pre>
               {/if}
             </div>
           {/if}
@@ -333,12 +335,10 @@
       {/if}
     </div>
 
-    <div
-      class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700"
-    >
+    <div class="flex justify-between items-center pt-4 border-t border-line">
       <a
         href={`/patients/${patientId}/email`}
-        class="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        class="px-4 py-2 text-fg-muted hover:text-fg transition-colors"
       >
         {$t('common.cancel')}
       </a>
@@ -346,14 +346,14 @@
         <button
           on:click={handleSaveDraft}
           disabled={isSaving || isGenerating}
-          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="h-8 px-3 bg-surface-selected text-fg-muted rounded-control hover:bg-surface-selected transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? $t('email.saving') : $t('email.saveDraft')}
         </button>
         <button
           on:click={handleSendEmail}
           disabled={isSaving || isGenerating}
-          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? $t('email.opening') : $t('email.openMailClient')}
         </button>
@@ -361,7 +361,7 @@
     </div>
   </div>
 
-  <div class="mt-4 text-sm text-gray-400 dark:text-gray-500">
+  <div class="mt-4 text-body text-fg-subtle">
     <p>{$t('email.mailClientHint')}</p>
   </div>
 </div>

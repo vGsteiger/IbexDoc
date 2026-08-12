@@ -80,10 +80,10 @@
 </script>
 
 <div class="p-8 max-w-4xl mx-auto">
-  <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Neue Sitzung erfassen</h1>
+  <h1 class="text-display font-semibold text-fg mb-6">Neue Sitzung erfassen</h1>
 
   {#if error}
-    <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-lg mb-6">
+    <div class="bg-danger-subtle border border-danger-line text-danger-fg p-4 rounded-card mb-6">
       {error}
     </div>
   {/if}
@@ -91,14 +91,14 @@
   <form onsubmit={handleSubmit} class="space-y-6">
     <div class="grid grid-cols-3 gap-4">
       <div class="col-span-2">
-        <label for="session-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label for="session-type" class="block text-body font-medium text-fg-muted mb-1">
           Sitzungstyp *
         </label>
         <select
           id="session-type"
           bind:value={sessionType}
           required
-          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
         >
           {#each sessionTypes as type}
             <option value={type}>{type}</option>
@@ -107,7 +107,7 @@
       </div>
 
       <div>
-        <label for="duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label for="duration" class="block text-body font-medium text-fg-muted mb-1">
           Dauer (Min.)
         </label>
         <input
@@ -117,13 +117,13 @@
           min="0"
           step="5"
           placeholder="50"
-          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
         />
       </div>
     </div>
 
     <div>
-      <label for="session-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label for="session-date" class="block text-body font-medium text-fg-muted mb-1">
         Datum *
       </label>
       <input
@@ -131,31 +131,31 @@
         type="date"
         bind:value={sessionDate}
         required
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
 
     <div>
-      <label for="session-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label for="session-time" class="block text-body font-medium text-fg-muted mb-1">
         Uhrzeit (optional)
       </label>
       <input
         id="session-time"
         type="time"
         bind:value={sessionTime}
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
 
     <div>
-      <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Notizen * </label>
+      <label for="notes" class="block text-body font-medium text-fg-muted mb-1"> Notizen * </label>
       <textarea
         id="notes"
         bind:value={notes}
         required
         rows="8"
         placeholder="Gesprächsnotizen, Beobachtungen, Interventionen..."
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
       ></textarea>
     </div>
 
@@ -164,33 +164,33 @@
         <input
           type="checkbox"
           bind:checked={showAMDP}
-          class="w-4 h-4 bg-gray-700 border-gray-600 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
+          class="w-4 h-4 bg-surface-selected border-line rounded-control text-accent-fg focus:ring-2 focus:ring-accent/30"
         />
-        <span class="text-sm font-medium text-gray-300"
+        <span class="text-body font-medium text-fg-muted"
           >AMDP psychopathologische Befunde erfassen</span
         >
       </label>
     </div>
 
     {#if showAMDP}
-      <div class="border border-gray-700 rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-gray-100 mb-4">AMDP Befunderhebung</h2>
+      <div class="border border-line rounded-card p-4">
+        <h2 class="text-heading font-semibold text-fg mb-4">AMDP Befunderhebung</h2>
         <AMDPForm categories={amdpCategories} onScoreChange={handleAMDPScoreChange} />
       </div>
     {/if}
 
-    <div class="flex justify-end gap-3 pt-4 border-t border-gray-700">
+    <div class="flex justify-end gap-3 pt-4 border-t border-line">
       <button
         type="button"
         onclick={handleCancel}
-        class="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        class="h-8 px-3 bg-surface-hover text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
         disabled={saving}
       >
         Abbrechen
       </button>
       <button
         type="submit"
-        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={saving}
       >
         {saving ? 'Speichert...' : 'Sitzung speichern'}

@@ -68,11 +68,11 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+  <div class="p-3 border-b border-line">
     <button
       onclick={onsessionnew}
-      class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700
-             text-white text-sm font-medium rounded-lg transition-colors"
+      class="w-full flex items-center justify-center gap-2 h-8 px-3 bg-accent hover:bg-accent-hover
+ text-on-accent text-body font-medium rounded-control transition-colors"
     >
       <span>+</span>
       <span>Neuer Chat</span>
@@ -81,13 +81,13 @@
 
   <div class="flex-1 overflow-y-auto">
     {#if sessions.length === 0}
-      <p class="text-center text-gray-400 dark:text-gray-500 text-sm p-4">Keine Chats vorhanden</p>
+      <p class="text-center text-fg-subtle text-body p-4">Keine Chats vorhanden</p>
     {:else}
       <ul class="py-2">
         {#each sessions as session (session.id)}
           <li
-            class="group px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer
-                   {activeSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800' : ''}"
+            class="group px-3 py-2 hover:bg-surface-hover transition-colors cursor-pointer
+ {activeSessionId === session.id ? 'bg-surface-hover' : ''}"
           >
             {#if renamingId === session.id}
               <div class="flex gap-1">
@@ -98,17 +98,17 @@
                     if (e.key === 'Enter') confirmRename(session.id);
                     if (e.key === 'Escape') renamingId = null;
                   }}
-                  class="flex-1 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5
-                         text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+                  class="flex-1 text-body bg-surface-hover border border-line rounded-control px-2 py-0.5
+ text-fg focus:outline-none focus:border-accent"
                 />
                 <button
                   onclick={() => confirmRename(session.id)}
-                  class="text-xs text-green-400 hover:text-green-300 px-1"
+                  class="text-caption text-success-fg hover:text-success-fg px-1"
                   aria-label="Bestätigen"><Check size={14} /></button
                 >
                 <button
                   onclick={() => (renamingId = null)}
-                  class="text-xs text-gray-500 hover:text-gray-400 px-1"
+                  class="text-caption text-fg-muted hover:text-fg-muted px-1"
                   aria-label="Abbrechen"><X size={14} /></button
                 >
               </div>
@@ -121,8 +121,8 @@
                 onkeydown={(e) => e.key === 'Enter' && onsessionselect(session.id)}
               >
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm text-gray-800 dark:text-gray-200 truncate">{session.title}</p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500">
+                  <p class="text-body text-fg truncate">{session.title}</p>
+                  <p class="text-caption text-fg-subtle">
                     {formatDate(session.updated_at)}
                   </p>
                 </div>
@@ -132,7 +132,7 @@
                       e.stopPropagation();
                       startRename(session);
                     }}
-                    class="text-xs text-gray-500 hover:text-gray-300 p-0.5"
+                    class="text-caption text-fg-muted hover:text-fg p-0.5"
                     title="Umbenennen"><Pencil size={14} /></button
                   >
                   <button
@@ -140,7 +140,7 @@
                       e.stopPropagation();
                       handleDelete(session.id);
                     }}
-                    class="text-xs text-gray-500 hover:text-red-400 p-0.5"
+                    class="text-caption text-fg-muted hover:text-danger-fg p-0.5"
                     title="Löschen"><Trash2 size={14} /></button
                   >
                 </div>

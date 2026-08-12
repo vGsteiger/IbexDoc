@@ -1,6 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { listChatSessions, createChatSession, getEngineStatus, loadModel, type ChatSession } from '$lib/api';
+  import {
+    listChatSessions,
+    createChatSession,
+    getEngineStatus,
+    loadModel,
+    type ChatSession,
+  } from '$lib/api';
   import ChatSessionList from '$lib/components/ChatSessionList.svelte';
   import ChatThread from '$lib/components/ChatThread.svelte';
   import { t } from '$lib/translations';
@@ -36,7 +42,11 @@
     loadSessions();
     try {
       const engineStatus = await getEngineStatus();
-      if (engineStatus.is_downloaded && !engineStatus.is_loaded && engineStatus.downloaded_filename) {
+      if (
+        engineStatus.is_downloaded &&
+        !engineStatus.is_loaded &&
+        engineStatus.downloaded_filename
+      ) {
         loadModel(engineStatus.downloaded_filename);
       }
     } catch {
@@ -47,9 +57,9 @@
 
 <div class="flex h-full">
   <!-- Sidebar: session list -->
-  <div class="w-64 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0">
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-      <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wide">
+  <div class="w-64 border-r border-line flex flex-col shrink-0">
+    <div class="p-4 border-b border-line">
+      <h2 class="text-body font-semibold text-fg-muted uppercase tracking-wide">
         {$t('chat.chats')}
       </h2>
     </div>
@@ -71,12 +81,12 @@
         <ChatThread sessionId={activeSessionId} scope="global" />
       {/key}
     {:else if !isLoading}
-      <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
+      <div class="flex-1 flex items-center justify-center text-fg-subtle">
         <div class="text-center">
-          <p class="text-lg mb-2">Kein Chat ausgewählt</p>
+          <p class="text-heading mb-2">Kein Chat ausgewählt</p>
           <button
             onclick={handleNewSession}
-            class="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 underline text-sm"
+            class="text-accent-fg hover:text-accent-fg underline text-body"
           >
             Neuen Chat starten
           </button>

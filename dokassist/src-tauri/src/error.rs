@@ -30,6 +30,16 @@ pub enum AppError {
     #[error("Auth required")]
     AuthRequired,
 
+    /// A concurrent `initialize_app` call is still generating the master keys.
+    /// Proceeding would overwrite the vault and Keychain items it just wrote.
+    #[error("Setup is already in progress")]
+    SetupInProgress,
+
+    /// Master keys and an encrypted database already exist. Regenerating them
+    /// would discard the only key that can decrypt the existing data.
+    #[error("The app is already initialized")]
+    AlreadyInitialized,
+
     #[error("Invalid recovery passphrase")]
     InvalidRecoveryPhrase,
 
@@ -75,6 +85,8 @@ impl AppError {
             AppError::Filesystem(_) => "FILESYSTEM_ERROR".to_string(),
             AppError::Llm(_) => "LLM_ERROR".to_string(),
             AppError::AuthRequired => "AUTH_REQUIRED".to_string(),
+            AppError::SetupInProgress => "SETUP_IN_PROGRESS".to_string(),
+            AppError::AlreadyInitialized => "ALREADY_INITIALIZED".to_string(),
             AppError::InvalidRecoveryPhrase => "INVALID_RECOVERY_PHRASE".to_string(),
             AppError::NotFound(resource) => {
                 // Generate specific NOT_FOUND codes based on the resource

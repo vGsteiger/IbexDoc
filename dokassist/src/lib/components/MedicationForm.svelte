@@ -1,6 +1,12 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { CreateMedication, UpdateMedication, Medication, SubstanceSummary, SubstanceDetail } from '$lib/api';
+  import type {
+    CreateMedication,
+    UpdateMedication,
+    Medication,
+    SubstanceSummary,
+    SubstanceDetail,
+  } from '$lib/api';
   import { getMedicationReferenceDetail, searchMedicationReference } from '$lib/api';
   import MedicationAutocomplete from './MedicationAutocomplete.svelte';
   import MedicationInfoPanel from './MedicationInfoPanel.svelte';
@@ -10,7 +16,10 @@
     medication?: Medication;
     patientId?: string;
     activeMedications?: Medication[];
-    onSave: (input: CreateMedication | { id: string; update: UpdateMedication }, replacingMedicationId?: string | null) => void;
+    onSave: (
+      input: CreateMedication | { id: string; update: UpdateMedication },
+      replacingMedicationId?: string | null
+    ) => void;
     onCancel: () => void;
   }
 
@@ -55,12 +64,12 @@
     if (selectedSubstanceId) {
       const currentId = selectedSubstanceId;
       getMedicationReferenceDetail(currentId)
-        .then(detail => {
+        .then((detail) => {
           if (selectedSubstanceId === currentId) {
             selectedSubstanceDetail = detail;
           }
         })
-        .catch(err => {
+        .catch((err) => {
           console.error('Failed to load substance detail:', err);
           if (selectedSubstanceId === currentId) {
             selectedSubstanceDetail = null;
@@ -75,24 +84,24 @@
   $effect(() => {
     if (replacingMedicationId) {
       const currentReplacingId = replacingMedicationId;
-      const med = activeMedications.find(m => m.id === currentReplacingId);
+      const med = activeMedications.find((m) => m.id === currentReplacingId);
       replacingMedication = med ?? null;
       replacingSubstanceDetail = null;
       showComparisonAssistant = false;
       if (med) {
         searchMedicationReference(med.substance)
-          .then(results => {
+          .then((results) => {
             if (results.length > 0) {
               return getMedicationReferenceDetail(results[0].id);
             }
             return null;
           })
-          .then(detail => {
+          .then((detail) => {
             if (replacingMedicationId === currentReplacingId) {
               replacingSubstanceDetail = detail;
             }
           })
-          .catch(err => {
+          .catch((err) => {
             console.error('Failed to load replacing substance detail:', err);
           });
       }
@@ -156,29 +165,29 @@
 <form onsubmit={handleSubmit} class="space-y-4">
   <!-- Replacement Option -->
   {#if !medication && activeMedications.length > 0}
-    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+    <div class="bg-surface-sunken border border-line rounded-card p-4">
       <label class="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
           checked={isReplacement}
           onchange={handleReplacementToggle}
-          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          class="w-4 h-4 text-accent-fg border-line rounded-control focus:ring-accent/30"
         />
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span class="text-body font-medium text-fg-muted">
           Dieses Medikament ersetzt ein bestehendes Medikament
         </span>
       </label>
 
       {#if isReplacement}
         <div class="mt-3">
-          <label for="replacing-medication" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label for="replacing-medication" class="block text-body font-medium text-fg-muted mb-1">
             Zu ersetzendes Medikament *
           </label>
           <select
             id="replacing-medication"
             bind:value={replacingMedicationId}
             required={isReplacement}
-            class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
           >
             <option value={null}>-- Bitte wählen --</option>
             {#each activeMedications as med (med.id)}
@@ -192,7 +201,7 @@
             <button
               type="button"
               onclick={handleShowComparison}
-              class="mt-2 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              class="mt-2 w-full h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors text-body"
             >
               🤖 Medikamentenvergleich & KI-Entscheidungshilfe anzeigen
             </button>
@@ -204,7 +213,7 @@
 
   <!-- Show Comparison Assistant -->
   {#if showComparisonAssistant && selectedSubstanceDetail && replacingSubstanceDetail && patientId}
-    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+    <div class="border-t border-line pt-4">
       <MedicationChangeAssistant
         {patientId}
         currentSubstance={replacingSubstanceDetail}
@@ -214,7 +223,7 @@
   {/if}
 
   <div>
-    <label for="substance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    <label for="substance" class="block text-body font-medium text-fg-muted mb-1">
       Wirkstoff *
     </label>
     <MedicationAutocomplete
@@ -232,19 +241,19 @@
   </div>
 
   <div>
-    <label for="dosage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Dosierung * </label>
+    <label for="dosage" class="block text-body font-medium text-fg-muted mb-1"> Dosierung * </label>
     <input
       id="dosage"
       type="text"
       bind:value={dosage}
       required
       placeholder="z.B. 50 mg"
-      class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
     />
   </div>
 
   <div>
-    <label for="frequency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    <label for="frequency" class="block text-body font-medium text-fg-muted mb-1">
       Häufigkeit *
     </label>
     <input
@@ -253,13 +262,13 @@
       bind:value={frequency}
       required
       placeholder="z.B. 1x täglich"
-      class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
     />
   </div>
 
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label for="start-date" class="block text-body font-medium text-fg-muted mb-1">
         Startdatum *
       </label>
       <input
@@ -267,29 +276,31 @@
         type="date"
         bind:value={startDate}
         required
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
 
     <div>
-      <label for="end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Enddatum </label>
+      <label for="end-date" class="block text-body font-medium text-fg-muted mb-1">
+        Enddatum
+      </label>
       <input
         id="end-date"
         type="date"
         bind:value={endDate}
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
   </div>
 
   <div>
-    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Notizen </label>
+    <label for="notes" class="block text-body font-medium text-fg-muted mb-1"> Notizen </label>
     <textarea
       id="notes"
       bind:value={notes}
       rows="3"
       placeholder="Zusätzliche Informationen..."
-      class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+      class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
     ></textarea>
   </div>
 
@@ -297,13 +308,13 @@
     <button
       type="button"
       onclick={onCancel}
-      class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+      class="h-8 px-3 bg-surface-hover text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
     >
       Abbrechen
     </button>
     <button
       type="submit"
-      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
     >
       {medication ? 'Aktualisieren' : 'Hinzufügen'}
     </button>

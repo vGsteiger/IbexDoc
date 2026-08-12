@@ -1,6 +1,6 @@
 #[cfg(target_os = "macos")]
 use crate::constants::KEYCHAIN_SERVICE;
-use crate::constants::RECOVERY_FILENAME;
+use crate::constants::{DATABASE_FILENAME, RECOVERY_FILENAME};
 use crate::database::DbPool;
 use crate::llm::{embed::EmbedEngine, LlmEngine};
 use rusqlite::Connection;
@@ -28,12 +28,24 @@ pub struct AppState {
 
 pub enum AuthState {
     FirstRun,
+    /// `initialize_app` has claimed the first run and is generating master keys.
+    /// Nothing else may write the vault or the Keychain items until it finishes.
+    Initializing,
     Locked,
     Unlocked {
         db_key: zeroize::Zeroizing<[u8; 32]>,
         fs_key: zeroize::Zeroizing<[u8; 32]>,
     },
     RecoveryRequired,
+}
+
+/// Whether `db_path` holds a real database rather than the zero-length file that
+/// `Connection::open` leaves behind when initialization fails before the first
+/// page is written. An empty file carries no data and must not block a retry.
+pub(crate) fn database_is_initialized(db_path: &std::path::Path) -> bool {
+    std::fs::metadata(db_path)
+        .map(|metadata| metadata.len() > 0)
+        .unwrap_or(false)
 }
 
 impl AppState {
@@ -97,7 +109,7 @@ impl AppState {
         fs_key: &[u8; 32],
         mode: crate::database::CheckpointMode,
     ) -> Result<(), crate::error::AppError> {
-        let db_path = self.data_dir.join("dokassist.db");
+        let db_path = self.data_dir.join(DATABASE_FILENAME);
         #[cfg(target_os = "macos")]
         let pool = crate::database::init_db_with_audit_checkpoint(&db_path, db_key, fs_key, mode)?;
         #[cfg(not(target_os = "macos"))]
@@ -211,7 +223,7 @@ fn determine_initial_auth_state(data_dir: &std::path::Path) -> AuthState {
     let vault_path = data_dir.join(RECOVERY_FILENAME);
     let vault_exists = vault_path.exists();
     #[cfg(target_os = "macos")]
-    let database_exists = data_dir.join("dokassist.db").exists();
+    let database_exists = database_is_initialized(&data_dir.join(DATABASE_FILENAME));
 
     // Check if keys exist in keychain (macOS only)
     #[cfg(target_os = "macos")]
@@ -296,6 +308,22 @@ mod tests {
             auth_state_without_master_keys(false, false),
             AuthState::FirstRun
         ));
+    }
+
+    /// `Connection::open` creates the file before it can fail on the key, so a
+    /// zero-length `dokassist.db` means setup never got as far as writing a page.
+    #[test]
+    fn empty_database_file_does_not_count_as_initialized() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join(DATABASE_FILENAME);
+
+        assert!(!database_is_initialized(&db_path));
+
+        std::fs::write(&db_path, []).unwrap();
+        assert!(!database_is_initialized(&db_path));
+
+        std::fs::write(&db_path, b"SQLite format 3\0").unwrap();
+        assert!(database_is_initialized(&db_path));
     }
 
     #[test]

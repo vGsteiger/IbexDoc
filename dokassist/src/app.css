@@ -1,75 +1,295 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
 @variant dark (&:where(.dark, .dark *));
 
-/* The onboarding was originally authored as a dark-only flow. Keep its
- * existing dark palette intact while providing matching light-mode surfaces
- * until the individual screens are fully tokenised. */
-html:not(.dark) .onboarding-theme.bg-gray-950,
-html:not(.dark) .onboarding-theme .bg-gray-950,
-html:not(.dark) .onboarding-theme .bg-gray-900 {
-  background-color: #ffffff;
+/* ============================================================================
+ * RamDoc design tokens
+ *
+ * Single source of truth for colour, radius, elevation and type. Views must
+ * consume the semantic utilities these generate (bg-surface, text-fg-muted,
+ * border-line, …) and must not reference raw palette utilities such as
+ * bg-gray-100 or text-blue-600 — those hardcode a theme at the call site and
+ * are what this layer exists to remove. See docs/design-language.md.
+ *
+ * Light and dark differ ONLY by the custom property values below. Because the
+ * @theme block is `inline`, every generated utility resolves var() at use time,
+ * so flipping `.dark` on <html> reheats the whole UI with no dark: variants.
+ * ==========================================================================*/
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces — a warm near-white ramp rather than pure white on grey. */
+  --surface: #fbfbfa;
+  --surface-raised: #ffffff;
+  --surface-overlay: #ffffff;
+  --surface-sunken: #f5f5f4;
+  --surface-hover: #f0f0ef;
+  --surface-selected: #e9e9e7;
+
+  /* Hairlines carry separation; shadows are reserved for true overlays. */
+  --line-subtle: #eeeeec;
+  --line: #e2e2df;
+  --line-strong: #cbcbc7;
+
+  /* Foreground ramp. */
+  --fg: #1d1d1b;
+  --fg-muted: #61615d;
+  --fg-subtle: #8c8c87;
+  --fg-disabled: #b6b6b1;
+
+  /* Accent — used only for focus, links, selection and one primary action. */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eef3ff;
+  --accent-line: #c3d5fd;
+  --accent-fg: #1d4ed8;
+  --on-accent: #ffffff;
+
+  /* Status. */
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-subtle: #fef4f3;
+  --danger-line: #f6cfcb;
+  --danger-fg: #b3241f;
+  --on-danger: #ffffff;
+
+  --success: #15803d;
+  --success-hover: #126630;
+  --success-subtle: #f1faf3;
+  --success-line: #c3e8cd;
+  --success-fg: #15803d;
+  --on-success: #ffffff;
+
+  --warning: #b45309;
+  --warning-hover: #96440a;
+  --warning-subtle: #fdf6e7;
+  --warning-line: #f0dcae;
+  --warning-fg: #92400e;
+  --on-warning: #ffffff;
+
+  --info: var(--accent);
+  --info-subtle: var(--accent-subtle);
+  --info-line: var(--accent-line);
+  --info-fg: var(--accent-fg);
+
+  /* Elevation — one soft shadow per overlay class, never on inline content. */
+  --elevation-popover: 0 4px 12px -2px rgb(15 15 15 / 0.1), 0 2px 4px -2px rgb(15 15 15 / 0.06);
+  --elevation-modal: 0 16px 40px -8px rgb(15 15 15 / 0.18), 0 4px 10px -4px rgb(15 15 15 / 0.1);
 }
 
-html:not(.dark) .onboarding-theme .bg-gray-800 {
-  background-color: #f9fafb;
+.dark {
+  color-scheme: dark;
+
+  --surface: #191919;
+  --surface-raised: #202020;
+  --surface-overlay: #252525;
+  --surface-sunken: #161616;
+  --surface-hover: #262626;
+  --surface-selected: #2f2f2f;
+
+  --line-subtle: #242424;
+  --line: #2e2e2e;
+  --line-strong: #3d3d3d;
+
+  --fg: #ededec;
+  --fg-muted: #a3a3a0;
+  --fg-subtle: #737370;
+  --fg-disabled: #55554f;
+
+  --accent: #2f6feb;
+  --accent-hover: #4483f2;
+  --accent-subtle: #17233d;
+  --accent-line: #23386b;
+  --accent-fg: #8fb4fb;
+  --on-accent: #ffffff;
+
+  --danger: #dc2f2f;
+  --danger-hover: #e14a4a;
+  --danger-subtle: #2a1918;
+  --danger-line: #4d2523;
+  --danger-fg: #f08d8d;
+  --on-danger: #ffffff;
+
+  --success: #2e9d54;
+  --success-hover: #38b062;
+  --success-subtle: #15231a;
+  --success-line: #24402d;
+  --success-fg: #6ed08c;
+  --on-success: #ffffff;
+
+  --warning: #b8791f;
+  --warning-hover: #cd8a29;
+  --warning-subtle: #241d12;
+  --warning-line: #43351b;
+  --warning-fg: #e0b063;
+  --on-warning: #ffffff;
+
+  --info: var(--accent);
+  --info-subtle: var(--accent-subtle);
+  --info-line: var(--accent-line);
+  --info-fg: var(--accent-fg);
+
+  --elevation-popover: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --elevation-modal: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.45);
 }
 
-html:not(.dark) .onboarding-theme .border-gray-800,
-html:not(.dark) .onboarding-theme .border-gray-700,
-html:not(.dark) .onboarding-theme .border-gray-600 {
-  border-color: #d1d5db;
+@theme inline {
+  /* Typography — one deliberate six-step scale. Sizes are tighter than the
+   * Tailwind defaults so hierarchy comes from scale and colour, not weight. */
+  --font-sans:
+    ui-sans-serif, -apple-system, 'Segoe UI Variable Text', 'Segoe UI', Inter, Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  --text-display: 1.625rem; /* 26px — one per page, the page title */
+  --text-display--line-height: 1.25;
+  --text-display--letter-spacing: -0.018em;
+  --text-display--font-weight: 600;
+
+  --text-title: 1.25rem; /* 20px — section and card titles */
+  --text-title--line-height: 1.3;
+  --text-title--letter-spacing: -0.014em;
+  --text-title--font-weight: 600;
+
+  --text-heading: 1rem; /* 16px — sub-headings, emphasised rows */
+  --text-heading--line-height: 1.4;
+  --text-heading--letter-spacing: -0.008em;
+  --text-heading--font-weight: 600;
+
+  --text-body: 0.875rem; /* 14px — the default */
+  --text-body--line-height: 1.55;
+
+  --text-label: 0.8125rem; /* 13px — form labels, dense table cells */
+  --text-label--line-height: 1.45;
+
+  --text-caption: 0.75rem; /* 12px — metadata, hints, timestamps */
+  --text-caption--line-height: 1.45;
+
+  /* Two radii only: controls and containers. rounded-full stays for avatars
+   * and dot indicators. */
+  --radius-control: 6px;
+  --radius-card: 10px;
+
+  --shadow-popover: var(--elevation-popover);
+  --shadow-modal: var(--elevation-modal);
+
+  /* Motion — short, ease-out, colour and opacity only. */
+  --ease-standard: cubic-bezier(0.2, 0, 0.13, 1);
+
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-selected: var(--surface-selected);
+
+  --color-line: var(--line);
+  --color-line-subtle: var(--line-subtle);
+  --color-line-strong: var(--line-strong);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-disabled: var(--fg-disabled);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-line: var(--accent-line);
+  --color-accent-fg: var(--accent-fg);
+  --color-on-accent: var(--on-accent);
+
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-line: var(--danger-line);
+  --color-danger-fg: var(--danger-fg);
+  --color-on-danger: var(--on-danger);
+
+  --color-success: var(--success);
+  --color-success-hover: var(--success-hover);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-line: var(--success-line);
+  --color-success-fg: var(--success-fg);
+  --color-on-success: var(--on-success);
+
+  --color-warning: var(--warning);
+  --color-warning-hover: var(--warning-hover);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-line: var(--warning-line);
+  --color-warning-fg: var(--warning-fg);
+  --color-on-warning: var(--on-warning);
+
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-line: var(--info-line);
+  --color-info-fg: var(--info-fg);
 }
 
-html:not(.dark) .onboarding-theme .text-gray-100 {
-  color: #111827;
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--fg);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  /* Digits align in tables, dosage columns and score trends. */
+  table,
+  time,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One focus treatment for the entire app. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::placeholder {
+    color: var(--fg-subtle);
+  }
+
+  ::selection {
+    background-color: var(--accent-subtle);
+    color: var(--fg);
+  }
+
+  /* Scrollbars follow the neutral ramp instead of the OS default. */
+  * {
+    scrollbar-color: var(--line-strong) transparent;
+    scrollbar-width: thin;
+  }
 }
 
-html:not(.dark) .onboarding-theme .text-gray-400 {
-  color: #4b5563;
+@layer components {
+  /* Field label — the one repeated form pattern worth a shorthand. */
+  .field-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: var(--text-label);
+    line-height: var(--text-label--line-height);
+    font-weight: 500;
+    color: var(--fg-muted);
+  }
 }
 
-html:not(.dark) .onboarding-theme .text-gray-300 {
-  color: #374151;
-}
-
-html:not(.dark) .onboarding-theme .text-gray-600 {
-  color: #6b7280;
-}
-
-html:not(.dark) .onboarding-theme .bg-blue-900\/20 {
-  background-color: rgb(219 234 254 / 0.7);
-}
-
-html:not(.dark) .onboarding-theme .border-blue-800 {
-  border-color: #93c5fd;
-}
-
-html:not(.dark) .onboarding-theme .text-blue-400 {
-  color: #1d4ed8;
-}
-
-html:not(.dark) .onboarding-theme .bg-green-900\/20 {
-  background-color: rgb(220 252 231 / 0.7);
-}
-
-html:not(.dark) .onboarding-theme .border-green-800 {
-  border-color: #86efac;
-}
-
-html:not(.dark) .onboarding-theme .text-green-400 {
-  color: #15803d;
-}
-
-html:not(.dark) .onboarding-theme .bg-yellow-900\/20 {
-  background-color: rgb(254 249 195 / 0.8);
-}
-
-html:not(.dark) .onboarding-theme .border-yellow-800 {
-  border-color: #facc15;
-}
-
-html:not(.dark) .onboarding-theme .text-yellow-400 {
-  color: #a16207;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

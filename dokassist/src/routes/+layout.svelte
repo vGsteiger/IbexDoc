@@ -19,24 +19,20 @@
   let patients = $state<Patient[]>([]);
 
   const authPaths = ['/', '/setup', '/unlock', '/recover', '/reset'];
-  const layoutlessPaths = [...authPaths, '/onboarding/step1', '/onboarding/step2', '/onboarding/step3', '/onboarding/step4'];
+  const layoutlessPaths = [
+    ...authPaths,
+    '/onboarding/step1',
+    '/onboarding/step2',
+    '/onboarding/step3',
+    '/onboarding/step4',
+  ];
   let showLayout = $derived(!layoutlessPaths.includes(currentPath));
 
-  // Apply theme to document element
+  // Toggling `dark` on <html> is the whole theme switch: every design token
+  // flips with it, and body colours come from app.css. Nothing else to set.
   $effect(() => {
     if (typeof document !== 'undefined') {
-      const html = document.documentElement;
-      const body = document.body;
-
-      if ($resolvedTheme === 'dark') {
-        html.classList.add('dark');
-        body.classList.add('bg-gray-950', 'text-gray-100');
-        body.classList.remove('bg-white', 'text-gray-900');
-      } else {
-        html.classList.remove('dark');
-        body.classList.add('bg-white', 'text-gray-900');
-        body.classList.remove('bg-gray-950', 'text-gray-100');
-      }
+      document.documentElement.classList.toggle('dark', $resolvedTheme === 'dark');
     }
   });
 
@@ -117,7 +113,7 @@
 </script>
 
 {#if showLayout}
-  <div class="flex h-screen bg-white dark:bg-gray-950">
+  <div class="flex h-screen bg-surface">
     <Sidebar />
     <div class="flex-1 flex flex-col overflow-hidden">
       <TopBar />

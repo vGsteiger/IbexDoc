@@ -77,14 +77,14 @@
 
     if (diagnoses.length > 0) {
       lines.push('\nDiagnosen:');
-      diagnoses.forEach(d => {
+      diagnoses.forEach((d) => {
         lines.push(`- ${d.icd10_code}: ${d.description} (${d.status})`);
       });
     }
 
     if (medications.length > 0) {
       lines.push('\nAktuelle Medikation:');
-      medications.forEach(m => {
+      medications.forEach((m) => {
         lines.push(`- ${m.substance} ${m.dosage}, ${m.frequency}`);
       });
     }
@@ -180,53 +180,52 @@
 
 <div class="max-w-4xl mx-auto p-6">
   <div class="mb-6">
-    <button
-      onclick={handleCancel}
-      class="text-blue-600 hover:text-blue-800 mb-4"
-    >
+    <button onclick={handleCancel} class="text-accent-fg hover:text-accent-fg mb-4">
       {$t('letters.backToLetters')}
     </button>
-    <h1 class="text-3xl font-bold text-gray-800">{$t('letters.newLetterTitle')}</h1>
+    <h1 class="text-display font-semibold text-fg">{$t('letters.newLetterTitle')}</h1>
   </div>
 
   {#if isLoading}
     <div class="text-center py-8">
-      <p class="text-gray-600">{$t('letters.loading')}</p>
+      <p class="text-fg-muted">{$t('letters.loading')}</p>
     </div>
   {:else if error}
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-      <p class="text-red-800">{error}</p>
+    <div class="bg-danger-subtle border border-danger-line rounded-card p-4 mb-6">
+      <p class="text-danger-fg">{error}</p>
     </div>
   {:else}
     <div class="space-y-6">
       <!-- Letter Type Selection -->
       <div>
-        <label for="letter-type" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-type" class="block text-body font-medium text-fg-muted mb-2">
           {$t('letters.selectType')}
         </label>
         <select
           id="letter-type"
           bind:value={letterType}
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30"
         >
           <option value="referral">{$t('letters.types.referral')}</option>
-          <option value="insurance_authorization">{$t('letters.types.insurance_authorization')}</option>
+          <option value="insurance_authorization"
+            >{$t('letters.types.insurance_authorization')}</option
+          >
           <option value="therapy_extension">{$t('letters.types.therapy_extension')}</option>
         </select>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-body text-fg-muted mt-1">
           {$t(`letters.typeDescriptions.${letterType}`)}
         </p>
       </div>
 
       <!-- Language Selection -->
       <div>
-        <label for="letter-language" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-language" class="block text-body font-medium text-fg-muted mb-2">
           {$t('letters.selectLanguage')}
         </label>
         <select
           id="letter-language"
           bind:value={letterLanguage}
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30"
         >
           <option value="de">Deutsch</option>
           <option value="fr">Français</option>
@@ -236,7 +235,7 @@
       <!-- Recipient Information -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="letter-recipient-name" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="letter-recipient-name" class="block text-body font-medium text-fg-muted mb-2">
             {$t('letters.recipientName')}
           </label>
           <input
@@ -244,12 +243,12 @@
             type="text"
             bind:value={recipientName}
             placeholder={$t('letters.recipientNamePlaceholder')}
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30"
           />
         </div>
 
         <div>
-          <label for="letter-subject" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="letter-subject" class="block text-body font-medium text-fg-muted mb-2">
             {$t('letters.subject')}
           </label>
           <input
@@ -257,13 +256,16 @@
             type="text"
             bind:value={subject}
             placeholder={$t('letters.subjectPlaceholder')}
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30"
           />
         </div>
       </div>
 
       <div>
-        <label for="letter-recipient-address" class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+          for="letter-recipient-address"
+          class="block text-body font-medium text-fg-muted mb-2"
+        >
           {$t('letters.recipientAddress')}
         </label>
         <textarea
@@ -271,26 +273,27 @@
           bind:value={recipientAddress}
           placeholder={$t('letters.recipientAddressPlaceholder')}
           rows="2"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30"
         ></textarea>
       </div>
 
       <!-- Patient Context -->
       <div>
-        <label for="letter-patient-context" class="block text-sm font-medium text-gray-700 mb-2">
-          {$t('letters.patientContext')} <span class="text-gray-500 text-xs">{$t('letters.patientContextHint')}</span>
+        <label for="letter-patient-context" class="block text-body font-medium text-fg-muted mb-2">
+          {$t('letters.patientContext')}
+          <span class="text-fg-muted text-caption">{$t('letters.patientContextHint')}</span>
         </label>
         <textarea
           id="letter-patient-context"
           bind:value={patientContext}
           rows="6"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30 font-mono text-body"
         ></textarea>
       </div>
 
       <!-- Clinical Summary -->
       <div>
-        <label for="letter-clinical-summary" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-clinical-summary" class="block text-body font-medium text-fg-muted mb-2">
           {$t('letters.clinicalSummary')}
         </label>
         <textarea
@@ -298,7 +301,7 @@
           bind:value={clinicalSummary}
           placeholder={$t('letters.clinicalSummaryPlaceholder')}
           rows="4"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30"
         ></textarea>
       </div>
 
@@ -307,7 +310,7 @@
         <button
           onclick={handleGenerate}
           disabled={isGenerating}
-          class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          class="px-6 py-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover disabled:bg-surface-selected disabled:cursor-not-allowed"
         >
           {isGenerating ? $t('letters.generating') : $t('letters.generate')}
         </button>
@@ -316,7 +319,7 @@
           <button
             onclick={handleGenerate}
             disabled={isGenerating}
-            class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            class="px-6 py-3 bg-surface-selected text-fg-muted rounded-control hover:bg-surface-selected disabled:bg-surface-hover disabled:cursor-not-allowed"
           >
             {$t('letters.regenerate')}
           </button>
@@ -326,27 +329,27 @@
       <!-- Generated Content -->
       {#if generatedContent || editableContent}
         <div>
-          <label for="letter-generated" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="letter-generated" class="block text-body font-medium text-fg-muted mb-2">
             {$t('letters.generatedLetter')}
             {#if isGenerating}
-              <span class="text-blue-600 text-xs">({$t('letters.generating')})</span>
+              <span class="text-accent-fg text-caption">({$t('letters.generating')})</span>
             {/if}
           </label>
-          <p class="text-sm text-gray-500 mb-2">{$t('letters.reviewBeforeSaving')}</p>
+          <p class="text-body text-fg-muted mb-2">{$t('letters.reviewBeforeSaving')}</p>
           {#if isGenerating}
             <textarea
               id="letter-generated"
               value={generatedContent}
               rows="20"
               readonly
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm bg-gray-50"
+              class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30 font-mono text-body bg-surface-sunken"
             ></textarea>
           {:else}
             <textarea
               id="letter-generated"
               bind:value={editableContent}
               rows="20"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              class="w-full px-3 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30 font-mono text-body"
             ></textarea>
           {/if}
         </div>
@@ -356,14 +359,14 @@
           <button
             onclick={handleSave}
             disabled={isSaving}
-            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            class="px-6 py-3 bg-success text-on-success rounded-control hover:bg-success-hover disabled:bg-surface-selected disabled:cursor-not-allowed"
           >
             {isSaving ? $t('common.loading') : $t('common.save')}
           </button>
 
           <button
             onclick={handleCancel}
-            class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            class="px-6 py-3 bg-surface-selected text-fg-muted rounded-control hover:bg-surface-selected"
           >
             {$t('common.cancel')}
           </button>

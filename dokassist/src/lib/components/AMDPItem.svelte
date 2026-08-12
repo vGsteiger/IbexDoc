@@ -20,10 +20,10 @@
   }
 </script>
 
-<div class="flex items-center justify-between py-2 px-3 hover:bg-gray-700/30 rounded">
+<div class="flex items-center justify-between py-2 px-3 hover:bg-surface-selected/30 rounded-card">
   <div class="flex-1">
-    <span class="text-sm text-gray-300">
-      <span class="text-gray-500 font-mono text-xs mr-2">{item.code}</span>
+    <span class="text-body text-fg-muted">
+      <span class="text-fg-muted font-mono text-caption mr-2">{item.code}</span>
       {item.label}
     </span>
   </div>
@@ -31,13 +31,11 @@
     {#each scores as { value, label, title }}
       <button
         type="button"
-        class="w-10 h-10 rounded transition-colors font-medium text-sm"
-        class:bg-gray-600={item.score !== value}
-        class:text-gray-300={item.score !== value}
-        class:bg-blue-600={item.score === value}
-        class:text-white={item.score === value}
-        class:ring-2={item.score === value}
-        class:ring-blue-400={item.score === value}
+        class="w-10 h-10 rounded-control transition-colors font-medium text-body"
+        class:bg-surface-hover={item.score !== value}
+        class:text-fg-muted={item.score !== value}
+        class:bg-accent={item.score === value}
+        class:text-on-accent={item.score === value}
         onclick={() => handleScoreClick(value)}
         {title}
       >

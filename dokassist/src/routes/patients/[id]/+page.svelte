@@ -74,7 +74,9 @@
     }
   }
 
-  async function handleUpdate(event: CustomEvent<CreatePatient | { id: string; data: UpdatePatient }>) {
+  async function handleUpdate(
+    event: CustomEvent<CreatePatient | { id: string; data: UpdatePatient }>
+  ) {
     if (!('id' in event.detail)) return;
     try {
       isSubmitting = true;
@@ -144,28 +146,27 @@
       isExporting = false;
     }
   }
-  
-  
+
   async function handleExportPdf() {
     if (!patientId || !patient) return;
 
     try {
       isExporting = true;
-      error = "";
+      error = '';
       const bytes = await exportPatientPdf(patientId);
       const uint8Array = new Uint8Array(bytes);
-      const blob = new Blob([uint8Array], { type: "application/pdf" });
+      const blob = new Blob([uint8Array], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `Patient_${patient.last_name}_${patient.first_name}_${new Date().toISOString().split("T")[0]}.pdf`;
+      a.download = `Patient_${patient.last_name}_${patient.first_name}_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to export patient summary";
-      console.error("Error exporting patient summary:", e);
+      error = e instanceof Error ? e.message : 'Failed to export patient summary';
+      console.error('Error exporting patient summary:', e);
     } finally {
       isExporting = false;
     }
@@ -198,18 +199,16 @@
   <div class="max-w-4xl mx-auto">
     {#if isLoading}
       <div class="flex justify-center items-center py-12">
-        <div class="text-gray-500 dark:text-gray-400">{$t('patients.loadingDetails')}</div>
+        <div class="text-fg-muted">{$t('patients.loadingDetails')}</div>
       </div>
     {:else if error}
-      <div
-        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400 mb-6"
-      >
+      <div class="bg-danger-subtle border border-danger-line rounded-card p-4 text-danger-fg mb-6">
         {error}
       </div>
     {:else if patient}
       <!-- Edit Mode -->
       {#if isEditing}
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div class="bg-surface-raised rounded-card p-6">
           <PatientForm
             {patient}
             on:submit={handleUpdate}
@@ -219,35 +218,31 @@
         </div>
       {:else}
         <!-- View Mode -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div class="bg-surface-raised rounded-card p-6">
           <!-- Action Buttons -->
           <div class="flex justify-between mb-6">
             <div class="flex gap-3">
               <button
                 onclick={() => (isEditing = true)}
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
               >
                 {$t('patients.editPatient')}
               </button>
               <a
                 href={`/patients/${patientId}/email/new`}
-                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center"
+                class="h-8 px-3 bg-success text-on-success rounded-card hover:bg-success-hover transition-colors inline-flex items-center"
               >
                 {$t('patients.sendEmail')}
-              </a>              <!-- Export Dropdown -->
+              </a>
+              <!-- Export Dropdown -->
               <div class="relative export-dropdown">
                 <button
                   onclick={() => (showExportMenu = !showExportMenu)}
                   disabled={isExporting}
-                  class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                  class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
                   {isExporting ? 'Exporting...' : 'Export'}
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
                       stroke-linejoin="round"
@@ -258,20 +253,20 @@
                 </button>
                 {#if showExportMenu}
                   <div
-                    class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10"
+                    class="absolute left-0 mt-2 w-48 bg-surface-raised rounded-card shadow-popover border border-line z-10"
                   >
                     <button
                       onclick={handleExportFhir}
-                      class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      class="w-full text-left h-8 px-3 hover:bg-surface-hover rounded-control transition-colors"
                     >
                       Export FHIR R4
                     </button>
                     <button
                       onclick={handleExportPdf}
                       disabled={isExporting}
-                      class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isExporting ? "Exporting..." : "Export PDF"}
+                      {isExporting ? 'Exporting...' : 'Export PDF'}
                     </button>
                   </div>
                 {/if}
@@ -279,7 +274,7 @@
             </div>
             <button
               onclick={() => (showDeleteConfirm = true)}
-              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              class="h-8 px-3 bg-danger text-on-danger rounded-control hover:bg-danger-hover transition-colors"
             >
               {$t('patients.deletePatient')}
             </button>
@@ -287,21 +282,19 @@
 
           <!-- Patient History Query Interface -->
           <div class="mb-6">
-            <PatientHistoryQuery patientId={patientId} />
+            <PatientHistoryQuery {patientId} />
           </div>
 
           <!-- Patient Details -->
           <div class="space-y-6">
             <!-- Outcome Score Trend Visualization -->
             {#if outcomeScores.length > 0}
-              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <div class="border-t border-line pt-6">
                 <button
                   onclick={() => (showTrendChart = !showTrendChart)}
-                  class="flex items-center justify-between w-full mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  class="flex items-center justify-between w-full mb-4 hover:text-accent-fg transition-colors"
                 >
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Outcome Score Trends
-                  </h3>
+                  <h3 class="text-heading font-semibold text-fg">Outcome Score Trends</h3>
                   {#if showTrendChart}
                     <ChevronUp class="w-5 h-5" />
                   {:else}
@@ -312,12 +305,14 @@
                 {#if showTrendChart}
                   <div class="space-y-6">
                     {#each ['PHQ-9', 'GAD-7', 'BDI-II'] as scaleType}
-                      {@const scoresForScale = outcomeScores.filter((s) => s.scale_type === scaleType)}
+                      {@const scoresForScale = outcomeScores.filter(
+                        (s) => s.scale_type === scaleType
+                      )}
                       {#if scoresForScale.length > 0}
-                        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-                          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        <div class="bg-surface-sunken rounded-card p-4">
+                          <h4 class="text-body font-semibold text-fg-muted mb-3">
                             {scaleType}
-                            <span class="text-xs font-normal text-gray-500 dark:text-gray-400">
+                            <span class="text-caption font-normal text-fg-muted">
                               ({scoresForScale.length}
                               {scoresForScale.length === 1 ? 'measurement' : 'measurements'})
                             </span>
@@ -334,64 +329,64 @@
             <!-- Basic Info -->
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.firstName')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100">{patient.first_name}</p>
+                <p class="text-fg">{patient.first_name}</p>
               </div>
               <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.lastName')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100">{patient.last_name}</p>
+                <p class="text-fg">{patient.last_name}</p>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.ahvNumber')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100">{patient.ahv_number}</p>
+                <p class="text-fg">{patient.ahv_number}</p>
               </div>
               <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.dateOfBirth')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100">{formatDate(patient.date_of_birth)}</p>
+                <p class="text-fg">{formatDate(patient.date_of_birth)}</p>
               </div>
             </div>
 
             {#if patient.gender}
               <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.gender')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100 capitalize">{patient.gender}</p>
+                <p class="text-fg capitalize">{patient.gender}</p>
               </div>
             {/if}
 
             <!-- Contact Info -->
             {#if patient.phone || patient.email}
-              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <div class="border-t border-line pt-6">
+                <h3 class="text-heading font-semibold text-fg mb-4">
                   {$t('patients.contactInfo')}
                 </h3>
                 <div class="grid grid-cols-2 gap-6">
                   {#if patient.phone}
                     <div>
-                      <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                      <span class="block text-body font-medium text-fg-muted mb-1"
                         >{$t('patients.phone')}</span
                       >
-                      <p class="text-gray-900 dark:text-gray-100">{patient.phone}</p>
+                      <p class="text-fg">{patient.phone}</p>
                     </div>
                   {/if}
                   {#if patient.email}
                     <div>
-                      <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                      <span class="block text-body font-medium text-fg-muted mb-1"
                         >{$t('patients.email')}</span
                       >
-                      <p class="text-gray-900 dark:text-gray-100">{patient.email}</p>
+                      <p class="text-fg">{patient.email}</p>
                     </div>
                   {/if}
                 </div>
@@ -400,10 +395,10 @@
 
             {#if patient.address}
               <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.address')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line">
+                <p class="text-fg whitespace-pre-line">
                   {patient.address}
                 </p>
               </div>
@@ -411,17 +406,17 @@
 
             <!-- Insurance & GP -->
             {#if patient.insurance || patient.gp_name || patient.gp_address}
-              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <div class="border-t border-line pt-6">
+                <h3 class="text-heading font-semibold text-fg mb-4">
                   {$t('patients.medicalInfo')}
                 </h3>
 
                 {#if patient.insurance}
                   <div class="mb-4">
-                    <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                    <span class="block text-body font-medium text-fg-muted mb-1"
                       >{$t('patients.insurance')}</span
                     >
-                    <p class="text-gray-900 dark:text-gray-100">{patient.insurance}</p>
+                    <p class="text-fg">{patient.insurance}</p>
                   </div>
                 {/if}
 
@@ -429,20 +424,18 @@
                   <div class="grid grid-cols-2 gap-6">
                     {#if patient.gp_name}
                       <div>
-                        <span
-                          class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                        <span class="block text-body font-medium text-fg-muted mb-1"
                           >{$t('patients.gpName')}</span
                         >
-                        <p class="text-gray-900 dark:text-gray-100">{patient.gp_name}</p>
+                        <p class="text-fg">{patient.gp_name}</p>
                       </div>
                     {/if}
                     {#if patient.gp_address}
                       <div>
-                        <span
-                          class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                        <span class="block text-body font-medium text-fg-muted mb-1"
                           >{$t('patients.gpAddress')}</span
                         >
-                        <p class="text-gray-900 dark:text-gray-100">{patient.gp_address}</p>
+                        <p class="text-fg">{patient.gp_address}</p>
                       </div>
                     {/if}
                   </div>
@@ -452,16 +445,16 @@
 
             <!-- Notes -->
             {#if patient.notes}
-              <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+              <div class="border-t border-line pt-6">
+                <span class="block text-body font-medium text-fg-muted mb-1"
                   >{$t('patients.notes')}</span
                 >
-                <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line">{patient.notes}</p>
+                <p class="text-fg whitespace-pre-line">{patient.notes}</p>
               </div>
             {/if}
 
             <!-- Metadata -->
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-6 text-sm text-gray-500">
+            <div class="border-t border-line pt-6 text-body text-fg-muted">
               <div class="grid grid-cols-2 gap-4">
                 <div>{$t('patients.created')}: {formatDate(patient.created_at)}</div>
                 <div>{$t('patients.lastUpdated')}: {formatDate(patient.updated_at)}</div>
@@ -480,7 +473,7 @@
           onkeydown={(e) => e.key === 'Escape' && (showDeleteConfirm = false)}
         >
           <div
-            class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
+            class="bg-surface-raised rounded-card p-6 max-w-md w-full mx-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-dialog-title"
@@ -488,13 +481,10 @@
             onclick={(e) => e.stopPropagation()}
             onkeydown={(e) => e.key === 'Escape' && (showDeleteConfirm = false)}
           >
-            <h2
-              id="delete-dialog-title"
-              class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4"
-            >
+            <h2 id="delete-dialog-title" class="text-title font-semibold text-fg mb-4">
               {$t('patients.deletePatient')}
             </h2>
-            <p class="text-gray-600 dark:text-gray-300 mb-6">
+            <p class="text-fg-muted mb-6">
               {$t('patients.confirmDeleteText').replace(
                 '{name}',
                 `${patient.first_name} ${patient.last_name}`
@@ -504,14 +494,14 @@
               <button
                 onclick={() => (showDeleteConfirm = false)}
                 disabled={isDeleting}
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="h-8 px-3 border border-line rounded-control text-fg-muted hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {$t('common.cancel')}
               </button>
               <button
                 onclick={handleDelete}
                 disabled={isDeleting}
-                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="h-8 px-3 bg-danger text-on-danger rounded-control hover:bg-danger-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isDeleting ? $t('patients.deleting') : $t('patients.deletePatient')}
               </button>

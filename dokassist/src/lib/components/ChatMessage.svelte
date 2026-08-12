@@ -3,7 +3,18 @@
   import { Zap, Check } from 'lucide-svelte';
 
   // Internal fields to hide from tool result display
-  const HIDDEN_FIELDS = new Set(['id', 'patient_id', 'session_id', 'created_at', 'updated_at', 'vault_path', 'extracted_text', 'metadata_json', 'prompt_hash', 'amdp_data']);
+  const HIDDEN_FIELDS = new Set([
+    'id',
+    'patient_id',
+    'session_id',
+    'created_at',
+    'updated_at',
+    'vault_path',
+    'extracted_text',
+    'metadata_json',
+    'prompt_hash',
+    'amdp_data',
+  ]);
 
   function toLabel(key: string): string {
     return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -67,7 +78,7 @@
 {#if message.role === 'user'}
   <div class="flex justify-end mb-3">
     <div
-      class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap"
+      class="max-w-[75%] bg-accent text-on-accent rounded-card rounded-br-sm px-4 py-2 text-body whitespace-pre-wrap"
     >
       {message.content}
     </div>
@@ -76,23 +87,19 @@
   <div class="flex justify-start mb-3">
     <div class="max-w-[80%] space-y-2">
       {#if thinkContent()}
-        <div
-          class="bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2"
-        >
-          <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">
-            Thinking
-          </p>
+        <div class="bg-surface-hover border border-line rounded-card px-3 py-2">
+          <p class="text-caption text-fg-subtle uppercase tracking-wide mb-1">Thinking</p>
           <pre
-            class="whitespace-pre-wrap font-sans text-xs text-gray-500 dark:text-gray-400 italic">{thinkContent()}</pre>
+            class="whitespace-pre-wrap font-sans text-caption text-fg-muted italic">{thinkContent()}</pre>
         </div>
       {/if}
       <div
-        class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap"
+        class="bg-surface-hover border border-line rounded-card rounded-bl-sm px-4 py-2 text-body text-fg whitespace-pre-wrap"
       >
         {#if mainContent()}
           {mainContent()}
         {:else if isStreaming}
-          <span class="animate-pulse text-gray-500">●</span>
+          <span class="animate-pulse text-fg-muted">●</span>
         {/if}
       </div>
     </div>
@@ -103,18 +110,16 @@
       <button
         onclick={() => (toolCallCollapsed = !toolCallCollapsed)}
         aria-label={toolCallCollapsed ? 'Show tool call details' : 'Hide tool call details'}
-        class="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-400 transition-colors"
+        class="flex items-center gap-2 text-caption text-fg-muted hover:text-fg-muted transition-colors"
       >
-        <Zap size={14} class="text-amber-500" />
+        <Zap size={14} class="text-warning-fg" />
         <span>Tool: {message.tool_name ?? 'unknown'}</span>
         <span>{toolCallCollapsed ? '▶' : '▼'}</span>
       </button>
       {#if !toolCallCollapsed}
-        <div
-          class="mt-1 bg-gray-100 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2"
-        >
+        <div class="mt-1 bg-surface-hover border border-line rounded-card px-3 py-2">
           <pre
-            class="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap overflow-x-auto">{message.tool_args_json ??
+            class="text-caption text-fg-muted whitespace-pre-wrap overflow-x-auto">{message.tool_args_json ??
               message.content}</pre>
         </div>
       {/if}
@@ -127,26 +132,26 @@
       <button
         onclick={() => (toolResultCollapsed = !toolResultCollapsed)}
         aria-label={toolResultCollapsed ? 'Ergebnis anzeigen' : 'Ergebnis ausblenden'}
-        class="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-400 transition-colors"
+        class="flex items-center gap-2 text-caption text-fg-muted hover:text-fg-muted transition-colors"
       >
-        <Check size={14} class="text-green-500" />
+        <Check size={14} class="text-success-fg" />
         <span>Ergebnis</span>
         <span>{toolResultCollapsed ? '▶' : '▼'}</span>
       </button>
       {#if !toolResultCollapsed}
-        <div
-          class="mt-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 rounded-lg px-3 py-2"
-        >
+        <div class="mt-1 bg-success-subtle border border-success-line rounded-card px-3 py-2">
           {#if parsed !== null}
             {#if Array.isArray(parsed)}
               <div class="space-y-2">
                 {#each parsed as item, i}
-                  <div class="text-xs text-gray-700 dark:text-gray-300 border-b border-green-200 dark:border-green-800/30 pb-1 last:border-0 last:pb-0">
-                    <span class="text-[10px] text-gray-400 uppercase">{i + 1}</span>
+                  <div
+                    class="text-caption text-fg-muted border-b border-success-line pb-1 last:border-0 last:pb-0"
+                  >
+                    <span class="text-[10px] text-fg-muted uppercase">{i + 1}</span>
                     {#each visibleEntries(item) as [key, val]}
                       <div class="flex gap-2">
-                        <span class="text-gray-500 dark:text-gray-400 shrink-0">{toLabel(key)}:</span>
-                        <span class="text-gray-800 dark:text-gray-200">{formatValue(val)}</span>
+                        <span class="text-fg-muted shrink-0">{toLabel(key)}:</span>
+                        <span class="text-fg">{formatValue(val)}</span>
                       </div>
                     {/each}
                   </div>
@@ -155,15 +160,16 @@
             {:else}
               <div class="space-y-1">
                 {#each visibleEntries(parsed) as [key, val]}
-                  <div class="flex gap-2 text-xs">
-                    <span class="text-gray-500 dark:text-gray-400 shrink-0">{toLabel(key)}:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{formatValue(val)}</span>
+                  <div class="flex gap-2 text-caption">
+                    <span class="text-fg-muted shrink-0">{toLabel(key)}:</span>
+                    <span class="text-fg">{formatValue(val)}</span>
                   </div>
                 {/each}
               </div>
             {/if}
           {:else}
-            <pre class="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap overflow-x-auto">{message.content}</pre>
+            <pre
+              class="text-caption text-fg-muted whitespace-pre-wrap overflow-x-auto">{message.content}</pre>
           {/if}
         </div>
       {/if}

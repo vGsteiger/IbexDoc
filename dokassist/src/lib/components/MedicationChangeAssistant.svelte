@@ -81,36 +81,32 @@ Nutze das compare_medications Tool, um detaillierte Informationen zu beiden Medi
   <MedicationComparisonPanel current={currentSubstance} replacement={replacementSubstance} />
 
   <!-- AI Guidance Section -->
-  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+  <div class="bg-surface-raised border border-line rounded-card p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        KI-gestützte Entscheidungshilfe
-      </h3>
+      <h3 class="text-heading font-semibold text-fg">KI-gestützte Entscheidungshilfe</h3>
       <button
         onclick={generateGuidance}
         disabled={isGenerating}
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+        class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:bg-surface-selected disabled:cursor-not-allowed"
       >
         {isGenerating ? 'Generiert...' : 'Entscheidungshilfe generieren'}
       </button>
     </div>
 
     {#if error}
-      <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-        <p class="text-sm text-red-800 dark:text-red-300">{error}</p>
+      <div class="mb-4 p-3 bg-danger-subtle border border-danger-line rounded-card">
+        <p class="text-body text-danger-fg">{error}</p>
       </div>
     {/if}
 
     {#if aiGuidance || isGenerating}
       <div class="prose dark:prose-invert max-w-none">
-        <div
-          class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 rounded p-4"
-        >
+        <div class="whitespace-pre-wrap text-body text-fg-muted bg-surface-sunken rounded-card p-4">
           {aiGuidance || 'Generiere Entscheidungshilfe...'}
         </div>
       </div>
     {:else}
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-body text-fg-muted">
         Klicken Sie auf "Entscheidungshilfe generieren", um eine KI-gestützte Analyse des
         Medikamentenwechsels zu erhalten. Die KI wird die Kompendiumdaten beider Medikamente
         analysieren und eine fundierte Empfehlung geben.

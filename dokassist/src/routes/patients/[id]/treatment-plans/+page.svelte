@@ -22,7 +22,7 @@
     type UpdateTreatmentGoal,
     type TreatmentIntervention,
     type CreateTreatmentIntervention,
-    type UpdateTreatmentIntervention
+    type UpdateTreatmentIntervention,
   } from '$lib/api';
 
   const patientId = $derived($page.params.id);
@@ -66,7 +66,7 @@
     { value: 'active', label: 'Active' },
     { value: 'completed', label: 'Completed' },
     { value: 'revised', label: 'Revised' },
-    { value: 'discontinued', label: 'Discontinued' }
+    { value: 'discontinued', label: 'Discontinued' },
   ];
 
   const goalStatusOptions = [
@@ -74,14 +74,14 @@
     { value: 'in_progress', label: 'In Progress' },
     { value: 'achieved', label: 'Achieved' },
     { value: 'revised', label: 'Revised' },
-    { value: 'discontinued', label: 'Discontinued' }
+    { value: 'discontinued', label: 'Discontinued' },
   ];
 
   const interventionTypeOptions = [
     { value: 'psychotherapy', label: 'Psychotherapy' },
     { value: 'medication', label: 'Medication' },
     { value: 'referral', label: 'Referral' },
-    { value: 'other', label: 'Other' }
+    { value: 'other', label: 'Other' },
   ];
 
   onMount(async () => {
@@ -94,7 +94,8 @@
       error = null;
       plans = await listTreatmentPlansForPatient(patientId!);
     } catch (err) {
-      error = 'Error loading treatment plans: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        'Error loading treatment plans: ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to load treatment plans:', err);
     } finally {
       loading = false;
@@ -113,7 +114,7 @@
 
       const [loadedGoals, loadedInterventions] = await Promise.all([
         listTreatmentGoalsForPlan(planId),
-        listTreatmentInterventionsForPlan(planId)
+        listTreatmentInterventionsForPlan(planId),
       ]);
       goals = loadedGoals;
       interventions = loadedInterventions;
@@ -136,7 +137,11 @@
   }
 
   async function handleDelete(planId: string) {
-    if (!confirm('Are you sure you want to delete this treatment plan? This will also delete all goals and interventions.')) {
+    if (
+      !confirm(
+        'Are you sure you want to delete this treatment plan? This will also delete all goals and interventions.'
+      )
+    ) {
       return;
     }
 
@@ -172,7 +177,7 @@
           description: description || undefined,
           start_date: startDate,
           end_date: endDate || undefined,
-          status
+          status,
         };
         await updateTreatmentPlan(editingId, update);
       } else {
@@ -182,7 +187,7 @@
           description: description || undefined,
           start_date: startDate,
           end_date: endDate || undefined,
-          status
+          status,
         };
         await createTreatmentPlan(input);
       }
@@ -249,7 +254,7 @@
           description: goalDescription,
           target_date: goalTargetDate || undefined,
           status: goalStatus,
-          sort_order: goalSortOrder
+          sort_order: goalSortOrder,
         };
         await updateTreatmentGoal(editingGoalId, update);
       } else {
@@ -258,7 +263,7 @@
           description: goalDescription,
           target_date: goalTargetDate || undefined,
           status: goalStatus,
-          sort_order: goalSortOrder
+          sort_order: goalSortOrder,
         };
         await createTreatmentGoal(input);
       }
@@ -277,7 +282,7 @@
     goalDescription = '';
     goalTargetDate = '';
     goalStatus = 'in_progress';
-    goalSortOrder = goals.length > 0 ? Math.max(...goals.map(g => g.sort_order)) + 1 : 0;
+    goalSortOrder = goals.length > 0 ? Math.max(...goals.map((g) => g.sort_order)) + 1 : 0;
   }
 
   // Intervention handlers
@@ -320,7 +325,7 @@
         const update: UpdateTreatmentIntervention = {
           type: interventionType,
           description: interventionDescription,
-          frequency: interventionFrequency || undefined
+          frequency: interventionFrequency || undefined,
         };
         await updateTreatmentIntervention(editingInterventionId, update);
       } else {
@@ -328,7 +333,7 @@
           treatment_plan_id: selectedPlanId,
           type: interventionType,
           description: interventionDescription,
-          frequency: interventionFrequency || undefined
+          frequency: interventionFrequency || undefined,
         };
         await createTreatmentIntervention(input);
       }
@@ -353,26 +358,26 @@
     switch (status) {
       case 'active':
       case 'in_progress':
-        return 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400';
+        return 'text-success-fg  border-success ';
       case 'completed':
       case 'achieved':
-        return 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400';
+        return 'text-accent-fg  border-accent ';
       case 'revised':
-        return 'text-yellow-600 dark:text-yellow-400 border-yellow-600 dark:border-yellow-400';
+        return 'text-warning-fg  border-warning ';
       case 'discontinued':
       case 'pending':
-        return 'text-gray-600 dark:text-gray-400 border-gray-600 dark:border-gray-400';
+        return 'text-fg-muted  border-line ';
       default:
-        return 'text-gray-600 dark:text-gray-400 border-gray-600 dark:border-gray-400';
+        return 'text-fg-muted  border-line ';
     }
   }
 </script>
 
 <div class="p-8 max-w-6xl mx-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Treatment Plans</h1>
+    <h1 class="text-display font-semibold text-fg">Treatment Plans</h1>
     <button
-      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
       onclick={() => {
         if (showAddForm) {
           resetForm();
@@ -386,19 +391,19 @@
   </div>
 
   {#if error}
-    <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-lg mb-6">
+    <div class="bg-danger-subtle border border-danger-line text-danger-fg p-4 rounded-card mb-6">
       {error}
     </div>
   {/if}
 
   {#if showAddForm}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <div class="bg-surface-raised border border-line rounded-card p-6 mb-6">
+      <h2 class="text-heading font-semibold text-fg mb-4">
         {editingId ? 'Edit Treatment Plan' : 'Add New Treatment Plan'}
       </h2>
       <form onsubmit={handleSubmit} class="space-y-4">
         <div>
-          <label for="title" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+          <label for="title" class="block text-body font-medium text-fg-muted mb-1">
             Title *
           </label>
           <input
@@ -406,25 +411,25 @@
             type="text"
             bind:value={title}
             required
-            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </div>
 
         <div>
-          <label for="description" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+          <label for="description" class="block text-body font-medium text-fg-muted mb-1">
             Description
           </label>
           <textarea
             id="description"
             bind:value={description}
             rows="3"
-            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
           ></textarea>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
           <div>
-            <label for="start-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+            <label for="start-date" class="block text-body font-medium text-fg-muted mb-1">
               Start Date *
             </label>
             <input
@@ -432,31 +437,31 @@
               type="date"
               bind:value={startDate}
               required
-              class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
 
           <div>
-            <label for="end-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+            <label for="end-date" class="block text-body font-medium text-fg-muted mb-1">
               End Date
             </label>
             <input
               id="end-date"
               type="date"
               bind:value={endDate}
-              class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
 
           <div>
-            <label for="status" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+            <label for="status" class="block text-body font-medium text-fg-muted mb-1">
               Status *
             </label>
             <select
               id="status"
               bind:value={status}
               required
-              class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             >
               {#each statusOptions as option}
                 <option value={option.value}>{option.label}</option>
@@ -469,14 +474,14 @@
           <button
             type="button"
             onclick={resetForm}
-            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            class="h-8 px-3 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50"
           >
             {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
           </button>
@@ -487,14 +492,14 @@
 
   {#if loading}
     <div class="flex justify-center py-12">
-      <div class="text-gray-500 dark:text-gray-400">Loading treatment plans...</div>
+      <div class="text-fg-muted">Loading treatment plans...</div>
     </div>
   {:else if plans.length === 0}
     <div class="text-center py-12">
-      <p class="text-gray-500 dark:text-gray-400 mb-4">No treatment plans yet</p>
+      <p class="text-fg-muted mb-4">No treatment plans yet</p>
       <button
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        onclick={() => showAddForm = true}
+        class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
+        onclick={() => (showAddForm = true)}
       >
         Add First Treatment Plan
       </button>
@@ -502,20 +507,24 @@
   {:else}
     <div class="grid gap-4">
       {#each plans as plan (plan.id)}
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="bg-surface-raised rounded-card border border-line">
           <div class="p-4">
             <div class="flex justify-between items-start mb-2">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{plan.title}</h3>
-                  <span class="px-2 py-0.5 rounded-full text-xs border {getStatusColor(plan.status)}">
+                  <h3 class="text-heading font-semibold text-fg">{plan.title}</h3>
+                  <span
+                    class="px-2 py-0.5 rounded-full text-caption border {getStatusColor(
+                      plan.status
+                    )}"
+                  >
                     {plan.status}
                   </span>
                 </div>
                 {#if plan.description}
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{plan.description}</p>
+                  <p class="text-body text-fg-muted mb-2">{plan.description}</p>
                 {/if}
-                <div class="text-sm text-gray-500 dark:text-gray-400">
+                <div class="text-body text-fg-muted">
                   <span>{plan.start_date}</span>
                   {#if plan.end_date}
                     <span> — {plan.end_date}</span>
@@ -525,29 +534,63 @@
               <div class="flex gap-2 ml-2">
                 <button
                   onclick={() => handleEdit(plan)}
-                  class="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+                  class="p-2 text-fg-muted hover:text-accent-fg transition-colors"
                   title="Edit"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
                   </svg>
                 </button>
                 <button
                   onclick={() => handleDelete(plan.id)}
-                  class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  class="p-2 text-fg-muted hover:text-danger-fg transition-colors"
                   title="Delete"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                 </button>
                 <button
-                  onclick={() => selectedPlanId === plan.id ? (selectedPlanId = null) : loadPlanDetails(plan.id)}
-                  class="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+                  onclick={() =>
+                    selectedPlanId === plan.id ? (selectedPlanId = null) : loadPlanDetails(plan.id)}
+                  class="p-2 text-fg-muted hover:text-accent-fg transition-colors"
                   title={selectedPlanId === plan.id ? 'Collapse' : 'View Details'}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={selectedPlanId === plan.id ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d={selectedPlanId === plan.id ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+                    />
                   </svg>
                 </button>
               </div>
@@ -555,14 +598,14 @@
           </div>
 
           {#if selectedPlanId === plan.id}
-            <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/50">
+            <div class="border-t border-line p-4 bg-surface-sunken">
               {#if loadingDetails}
-                <div class="text-center py-4 text-gray-500 dark:text-gray-400">Loading details...</div>
+                <div class="text-center py-4 text-fg-muted">Loading details...</div>
               {:else}
                 <!-- Goals Section -->
                 <div class="mb-6">
                   <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-md font-semibold text-gray-900 dark:text-gray-100">Goals</h4>
+                    <h4 class="text-md font-semibold text-fg">Goals</h4>
                     <button
                       onclick={() => {
                         if (showAddGoalForm) {
@@ -572,16 +615,22 @@
                           showAddGoalForm = true;
                         }
                       }}
-                      class="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      class="text-body h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                     >
                       {showAddGoalForm ? 'Cancel' : '+ Add Goal'}
                     </button>
                   </div>
 
                   {#if showAddGoalForm}
-                    <form onsubmit={handleSubmitGoal} class="bg-white dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700 mb-3 space-y-3">
+                    <form
+                      onsubmit={handleSubmitGoal}
+                      class="bg-surface-raised p-4 rounded-card border border-line mb-3 space-y-3"
+                    >
                       <div>
-                        <label for="goal-description" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label
+                          for="goal-description"
+                          class="block text-body font-medium text-fg-muted mb-1"
+                        >
                           Description *
                         </label>
                         <textarea
@@ -589,29 +638,35 @@
                           bind:value={goalDescription}
                           required
                           rows="2"
-                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                         ></textarea>
                       </div>
                       <div class="grid grid-cols-3 gap-3">
                         <div>
-                          <label for="goal-target-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label
+                            for="goal-target-date"
+                            class="block text-body font-medium text-fg-muted mb-1"
+                          >
                             Target Date
                           </label>
                           <input
                             id="goal-target-date"
                             type="date"
                             bind:value={goalTargetDate}
-                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                           />
                         </div>
                         <div>
-                          <label for="goal-status" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label
+                            for="goal-status"
+                            class="block text-body font-medium text-fg-muted mb-1"
+                          >
                             Status
                           </label>
                           <select
                             id="goal-status"
                             bind:value={goalStatus}
-                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                           >
                             {#each goalStatusOptions as option}
                               <option value={option.value}>{option.label}</option>
@@ -619,7 +674,10 @@
                           </select>
                         </div>
                         <div>
-                          <label for="goal-priority" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label
+                            for="goal-priority"
+                            class="block text-body font-medium text-fg-muted mb-1"
+                          >
                             Priority
                           </label>
                           <input
@@ -627,7 +685,7 @@
                             type="number"
                             bind:value={goalSortOrder}
                             min="0"
-                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                           />
                         </div>
                       </div>
@@ -635,13 +693,13 @@
                         <button
                           type="button"
                           onclick={resetGoalForm}
-                          class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          class="h-7 px-2.5 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          class="h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                         >
                           {editingGoalId ? 'Update' : 'Add'}
                         </button>
@@ -650,40 +708,68 @@
                   {/if}
 
                   {#if goals.length === 0}
-                    <p class="text-sm text-gray-500 dark:text-gray-400">No goals yet</p>
+                    <p class="text-body text-fg-muted">No goals yet</p>
                   {:else}
                     <div class="space-y-2">
                       {#each goals as goal (goal.id)}
-                        <div class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                        <div class="bg-surface-raised p-3 rounded-card border border-line">
                           <div class="flex justify-between items-start">
                             <div class="flex-1">
                               <div class="flex items-center gap-2 mb-1">
-                                <span class="px-2 py-0.5 rounded-full text-xs border {getStatusColor(goal.status)}">
+                                <span
+                                  class="px-2 py-0.5 rounded-full text-caption border {getStatusColor(
+                                    goal.status
+                                  )}"
+                                >
                                   {goal.status}
                                 </span>
                               </div>
-                              <p class="text-sm text-gray-900 dark:text-gray-100">{goal.description}</p>
+                              <p class="text-body text-fg">{goal.description}</p>
                               {#if goal.target_date}
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Target: {goal.target_date}</p>
+                                <p class="text-caption text-fg-muted mt-1">
+                                  Target: {goal.target_date}
+                                </p>
                               {/if}
                             </div>
                             <div class="flex gap-1 ml-2">
                               <button
                                 onclick={() => handleEditGoal(goal)}
-                                class="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                class="p-1 text-fg-muted hover:text-accent-fg transition-colors"
                                 aria-label="Edit goal"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
                                 </svg>
                               </button>
                               <button
                                 onclick={() => handleDeleteGoal(goal.id)}
-                                class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                class="p-1 text-fg-muted hover:text-danger-fg transition-colors"
                                 aria-label="Delete goal"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                               </button>
                             </div>
@@ -697,7 +783,7 @@
                 <!-- Interventions Section -->
                 <div>
                   <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-md font-semibold text-gray-900 dark:text-gray-100">Interventions</h4>
+                    <h4 class="text-md font-semibold text-fg">Interventions</h4>
                     <button
                       onclick={() => {
                         if (showAddInterventionForm) {
@@ -707,23 +793,29 @@
                           showAddInterventionForm = true;
                         }
                       }}
-                      class="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      class="text-body h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                     >
                       {showAddInterventionForm ? 'Cancel' : '+ Add Intervention'}
                     </button>
                   </div>
 
                   {#if showAddInterventionForm}
-                    <form onsubmit={handleSubmitIntervention} class="bg-white dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700 mb-3 space-y-3">
+                    <form
+                      onsubmit={handleSubmitIntervention}
+                      class="bg-surface-raised p-4 rounded-card border border-line mb-3 space-y-3"
+                    >
                       <div>
-                        <label for="intervention-type" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label
+                          for="intervention-type"
+                          class="block text-body font-medium text-fg-muted mb-1"
+                        >
                           Type *
                         </label>
                         <select
                           id="intervention-type"
                           bind:value={interventionType}
                           required
-                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                         >
                           {#each interventionTypeOptions as option}
                             <option value={option.value}>{option.label}</option>
@@ -731,7 +823,10 @@
                         </select>
                       </div>
                       <div>
-                        <label for="intervention-description" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label
+                          for="intervention-description"
+                          class="block text-body font-medium text-fg-muted mb-1"
+                        >
                           Description *
                         </label>
                         <textarea
@@ -739,11 +834,14 @@
                           bind:value={interventionDescription}
                           required
                           rows="2"
-                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                         ></textarea>
                       </div>
                       <div>
-                        <label for="intervention-frequency" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label
+                          for="intervention-frequency"
+                          class="block text-body font-medium text-fg-muted mb-1"
+                        >
                           Frequency
                         </label>
                         <input
@@ -751,20 +849,20 @@
                           type="text"
                           bind:value={interventionFrequency}
                           placeholder="e.g., Weekly, Twice per week"
-                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                         />
                       </div>
                       <div class="flex justify-end gap-2">
                         <button
                           type="button"
                           onclick={resetInterventionForm}
-                          class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          class="h-7 px-2.5 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          class="h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                         >
                           {editingInterventionId ? 'Update' : 'Add'}
                         </button>
@@ -773,40 +871,66 @@
                   {/if}
 
                   {#if interventions.length === 0}
-                    <p class="text-sm text-gray-500 dark:text-gray-400">No interventions yet</p>
+                    <p class="text-body text-fg-muted">No interventions yet</p>
                   {:else}
                     <div class="space-y-2">
                       {#each interventions as intervention (intervention.id)}
-                        <div class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                        <div class="bg-surface-raised p-3 rounded-card border border-line">
                           <div class="flex justify-between items-start">
                             <div class="flex-1">
                               <div class="flex items-center gap-2 mb-1">
-                                <span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+                                <span
+                                  class="px-2 py-0.5 rounded-full text-caption bg-accent-subtle text-accent-fg"
+                                >
                                   {intervention.type}
                                 </span>
                               </div>
-                              <p class="text-sm text-gray-900 dark:text-gray-100">{intervention.description}</p>
+                              <p class="text-body text-fg">{intervention.description}</p>
                               {#if intervention.frequency}
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Frequency: {intervention.frequency}</p>
+                                <p class="text-caption text-fg-muted mt-1">
+                                  Frequency: {intervention.frequency}
+                                </p>
                               {/if}
                             </div>
                             <div class="flex gap-1 ml-2">
                               <button
                                 onclick={() => handleEditIntervention(intervention)}
-                                class="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                class="p-1 text-fg-muted hover:text-accent-fg transition-colors"
                                 aria-label="Edit intervention"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
                                 </svg>
                               </button>
                               <button
                                 onclick={() => handleDeleteIntervention(intervention.id)}
-                                class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                class="p-1 text-fg-muted hover:text-danger-fg transition-colors"
                                 aria-label="Delete intervention"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                               </button>
                             </div>

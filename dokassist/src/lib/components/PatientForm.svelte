@@ -132,8 +132,8 @@
 >
   <!-- AHV Number -->
   <div>
-    <label for="ahv_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-      {$t('patients.ahvNumber')} <span class="text-red-400">*</span>
+    <label for="ahv_number" class="block text-body font-medium text-fg-muted mb-2">
+      {$t('patients.ahvNumber')} <span class="text-danger-fg">*</span>
     </label>
     <AhvInput bind:value={formData.ahv_number} error={errors.ahv_number} />
   </div>
@@ -141,42 +141,36 @@
   <!-- Name Fields -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label
-        for="first_name"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-      >
-        {$t('patients.firstName')} <span class="text-red-400">*</span>
+      <label for="first_name" class="block text-body font-medium text-fg-muted mb-2">
+        {$t('patients.firstName')} <span class="text-danger-fg">*</span>
       </label>
       <input
         type="text"
         id="first_name"
         bind:value={formData.first_name}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 {errors.first_name
-          ? 'border-red-500'
-          : 'border-gray-700'}"
+        class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {errors.first_name
+          ? 'border-danger-line'
+          : 'border-line'}"
       />
       {#if errors.first_name}
-        <p class="mt-1 text-sm text-red-400">{errors.first_name}</p>
+        <p class="mt-1 text-body text-danger-fg">{errors.first_name}</p>
       {/if}
     </div>
 
     <div>
-      <label
-        for="last_name"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-      >
-        {$t('patients.lastName')} <span class="text-red-400">*</span>
+      <label for="last_name" class="block text-body font-medium text-fg-muted mb-2">
+        {$t('patients.lastName')} <span class="text-danger-fg">*</span>
       </label>
       <input
         type="text"
         id="last_name"
         bind:value={formData.last_name}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 {errors.last_name
-          ? 'border-red-500'
-          : 'border-gray-700'}"
+        class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {errors.last_name
+          ? 'border-danger-line'
+          : 'border-line'}"
       />
       {#if errors.last_name}
-        <p class="mt-1 text-sm text-red-400">{errors.last_name}</p>
+        <p class="mt-1 text-body text-danger-fg">{errors.last_name}</p>
       {/if}
     </div>
   </div>
@@ -184,33 +178,30 @@
   <!-- Date of Birth and Gender -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label
-        for="date_of_birth"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-      >
-        {$t('patients.dateOfBirth')} <span class="text-red-400">*</span>
+      <label for="date_of_birth" class="block text-body font-medium text-fg-muted mb-2">
+        {$t('patients.dateOfBirth')} <span class="text-danger-fg">*</span>
       </label>
       <input
         type="date"
         id="date_of_birth"
         bind:value={formData.date_of_birth}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 {errors.date_of_birth
-          ? 'border-red-500'
-          : 'border-gray-700'}"
+        class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {errors.date_of_birth
+          ? 'border-danger-line'
+          : 'border-line'}"
       />
       {#if errors.date_of_birth}
-        <p class="mt-1 text-sm text-red-400">{errors.date_of_birth}</p>
+        <p class="mt-1 text-body text-danger-fg">{errors.date_of_birth}</p>
       {/if}
     </div>
 
     <div>
-      <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      <label for="gender" class="block text-body font-medium text-fg-muted mb-2"
         >{$t('patients.gender')}</label
       >
       <select
         id="gender"
         bind:value={formData.gender}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
       >
         <option value="">{$t('patients.genderSelect')}</option>
         <option value="male">{$t('patients.male')}</option>
@@ -223,96 +214,93 @@
   <!-- Contact Information -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      <label for="phone" class="block text-body font-medium text-fg-muted mb-2"
         >{$t('patients.phone')}</label
       >
       <input
         type="tel"
         id="phone"
         bind:value={formData.phone}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
       />
     </div>
 
     <div>
-      <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      <label for="email" class="block text-body font-medium text-fg-muted mb-2"
         >{$t('patients.email')}</label
       >
       <input
         type="email"
         id="email"
         bind:value={formData.email}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
       />
     </div>
   </div>
 
   <!-- Address -->
   <div>
-    <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+    <label for="address" class="block text-body font-medium text-fg-muted mb-2"
       >{$t('patients.address')}</label
     >
     <textarea
       id="address"
       bind:value={formData.address}
       rows="2"
-      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+      class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
     ></textarea>
   </div>
 
   <!-- Insurance -->
   <div>
-    <label for="insurance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+    <label for="insurance" class="block text-body font-medium text-fg-muted mb-2"
       >{$t('patients.insurance')}</label
     >
     <input
       type="text"
       id="insurance"
       bind:value={formData.insurance}
-      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+      class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
     />
   </div>
 
   <!-- GP Information -->
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="gp_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      <label for="gp_name" class="block text-body font-medium text-fg-muted mb-2"
         >{$t('patients.gpName')}</label
       >
       <input
         type="text"
         id="gp_name"
         bind:value={formData.gp_name}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
       />
     </div>
 
     <div>
-      <label
-        for="gp_address"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-      >
+      <label for="gp_address" class="block text-body font-medium text-fg-muted mb-2">
         {$t('patients.gpAddress')}
       </label>
       <input
         type="text"
         id="gp_address"
         bind:value={formData.gp_address}
-        class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
       />
     </div>
   </div>
 
   <!-- Notes -->
   <div>
-    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+    <label for="notes" class="block text-body font-medium text-fg-muted mb-2"
       >{$t('patients.notes')}</label
     >
     <textarea
       id="notes"
       bind:value={formData.notes}
       rows="4"
-      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+      class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
     ></textarea>
   </div>
 
@@ -322,14 +310,14 @@
       type="button"
       onclick={handleCancel}
       disabled={isSubmitting}
-      class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      class="h-8 px-3 border border-line rounded-control text-fg-muted hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {$t('common.cancel')}
     </button>
     <button
       type="submit"
       disabled={isSubmitting}
-      class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isSubmitting
         ? $t('patients.saving')

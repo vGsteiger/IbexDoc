@@ -125,24 +125,24 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   {#if isLoading}
-    <div class="text-gray-500 dark:text-gray-400">{$t('email.loadingEmail')}</div>
+    <div class="text-fg-muted">{$t('email.loadingEmail')}</div>
   {:else if error}
     <ErrorDisplay {error} showDetails={true} />
   {:else if email}
     <div class="mb-6">
       <div class="flex justify-between items-start mb-2">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h2 class="text-display font-semibold text-fg">
           {email.status === 'draft' ? $t('email.editDraft') : $t('email.viewEmail')}
         </h2>
         <span
-          class="px-3 py-1 text-sm rounded {email.status === 'sent'
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'}"
+          class="px-3 py-1 text-body rounded-card {email.status === 'sent'
+            ? 'bg-success-subtle text-success-fg '
+            : 'bg-warning-subtle text-warning-fg'}"
         >
           {email.status === 'draft' ? $t('email.draft') : $t('email.sentStatus')}
         </span>
       </div>
-      <p class="text-gray-500 dark:text-gray-400 text-sm">
+      <p class="text-fg-muted text-body">
         {#if email.status === 'sent' && email.sent_at}
           {$t('email.sent')} {formatDate(email.sent_at)}
         {:else}
@@ -157,14 +157,9 @@
       </div>
     {/if}
 
-    <div
-      class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-4"
-    >
+    <div class="bg-surface-sunken rounded-card p-6 border border-line space-y-4">
       <div>
-        <label
-          for="recipient"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
+        <label for="recipient" class="block text-body font-medium text-fg-muted mb-2">
           {$t('email.to')}
         </label>
         <input
@@ -172,15 +167,12 @@
           type="email"
           bind:value={recipientEmail}
           disabled={!isEditing}
-          class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
       <div>
-        <label
-          for="subject"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
+        <label for="subject" class="block text-body font-medium text-fg-muted mb-2">
           {$t('email.subject')}
         </label>
         <input
@@ -188,12 +180,12 @@
           type="text"
           bind:value={subject}
           disabled={!isEditing}
-          class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
       <div>
-        <label for="body" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label for="body" class="block text-body font-medium text-fg-muted mb-2">
           {$t('email.message')}
         </label>
         <textarea
@@ -201,16 +193,14 @@
           bind:value={body}
           disabled={!isEditing}
           rows="15"
-          class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
         ></textarea>
       </div>
 
-      <div
-        class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700"
-      >
+      <div class="flex justify-between items-center pt-4 border-t border-line">
         <a
           href={`/patients/${patientId}/email`}
-          class="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          class="px-4 py-2 text-fg-muted hover:text-fg transition-colors"
         >
           {$t('email.backToEmails')}
         </a>
@@ -219,14 +209,14 @@
             <button
               on:click={handleSaveChanges}
               disabled={isSaving}
-              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="h-8 px-3 bg-surface-selected text-fg-muted rounded-control hover:bg-surface-selected transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? $t('email.saving') : $t('email.saveChanges')}
             </button>
             <button
               on:click={handleSendEmail}
               disabled={isSaving}
-              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? $t('email.opening') : $t('email.openMailClient')}
             </button>
@@ -239,7 +229,7 @@
               );
               window.location.href = mailtoLink;
             }}
-            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
           >
             {$t('email.openMailClient')}
           </button>
@@ -248,7 +238,7 @@
     </div>
 
     {#if isEditing}
-      <div class="mt-4 text-sm text-gray-400 dark:text-gray-500">
+      <div class="mt-4 text-body text-fg-subtle">
         <p>{$t('email.mailClientEditHint')}</p>
       </div>
     {/if}

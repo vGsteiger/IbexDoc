@@ -14,3 +14,6 @@ pub const AUDIT_CHECKPOINT_B_ACCOUNT: &str = "audit.chain-head.v1.b";
 
 /// Recovery vault filename
 pub const RECOVERY_FILENAME: &str = "recovery.vault";
+
+/// SQLCipher database filename
+pub const DATABASE_FILENAME: &str = "dokassist.db";

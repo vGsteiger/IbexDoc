@@ -14,7 +14,7 @@
   // that state.
   onMount(() => {
     void (async () => {
-      if (await checkAuth() === 'recovery_required') {
+      if ((await checkAuth()) === 'recovery_required') {
         authStatus.set('recovery_required');
         await goto('/recover', { replaceState: true });
       }
@@ -68,19 +68,26 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex items-center justify-center p-8">
-  <main class="max-w-md w-full rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-xl space-y-8 dark:border-gray-800 dark:bg-gray-900/70 dark:shadow-2xl">
+<div class="min-h-screen bg-surface-sunken text-fg flex items-center justify-center p-8">
+  <main
+    class="max-w-md w-full rounded-card border border-line bg-surface-raised p-8 text-center shadow-modal space-y-8"
+  >
     <div class="space-y-3">
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-300">
+      <div
+        class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent-subtle/15 text-accent-fg"
+      >
         <KeyRound size={24} aria-hidden="true" />
       </div>
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">{$t('auth.welcomeBack')}</h1>
-      <p class="text-gray-600 dark:text-gray-400">{$t('auth.unlockSubtitle')}</p>
+      <h1 class="text-display font-semibold text-fg">{$t('auth.welcomeBack')}</h1>
+      <p class="text-fg-muted">{$t('auth.unlockSubtitle')}</p>
     </div>
 
     {#if error}
-      <div class="rounded-xl border border-red-500/50 bg-red-950/40 p-4 text-left" role="alert">
-        <p class="text-sm text-red-200">{error}</p>
+      <div
+        class="rounded-card border border-danger-line/50 bg-danger-subtle/40 p-4 text-left"
+        role="alert"
+      >
+        <p class="text-body text-danger-fg">{error}</p>
       </div>
     {/if}
 
@@ -88,10 +95,10 @@
       <button
         onclick={handleUnlock}
         disabled={isUnlocking}
-        class="w-full px-6 py-4 bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-3"
+        class="w-full px-6 py-4 bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-2 focus:ring-offset-surface-raised disabled:bg-surface-selected disabled:cursor-not-allowed text-on-accent font-medium rounded-card transition-colors flex items-center justify-center gap-3"
       >
         {#if isUnlocking}
-          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-on-accent"></div>
           <span>{$t('auth.unlocking')}</span>
         {:else}
           <Fingerprint size={22} aria-hidden="true" />
@@ -99,13 +106,16 @@
         {/if}
       </button>
 
-      <a href="/recover" class="block text-sm text-blue-400 hover:text-blue-300 transition-colors">
+      <a
+        href="/recover"
+        class="block text-body text-accent-fg hover:text-accent-fg transition-colors"
+      >
         {$t('auth.recoveryLink')}
       </a>
     </div>
 
-    <div class="border-t border-gray-200 pt-6 dark:border-gray-800">
-      <a href="/reset" class="text-xs text-gray-500 hover:text-red-600 transition-colors dark:text-gray-500 dark:hover:text-red-300">
+    <div class="border-t border-line pt-6">
+      <a href="/reset" class="text-caption text-fg-muted hover:text-danger-fg transition-colors">
         {$t('auth.resetLink')}
       </a>
     </div>

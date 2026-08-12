@@ -1,46 +1,63 @@
 use crate::constants::{
-    AUDIT_CHECKPOINT_A_ACCOUNT, AUDIT_CHECKPOINT_B_ACCOUNT, DB_KEY_ACCOUNT, FS_KEY_ACCOUNT,
-    KEYCHAIN_SERVICE, RECOVERY_FILENAME,
+    AUDIT_CHECKPOINT_A_ACCOUNT, AUDIT_CHECKPOINT_B_ACCOUNT, DATABASE_FILENAME, DB_KEY_ACCOUNT,
+    FS_KEY_ACCOUNT, KEYCHAIN_SERVICE, RECOVERY_FILENAME,
 };
 use crate::error::AppError;
 use crate::state::{AppState, AuthState};
 use crate::{keychain, recovery};
+use std::path::Path;
 use tauri::State;
 
 fn lock_poisoned() -> AppError {
     AppError::Keychain("Auth state mutex poisoned".to_string())
 }
 
-/// Returns "first_run" | "locked" | "unlocked" | "recovery_required"
+/// Returns "first_run" | "initializing" | "locked" | "unlocked" | "recovery_required"
 #[tauri::command]
 pub async fn check_auth(state: State<'_, AppState>) -> Result<String, AppError> {
     let auth = state.auth.lock().map_err(|_| lock_poisoned())?;
 
     match *auth {
         AuthState::FirstRun => Ok("first_run".to_string()),
+        AuthState::Initializing => Ok("initializing".to_string()),
         AuthState::Locked => Ok("locked".to_string()),
         AuthState::Unlocked { .. } => Ok("unlocked".to_string()),
         AuthState::RecoveryRequired => Ok("recovery_required".to_string()),
     }
 }
 
-/// First run: generate keys, store in Keychain. Returns 24 mnemonic words.
-#[tauri::command]
-pub async fn initialize_app(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
-    {
-        let auth = state.auth.lock().map_err(|_| lock_poisoned())?;
-        if !matches!(*auth, AuthState::FirstRun) {
-            return Err(AppError::Validation(
-                "App is already initialized".to_string(),
-            ));
-        }
+type MasterKeys = (
+    Vec<String>,
+    zeroize::Zeroizing<[u8; 32]>,
+    zeroize::Zeroizing<[u8; 32]>,
+);
+
+/// Generate the master keys, the vault marker, the Keychain items and the
+/// database. Every step here overwrites or creates on-disk state, so callers
+/// must hold the `Initializing` claim for the whole call.
+fn create_master_keys(
+    state: &AppState,
+    vault_path: &Path,
+    db_path: &Path,
+) -> Result<MasterKeys, AppError> {
+    // An existing database is encrypted under keys this function is about to
+    // replace. Regenerating them would strand the data behind a key that exists
+    // nowhere — neither in the Keychain nor behind the new recovery phrase.
+    if crate::state::database_is_initialized(db_path) {
+        return Err(AppError::AlreadyInitialized);
+    }
+
+    // `create_recovery` refuses to overwrite. A marker with no database behind it
+    // is an interrupted setup: the phrase was never confirmed and no data depends
+    // on those keys, so clearing it to start over is safe.
+    if vault_path.exists() {
+        std::fs::remove_file(vault_path)?;
     }
 
     // Derive master keys from a freshly generated mnemonic (Argon2id KDF).
     // The vault marker is written to vault_path; keys are wrapped in Zeroizing
     // immediately so they are wiped on any early-return path.
-    let vault_path = state.data_dir.join(RECOVERY_FILENAME);
-    let (words, db_key_raw, fs_key_raw) = recovery::create_recovery(&vault_path)?;
+    let (words, db_key_raw, fs_key_raw) = recovery::create_recovery(vault_path)?;
     let db_key = zeroize::Zeroizing::new(db_key_raw);
     let fs_key = zeroize::Zeroizing::new(fs_key_raw);
 
@@ -51,11 +68,51 @@ pub async fn initialize_app(state: State<'_, AppState>) -> Result<Vec<String>, A
     // Initialize database *before* committing auth state (HIGH-5: TOCTOU fix)
     state.init_db(&db_key, &fs_key)?;
 
-    // Only transition to Unlocked after DB init succeeds
-    let mut auth = state.auth.lock().map_err(|_| lock_poisoned())?;
-    *auth = AuthState::Unlocked { db_key, fs_key };
+    Ok((words, db_key, fs_key))
+}
 
-    Ok(words)
+/// First run: generate keys, store in Keychain. Returns 24 mnemonic words.
+///
+/// The `FirstRun` → `Initializing` transition happens under the auth lock so that
+/// only one call can ever be past the guard. Two calls racing here (a page reload
+/// during the ~1 s of Argon2id and migrations is enough) would each write their
+/// own vault and Keychain items while the database kept the first caller's key,
+/// leaving a vault that neither Touch ID nor the recovery phrase can open.
+#[tauri::command]
+pub async fn initialize_app(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
+    {
+        let mut auth = state.auth.lock().map_err(|_| lock_poisoned())?;
+        match *auth {
+            AuthState::FirstRun => {}
+            AuthState::Initializing => return Err(AppError::SetupInProgress),
+            _ => return Err(AppError::AlreadyInitialized),
+        }
+        *auth = AuthState::Initializing;
+    }
+
+    let vault_path = state.data_dir.join(RECOVERY_FILENAME);
+    let db_path = state.data_dir.join(DATABASE_FILENAME);
+
+    match create_master_keys(&state, &vault_path, &db_path) {
+        Ok((words, db_key, fs_key)) => {
+            // Only transition to Unlocked after DB init succeeds
+            let mut auth = state.auth.lock().map_err(|_| lock_poisoned())?;
+            *auth = AuthState::Unlocked { db_key, fs_key };
+            Ok(words)
+        }
+        Err(err) => {
+            // Release the claim. A database on disk means the keys were already
+            // committed to the Keychain, so the session is Locked rather than
+            // fresh — retrying setup from there must not regenerate them.
+            let mut auth = state.auth.lock().map_err(|_| lock_poisoned())?;
+            *auth = if crate::state::database_is_initialized(&db_path) {
+                AuthState::Locked
+            } else {
+                AuthState::FirstRun
+            };
+            Err(err)
+        }
+    }
 }
 
 /// Unlock: show Touch ID sheet, retrieve master keys from Keychain.
@@ -141,13 +198,30 @@ pub async fn unlock_app(state: State<'_, AppState>) -> Result<bool, AppError> {
 }
 
 /// Recover keys from 24-word mnemonic.
+///
+/// Accepted from `Locked` as well as `RecoveryRequired`: the phrase is the master
+/// credential, and the unlock screen offers it as the way out of a vault that
+/// Touch ID cannot open. Requiring `RecoveryRequired` — which is only reached when
+/// the Keychain items have gone missing — made the phrase unusable in exactly the
+/// case users reach for it.
 #[tauri::command]
 pub async fn recover_app(state: State<'_, AppState>, words: Vec<String>) -> Result<bool, AppError> {
-    // Verify we're in RecoveryRequired state (without holding lock during I/O)
+    // Verify the vault is sealed (without holding the lock during I/O)
     {
         let auth = state.auth.lock().map_err(|_| lock_poisoned())?;
-        if !matches!(*auth, AuthState::RecoveryRequired) {
-            return Err(AppError::Validation("Recovery is not required".to_string()));
+        match *auth {
+            AuthState::RecoveryRequired | AuthState::Locked => {}
+            AuthState::Initializing => return Err(AppError::SetupInProgress),
+            AuthState::FirstRun => {
+                return Err(AppError::Validation(
+                    "There is no vault to recover yet".to_string(),
+                ))
+            }
+            AuthState::Unlocked { .. } => {
+                return Err(AppError::Validation(
+                    "The vault is already unlocked".to_string(),
+                ))
+            }
         }
     }
 

@@ -20,8 +20,7 @@
           return `<p class="font-semibold mt-2 mb-0.5">${inline(escape(line.slice(3)))}</p>`;
         if (/^### /.test(line))
           return `<p class="font-medium mt-1 mb-0.5">${inline(escape(line.slice(4)))}</p>`;
-        if (/^- /.test(line))
-          return `<p class="ml-3">&bull; ${inline(escape(line.slice(2)))}</p>`;
+        if (/^- /.test(line)) return `<p class="ml-3">&bull; ${inline(escape(line.slice(2)))}</p>`;
         if (line.trim() === '') return '<div class="mt-1"></div>';
         return `<p>${inline(escape(line))}</p>`;
       })
@@ -93,18 +92,16 @@
 
 {#if showNotification && updateInfo?.update_available}
   <div
-    class="fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-md"
+    class="fixed top-4 right-4 z-50 bg-surface-raised border border-line rounded-card shadow-popover p-4 max-w-md"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="flex-1">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
-          Update Available
-        </h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        <h3 class="text-body font-semibold text-fg mb-1">Update Available</h3>
+        <p class="text-caption text-fg-muted mb-2">
           Version {updateInfo.latest_version} is now available. You are currently on version {updateInfo.current_version}.
         </p>
         {#if updateInfo.body}
-          <div class="text-xs text-gray-500 dark:text-gray-400 mb-3 max-h-24 overflow-y-auto">
+          <div class="text-caption text-fg-muted mb-3 max-h-24 overflow-y-auto">
             <p class="font-medium mb-1">What's new:</p>
             <div>{@html renderMarkdown(updateInfo.body)}</div>
           </div>
@@ -112,13 +109,13 @@
 
         {#if installing}
           <div class="mb-3">
-            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <div class="flex justify-between text-caption text-fg-muted mb-1">
               <span>Downloading update...</span>
               <span>{downloadProgress}%</span>
             </div>
-            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div class="w-full bg-surface-selected rounded-full h-2">
               <div
-                class="bg-blue-500 h-2 rounded-full transition-all"
+                class="bg-accent h-2 rounded-full transition-colors"
                 style="width: {downloadProgress}%"
               ></div>
             </div>
@@ -126,21 +123,21 @@
         {/if}
 
         {#if errorMsg}
-          <p class="text-xs text-red-400 mb-3">{errorMsg}</p>
+          <p class="text-caption text-danger-fg mb-3">{errorMsg}</p>
         {/if}
 
         <div class="flex gap-2">
           <button
             onclick={handleInstallUpdate}
             disabled={installing}
-            class="px-3 py-1.5 text-xs rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+            class="h-7 px-2.5 text-caption rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
           >
             {installing ? 'Installing...' : 'Install Update'}
           </button>
           <button
             onclick={dismiss}
             disabled={installing}
-            class="px-3 py-1.5 text-xs rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-100 transition-colors"
+            class="h-7 px-2.5 text-caption rounded-control bg-surface-selected hover:bg-surface-selected disabled:opacity-50 disabled:cursor-not-allowed text-fg transition-colors"
           >
             Later
           </button>
@@ -150,7 +147,7 @@
         onclick={dismiss}
         disabled={installing}
         aria-label={$t('common.close')}
-        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+        class="text-fg-muted hover:text-fg transition-colors disabled:opacity-50"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

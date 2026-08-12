@@ -12,7 +12,9 @@
       const status = await checkAuth();
       authStatus.set(status);
 
-      if (status === 'first_run') {
+      if (status === 'first_run' || status === 'initializing') {
+        // A setup run started by an earlier page load may still be generating
+        // keys; /setup reports that rather than starting a second one.
         goto('/setup');
       } else if (status === 'locked') {
         goto('/unlock');
@@ -50,24 +52,24 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex items-center justify-center p-8">
+<div class="min-h-screen bg-surface-sunken text-fg flex items-center justify-center p-8">
   {#if error}
     <div class="text-center space-y-4 max-w-md">
-      <div class="bg-red-50 border border-red-500 rounded-lg p-6 dark:bg-red-900/20">
-        <h2 class="text-xl font-bold text-red-500 mb-2">{$t('auth.authError')}</h2>
-        <p class="text-gray-700 dark:text-gray-300">{error}</p>
+      <div class="bg-danger-subtle border border-danger-line rounded-card p-6">
+        <h2 class="text-title font-semibold text-danger-fg mb-2">{$t('auth.authError')}</h2>
+        <p class="text-fg-muted">{error}</p>
       </div>
       <button
         onclick={handleRetry}
-        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+        class="px-6 py-3 bg-accent hover:bg-accent-hover text-on-accent font-medium rounded-control transition-colors"
       >
         {$t('auth.retry')}
       </button>
     </div>
   {:else}
     <div class="text-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-      <p class="mt-4 text-gray-600 dark:text-gray-400">{$t('auth.loading')}</p>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+      <p class="mt-4 text-fg-muted">{$t('auth.loading')}</p>
     </div>
   {/if}
 </div>

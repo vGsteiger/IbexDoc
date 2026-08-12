@@ -23,7 +23,19 @@
       words = mnemonic;
     } catch (err) {
       const { code, message } = parseError(err);
-      error = code === 'KEYCHAIN_ERROR' ? $t('auth.setupKeychainError') : message;
+      // The vault already exists — its phrase was shown to whichever page load
+      // created it. Setup has nothing left to do; send the user to unlock.
+      if (code === 'ALREADY_INITIALIZED') {
+        await goto('/', { replaceState: true });
+        return;
+      }
+      if (code === 'SETUP_IN_PROGRESS') {
+        error = $t('auth.setupInProgress');
+      } else if (code === 'KEYCHAIN_ERROR') {
+        error = $t('auth.setupKeychainError');
+      } else {
+        error = message;
+      }
     } finally {
       isLoading = false;
     }
@@ -59,20 +71,20 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex items-center justify-center p-8">
+<div class="min-h-screen bg-surface-sunken text-fg flex items-center justify-center p-8">
   <div class="max-w-4xl w-full">
     {#if isLoading}
       <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-        <p class="mt-4 text-gray-600 dark:text-gray-400">{$t('auth.setupGenerating')}</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+        <p class="mt-4 text-fg-muted">{$t('auth.setupGenerating')}</p>
       </div>
     {:else if error}
-      <div class="bg-red-50 border border-red-300 rounded-lg p-6 text-center dark:bg-red-900/20 dark:border-red-500">
-        <h2 class="text-xl font-bold text-red-500 mb-2">{$t('auth.setupFailed')}</h2>
-        <p class="text-gray-700 dark:text-gray-300">{error}</p>
+      <div class="bg-danger-subtle border border-danger-line rounded-card p-6 text-center">
+        <h2 class="text-title font-semibold text-danger-fg mb-2">{$t('auth.setupFailed')}</h2>
+        <p class="text-fg-muted">{error}</p>
         <button
           onclick={createRecoveryPhrase}
-          class="mt-5 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
+          class="mt-5 px-5 py-2 bg-accent hover:bg-accent-hover text-on-accent font-medium rounded-control transition-colors"
         >
           {$t('auth.retry')}
         </button>
@@ -80,14 +92,14 @@
     {:else if !showConfirmation}
       <div class="space-y-6">
         <div class="text-center">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{$t('auth.welcomeToRamDoc')}</h1>
-          <p class="text-gray-600 dark:text-gray-400">
+          <h1 class="text-display font-semibold text-fg mb-2">{$t('auth.welcomeToRamDoc')}</h1>
+          <p class="text-fg-muted">
             {$t('auth.setupIntro')}
           </p>
         </div>
 
-        <div class="bg-yellow-50 border border-yellow-400 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-600">
-          <p class="text-yellow-700 dark:text-yellow-500 text-sm font-medium flex items-center gap-2">
+        <div class="bg-warning-subtle border border-warning rounded-card p-4">
+          <p class="text-warning-fg text-body font-medium flex items-center gap-2">
             <AlertTriangle size={16} />
             {$t('auth.recoveryPhraseDesc')}
           </p>
@@ -98,7 +110,7 @@
         <div class="flex justify-center">
           <button
             onclick={startConfirmation}
-            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            class="px-6 py-3 bg-accent hover:bg-accent-hover text-on-accent font-medium rounded-control transition-colors"
           >
             {$t('auth.writtenDown')}
           </button>
@@ -107,27 +119,29 @@
     {:else}
       <div class="space-y-6">
         <div class="text-center">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{$t('auth.confirmRecoveryPhrase')}</h2>
-          <p class="text-gray-600 dark:text-gray-400">{$t('auth.confirmWordsPrompt')}</p>
+          <h2 class="text-display font-semibold text-fg mb-2">
+            {$t('auth.confirmRecoveryPhrase')}
+          </h2>
+          <p class="text-fg-muted">{$t('auth.confirmWordsPrompt')}</p>
         </div>
 
         {#if confirmError}
-          <div class="bg-red-50 border border-red-500 rounded-lg p-4 dark:bg-red-900/20">
-            <p class="text-red-500 text-sm">{confirmError}</p>
+          <div class="bg-danger-subtle border border-danger-line rounded-card p-4">
+            <p class="text-danger-fg text-body">{confirmError}</p>
           </div>
         {/if}
 
         <div class="space-y-4 max-w-md mx-auto">
           {#each confirmIndices as index}
             <div>
-              <label for={`confirm-word-${index}`} class="block text-gray-700 dark:text-gray-400 mb-2">
+              <label for={`confirm-word-${index}`} class="block text-fg-muted mb-2">
                 {$t('auth.wordPlaceholder').replace('{number}', String(index + 1))}
               </label>
               <input
                 id={`confirm-word-${index}`}
                 type="text"
                 bind:value={userInputs[index]}
-                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                class="w-full px-4 py-3 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                 placeholder={$t('auth.enterWord')}
               />
             </div>
@@ -137,13 +151,13 @@
         <div class="flex justify-center gap-4">
           <button
             onclick={() => (showConfirmation = false)}
-            class="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+            class="px-6 py-3 border border-line bg-surface-raised hover:bg-surface-hover text-fg font-medium rounded-control transition-colors"
           >
             Back
           </button>
           <button
             onclick={validateConfirmation}
-            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            class="px-6 py-3 bg-accent hover:bg-accent-hover text-on-accent font-medium rounded-control transition-colors"
           >
             Continue
           </button>

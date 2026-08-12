@@ -176,6 +176,7 @@
     "setupGenerating": "Preparing your encryption keys…",
     "setupFailed": "Setup couldn't be completed",
     "setupKeychainError": "RamDoc couldn't save keys in the Keychain. Unlock your Mac, then review Privacy & Security if the problem continues.",
+    "setupInProgress": "Setup is already running from an earlier page load. Wait a moment, then retry. If that run succeeds, its recovery phrase was shown to a page that is gone — start over so you get a phrase you can write down.",
     "setupIntro": "Keep this recovery phrase somewhere safe. It is the only way to restore access if this Mac's Keychain is reset.",
     "confirmWordsError": "One or more words are incorrect. Please try again.",
     "confirmWordsPrompt": "Enter these words to confirm your copy:",

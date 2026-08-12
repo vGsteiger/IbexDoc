@@ -67,6 +67,10 @@ jobs:
       run: pnpm lint
       continue-on-error: true
 
+    - name: Check design tokens
+      working-directory: ./dokassist
+      run: pnpm check:design
+
   typos:
     name: Typo Check
     runs-on: ubuntu-latest

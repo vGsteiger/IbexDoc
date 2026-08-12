@@ -88,10 +88,10 @@
       onkeydown={(e) => e.stopPropagation()}
     >
       <div
-        class="absolute top-0 left-0 right-0 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between rounded-t-lg"
+        class="absolute top-0 left-0 right-0 bg-surface-sunken border-b border-line-subtle p-4 flex items-center justify-between rounded-t-lg"
       >
         <div class="flex-1 min-w-0">
-          <h2 class="text-gray-900 dark:text-gray-100 font-medium truncate" title={file.filename}>
+          <h2 class="text-fg font-medium truncate" title={file.filename}>
             {file.filename}
           </h2>
         </div>
@@ -99,7 +99,7 @@
         <div class="flex items-center gap-2 ml-4">
           <button
             onclick={handleDownload}
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+            class="h-8 px-3 bg-accent hover:bg-accent-hover text-on-accent rounded-control transition-colors"
             disabled={!blobUrl}
           >
             Download
@@ -107,7 +107,7 @@
 
           <button
             onclick={handleClose}
-            class="px-4 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition-colors"
+            class="h-8 px-3 bg-surface-selected hover:bg-surface-selected text-fg-muted rounded-control transition-colors"
           >
             Close
           </button>
@@ -115,23 +115,21 @@
       </div>
 
       <div
-        class="absolute top-16 bottom-0 left-0 right-0 bg-gray-100 dark:bg-gray-950 rounded-b-lg overflow-hidden"
+        class="absolute top-16 bottom-0 left-0 right-0 bg-surface-sunken rounded-b-lg overflow-hidden"
       >
         {#if isLoading}
           <div class="flex items-center justify-center h-full">
             <div class="text-center">
-              <div class="mb-4 flex justify-center text-gray-400">
+              <div class="mb-4 flex justify-center text-fg-muted">
                 <Hourglass size={48} />
               </div>
-              <p class="text-gray-500 dark:text-gray-400">Loading file...</p>
+              <p class="text-fg-muted">Loading file...</p>
             </div>
           </div>
         {:else if errorMessage}
           <div class="flex items-center justify-center h-full">
-            <div
-              class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md"
-            >
-              <p class="text-red-600 dark:text-red-400">{errorMessage}</p>
+            <div class="bg-danger-subtle border border-danger-line rounded-card p-6 max-w-md">
+              <p class="text-danger-fg">{errorMessage}</p>
             </div>
           </div>
         {:else if blobUrl}
@@ -144,15 +142,13 @@
           {:else}
             <div class="flex items-center justify-center h-full">
               <div class="text-center">
-                <div class="mb-4 flex justify-center text-gray-400">
+                <div class="mb-4 flex justify-center text-fg-muted">
                   <FileText size={48} />
                 </div>
-                <p class="text-gray-500 dark:text-gray-400 mb-4">
-                  Preview not available for this file type
-                </p>
+                <p class="text-fg-muted mb-4">Preview not available for this file type</p>
                 <button
                   onclick={handleDownload}
-                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                  class="h-8 px-3 bg-accent hover:bg-accent-hover text-on-accent rounded-control transition-colors"
                 >
                   Download to View
                 </button>

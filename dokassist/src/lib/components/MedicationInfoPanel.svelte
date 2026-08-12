@@ -41,56 +41,60 @@
 </script>
 
 {#if loading}
-  <div class="mt-2 px-3 py-2 bg-gray-700 rounded-lg text-xs text-gray-400 animate-pulse">
+  <div
+    class="mt-2 px-3 py-2 bg-surface-selected rounded-card text-caption text-fg-muted animate-pulse"
+  >
     Compendium-Daten werden geladen…
   </div>
 {:else if detail}
-  <div class="mt-2 bg-gray-700 border border-gray-600 rounded-lg overflow-hidden text-xs">
+  <div
+    class="mt-2 bg-surface-selected border border-line rounded-card overflow-hidden text-caption"
+  >
     <!-- Header -->
     <button
       type="button"
-      class="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-gray-600 transition-colors"
+      class="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-surface-selected transition-colors"
       onclick={() => (collapsed = !collapsed)}
     >
       <div class="flex items-center gap-2">
-        <span class="font-semibold text-gray-200">{detail.name_de}</span>
+        <span class="font-semibold text-fg">{detail.name_de}</span>
         {#if detail.atc_code}
-          <span class="font-mono bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded">
+          <span class="font-mono bg-accent-subtle text-accent-fg px-1.5 py-0.5 rounded-card">
             {detail.atc_code}
           </span>
         {/if}
         {#if detail.trade_names.length > 0}
-          <span class="text-gray-400">{detail.trade_names.slice(0, 3).join(' · ')}</span>
+          <span class="text-fg-muted">{detail.trade_names.slice(0, 3).join(' · ')}</span>
         {/if}
       </div>
-      <span class="text-gray-400 text-xs">{collapsed ? '▸' : '▾'}</span>
+      <span class="text-fg-muted text-caption">{collapsed ? '▸' : '▾'}</span>
     </button>
 
     {#if !collapsed}
-      <div class="px-3 pb-3 space-y-2 border-t border-gray-600">
+      <div class="px-3 pb-3 space-y-2 border-t border-line">
         {#if detail.indication}
           <div class="pt-2">
-            <p class="font-semibold text-gray-300 mb-0.5">Indikation</p>
-            <p class="text-gray-400 leading-relaxed">{detail.indication}</p>
+            <p class="font-semibold text-fg-muted mb-0.5">Indikation</p>
+            <p class="text-fg-muted leading-relaxed">{detail.indication}</p>
           </div>
         {/if}
 
         {#if detail.side_effects}
           <div>
-            <p class="font-semibold text-amber-400 mb-0.5">Nebenwirkungen</p>
-            <p class="text-gray-400 leading-relaxed">{detail.side_effects}</p>
+            <p class="font-semibold text-warning-fg mb-0.5">Nebenwirkungen</p>
+            <p class="text-fg-muted leading-relaxed">{detail.side_effects}</p>
           </div>
         {/if}
 
         {#if detail.contraindications}
           <div>
-            <p class="font-semibold text-red-400 mb-0.5">Kontraindikationen</p>
-            <p class="text-gray-400 leading-relaxed">{detail.contraindications}</p>
+            <p class="font-semibold text-danger-fg mb-0.5">Kontraindikationen</p>
+            <p class="text-fg-muted leading-relaxed">{detail.contraindications}</p>
           </div>
         {/if}
 
         {#if detail.source_version}
-          <p class="text-gray-500 pt-1">Quelle: Swissmedic AIPS {detail.source_version}</p>
+          <p class="text-fg-muted pt-1">Quelle: Swissmedic AIPS {detail.source_version}</p>
         {/if}
       </div>
     {/if}

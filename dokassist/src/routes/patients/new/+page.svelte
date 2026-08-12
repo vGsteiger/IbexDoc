@@ -7,7 +7,9 @@
   let isSubmitting = $state(false);
   let error = $state('');
 
-  async function handleSubmit(event: CustomEvent<CreatePatient | { id: string; data: UpdatePatient }>) {
+  async function handleSubmit(
+    event: CustomEvent<CreatePatient | { id: string; data: UpdatePatient }>
+  ) {
     if ('id' in event.detail) return;
     try {
       isSubmitting = true;
@@ -34,17 +36,15 @@
 
 <div class="p-8">
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">New Patient</h1>
+    <h1 class="text-display font-semibold text-fg mb-6">New Patient</h1>
 
     {#if error}
-      <div
-        class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400"
-      >
+      <div class="mb-6 bg-danger-subtle border border-danger-line rounded-card p-4 text-danger-fg">
         {error}
       </div>
     {/if}
 
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <div class="bg-surface-raised rounded-card p-6">
       <PatientForm on:submit={handleSubmit} on:cancel={handleCancel} {isSubmitting} />
     </div>
   </div>

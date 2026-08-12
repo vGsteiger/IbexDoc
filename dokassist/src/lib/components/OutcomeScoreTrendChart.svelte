@@ -256,17 +256,17 @@
 
   {#if hoveredPoint}
     <div
-      class="absolute bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 pointer-events-none z-10"
+      class="absolute bg-surface-raised border border-line rounded-card shadow-popover p-3 pointer-events-none z-10"
       style="left: {hoveredPoint.x + 10}px; top: {hoveredPoint.y - 60}px;"
     >
-      <div class="text-sm">
-        <div class="font-semibold text-gray-900 dark:text-gray-100">
+      <div class="text-body">
+        <div class="font-semibold text-fg">
           Score: {hoveredPoint.score.score}
         </div>
-        <div class="text-gray-600 dark:text-gray-400">
+        <div class="text-fg-muted">
           {hoveredPoint.score.interpretation}
         </div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+        <div class="text-caption text-fg-subtle mt-1">
           {formatDate(hoveredPoint.score.administered_at)}
         </div>
       </div>

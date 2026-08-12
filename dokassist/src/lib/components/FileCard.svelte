@@ -38,8 +38,10 @@
   }
 
   function getFileIcon(mimeType: string): Component<Record<string, unknown>> {
-    if (mimeType.startsWith('image/')) return ImageIcon as unknown as Component<Record<string, unknown>>;
-    if (mimeType === 'application/pdf') return FileText as unknown as Component<Record<string, unknown>>;
+    if (mimeType.startsWith('image/'))
+      return ImageIcon as unknown as Component<Record<string, unknown>>;
+    if (mimeType === 'application/pdf')
+      return FileText as unknown as Component<Record<string, unknown>>;
     if (mimeType.includes('word')) return FileType as unknown as Component<Record<string, unknown>>;
     return Paperclip as unknown as Component<Record<string, unknown>>;
   }
@@ -53,20 +55,20 @@
 </script>
 
 <div
-  class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+  class="bg-surface-raised border border-line-subtle rounded-card p-4 hover:border-line-strong transition-colors"
 >
   <div class="flex items-start gap-4">
     <div class="flex-shrink-0">
-      <Icon size={32} class="text-gray-400" />
+      <Icon size={32} class="text-fg-muted" />
     </div>
 
     <div class="flex-1 min-w-0">
       <div class="flex items-start justify-between gap-2">
         <div class="flex-1 min-w-0">
-          <h3 class="text-gray-900 dark:text-gray-100 font-medium truncate" title={file.filename}>
+          <h3 class="text-fg font-medium truncate" title={file.filename}>
             {file.filename}
           </h3>
-          <div class="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <div class="flex items-center gap-3 mt-1 text-body text-fg-muted">
             <span>{formatFileSize(file.size_bytes)}</span>
             <span>•</span>
             <span>{getFileExtension(file.filename)}</span>
@@ -80,7 +82,7 @@
         {#if onView}
           <button
             onclick={() => onView?.(file)}
-            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+            class="h-7 px-2.5 bg-accent hover:bg-accent-hover text-on-accent text-body rounded-control transition-colors"
           >
             {$t('files.view')}
           </button>
@@ -89,7 +91,7 @@
         {#if onDownload}
           <button
             onclick={() => onDownload?.(file)}
-            class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+            class="h-7 px-2.5 bg-surface-hover hover:bg-surface-hover text-fg-muted text-body rounded-control transition-colors"
           >
             {$t('files.download')}
           </button>
@@ -98,7 +100,7 @@
         {#if onDelete}
           <button
             onclick={() => onDelete?.(file)}
-            class="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded transition-colors ml-auto"
+            class="h-7 px-2.5 bg-danger-subtle hover:bg-danger-subtle text-danger-fg text-body rounded-control transition-colors ml-auto"
           >
             {$t('common.delete')}
           </button>

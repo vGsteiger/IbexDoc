@@ -3,7 +3,15 @@
   import { lockApp } from '$lib/api';
   import { authStatus } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
-  import { Users, Calendar, BookOpen, MessageSquare, Settings, Lock, LayoutDashboard } from 'lucide-svelte';
+  import {
+    Users,
+    Calendar,
+    BookOpen,
+    MessageSquare,
+    Settings,
+    Lock,
+    LayoutDashboard,
+  } from 'lucide-svelte';
   import { t } from '$lib/translations';
 
   const navItems = [
@@ -28,40 +36,47 @@
   let currentPath = $derived($page.url.pathname);
 </script>
 
-<aside
-  class="w-64 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen"
->
-  <div class="p-6 border-b border-gray-200 dark:border-gray-800">
-    <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">RamDoc</h1>
+<aside class="flex h-screen w-56 flex-col border-r border-line-subtle bg-surface-sunken">
+  <div class="flex h-14 shrink-0 items-center px-3">
+    <span class="text-heading text-fg">RamDoc</span>
   </div>
 
-  <nav class="flex-1 p-4">
-    <ul class="space-y-2">
+  <nav class="flex-1 px-2 pb-2">
+    <ul class="space-y-0.5">
       {#each navItems as item}
         {@const Icon = item.icon}
+        {@const active = currentPath === item.path}
         <li>
+          <!-- Selection is a quiet raised surface plus a 2px accent bar, not a
+               saturated fill: the accent stays meaningful because it is scarce. -->
           <a
             href={item.path}
-            class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {currentPath ===
-            item.path
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'}"
+            aria-current={active ? 'page' : undefined}
+            class="relative flex h-8 items-center gap-2.5 rounded-control px-2.5 text-body transition-colors duration-150 ease-standard {active
+              ? 'bg-surface-selected font-medium text-fg'
+              : 'text-fg-muted hover:bg-surface-hover hover:text-fg'}"
           >
-            <Icon size={20} />
-            <span class="font-medium">{$t(item.labelKey)}</span>
+            {#if active}
+              <span
+                class="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent"
+                aria-hidden="true"
+              ></span>
+            {/if}
+            <Icon size={16} class={active ? 'text-fg' : 'text-fg-subtle'} />
+            <span class="truncate">{$t(item.labelKey)}</span>
           </a>
         </li>
       {/each}
     </ul>
   </nav>
 
-  <div class="p-4 border-t border-gray-200 dark:border-gray-800">
+  <div class="shrink-0 border-t border-line-subtle p-2">
     <button
       onclick={handleLock}
-      class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+      class="flex h-8 w-full items-center gap-2.5 rounded-control px-2.5 text-body text-fg-muted transition-colors duration-150 ease-standard hover:bg-surface-hover hover:text-fg"
     >
-      <Lock size={20} />
-      <span class="font-medium">{$t('nav.lock')}</span>
+      <Lock size={16} class="text-fg-subtle" />
+      <span>{$t('nav.lock')}</span>
     </button>
   </div>
 </aside>

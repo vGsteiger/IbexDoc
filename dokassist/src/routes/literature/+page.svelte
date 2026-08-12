@@ -165,10 +165,10 @@
   }
 </script>
 
-<div class="h-full flex flex-col bg-white dark:bg-gray-950">
-  <div class="border-b border-gray-200 dark:border-gray-800 p-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{$t('literature.title')}</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-2">
+<div class="h-full flex flex-col bg-surface">
+  <div class="border-b border-line-subtle p-6">
+    <h1 class="text-display font-semibold text-fg">{$t('literature.title')}</h1>
+    <p class="text-fg-muted mt-2">
       {$t('literature.description')}
     </p>
   </div>
@@ -183,10 +183,10 @@
     <!-- Upload Section -->
     <div class="mb-6">
       <label
-        class="flex items-center justify-center w-full h-32 px-4 transition bg-gray-50 dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg hover:border-blue-500 cursor-pointer"
+        class="flex items-center justify-center w-full h-32 px-4 transition bg-surface-sunken border-2 border-line border-dashed rounded-card hover:border-accent cursor-pointer"
       >
         <div class="flex flex-col items-center space-y-2">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-8 h-8 text-fg-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -194,12 +194,10 @@
               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
             />
           </svg>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="text-body text-fg-muted">
             {$t('literature.clickToUpload')}
           </span>
-          <span class="text-xs text-gray-400 dark:text-gray-500"
-            >{$t('literature.maxFileSize')}</span
-          >
+          <span class="text-caption text-fg-subtle">{$t('literature.maxFileSize')}</span>
         </div>
         <input type="file" class="hidden" accept=".pdf,.txt" multiple onchange={handleFileUpload} />
       </label>
@@ -208,16 +206,14 @@
     <!-- Loading State -->
     {#if loading}
       <div class="text-center py-8">
-        <div
-          class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
-        ></div>
-        <p class="text-gray-500 dark:text-gray-400 mt-2">{$t('literature.loading')}</p>
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+        <p class="text-fg-muted mt-2">{$t('literature.loading')}</p>
       </div>
     {:else if literature.length === 0}
       <!-- Empty State -->
       <div class="text-center py-12">
         <svg
-          class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
+          class="mx-auto h-12 w-12 text-fg-subtle"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -229,10 +225,10 @@
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <h3 class="mt-2 text-body font-medium text-fg-muted">
           {$t('literature.noLiterature')}
         </h3>
-        <p class="mt-1 text-sm text-gray-500">
+        <p class="mt-1 text-body text-fg-muted">
           {$t('literature.noLiteratureDesc')}
         </p>
       </div>
@@ -240,12 +236,10 @@
       <!-- Literature List -->
       <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {#each literature as lit}
-          <div
-            class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4"
-          >
+          <div class="bg-surface-raised border border-line-subtle rounded-card p-4">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="text-gray-500 dark:text-gray-400">
+                <span class="text-fg-muted">
                   {#if lit.mime_type === 'application/pdf'}
                     <FileText size={24} />
                   {:else}
@@ -253,10 +247,10 @@
                   {/if}
                 </span>
                 <div class="min-w-0">
-                  <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                  <h3 class="text-body font-medium text-fg truncate">
                     {lit.filename}
                   </h3>
-                  <p class="text-xs text-gray-400 dark:text-gray-500">
+                  <p class="text-caption text-fg-subtle">
                     {formatFileSize(lit.size_bytes)} · {formatDate(lit.created_at)}
                   </p>
                 </div>
@@ -264,12 +258,12 @@
 
               {#if processingFiles.has(lit.id)}
                 <div
-                  class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"
+                  class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-accent"
                   title={$t('literature.processingTitle')}
                 ></div>
               {:else if lit.chunk_count > 0}
                 <span
-                  class="text-green-500"
+                  class="text-success-fg"
                   title={$t('literature.processedTitle').replace(
                     '{count}',
                     String(lit.chunk_count)
@@ -278,7 +272,7 @@
                   <Check size={16} />
                 </span>
               {:else}
-                <span class="text-yellow-500" title={$t('literature.notProcessedTitle')}>
+                <span class="text-warning-fg" title={$t('literature.notProcessedTitle')}>
                   <AlertTriangle size={16} />
                 </span>
               {/if}
@@ -290,29 +284,28 @@
                 <div class="space-y-2">
                   <textarea
                     bind:value={descriptionText}
-                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-100"
+                    class="w-full px-3 py-2 bg-surface-hover border border-line rounded-control text-body text-fg"
                     rows="3"
-                    placeholder={$t('literature.addDescription')}
-                  ></textarea>
+                    placeholder={$t('literature.addDescription')}></textarea>
                   <div class="flex gap-2">
                     <button
                       onclick={() => saveDescription(lit.id)}
-                      class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                      class="h-7 px-2.5 bg-accent hover:bg-accent-hover text-on-accent text-caption rounded-control"
                     >
                       {$t('common.save')}
                     </button>
                     <button
                       onclick={cancelEditingDescription}
-                      class="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded"
+                      class="h-7 px-2.5 bg-surface-selected hover:bg-surface-selected text-fg-muted text-caption rounded-control"
                     >
                       {$t('common.cancel')}
                     </button>
                   </div>
                 </div>
               {:else if lit.description}
-                <p class="text-xs text-gray-500 dark:text-gray-400">{lit.description}</p>
+                <p class="text-caption text-fg-muted">{lit.description}</p>
               {:else}
-                <p class="text-xs text-gray-400 dark:text-gray-600 italic">
+                <p class="text-caption text-fg-subtle italic">
                   {$t('literature.noDescription')}
                 </p>
               {/if}
@@ -322,14 +315,14 @@
             <div class="flex gap-2">
               <button
                 onclick={() => handleDownload(lit)}
-                class="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                class="flex-1 h-7 px-2.5 bg-surface-hover hover:bg-surface-hover text-fg-muted text-caption rounded-control transition-colors"
               >
                 {$t('files.download')}
               </button>
               {#if editingDescription !== lit.id}
                 <button
                   onclick={() => startEditingDescription(lit)}
-                  class="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                  class="flex-1 h-7 px-2.5 bg-surface-hover hover:bg-surface-hover text-fg-muted text-caption rounded-control transition-colors"
                 >
                   {$t('common.edit')}
                 </button>
@@ -337,20 +330,20 @@
               {#if confirmingDelete === lit.id}
                 <button
                   onclick={() => handleDelete(lit.id)}
-                  class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                  class="h-7 px-2.5 bg-danger hover:bg-danger-hover text-on-danger text-caption rounded-control transition-colors"
                 >
                   {$t('common.confirm')}
                 </button>
                 <button
                   onclick={() => (confirmingDelete = null)}
-                  class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                  class="h-7 px-2.5 bg-surface-hover hover:bg-surface-hover text-fg-muted text-caption rounded-control transition-colors"
                 >
                   {$t('common.cancel')}
                 </button>
               {:else}
                 <button
                   onclick={() => (confirmingDelete = lit.id)}
-                  class="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-xs rounded transition-colors"
+                  class="h-7 px-2.5 bg-danger-subtle hover:bg-danger-subtle text-danger-fg text-caption rounded-control transition-colors"
                 >
                   {$t('common.delete')}
                 </button>

@@ -25,13 +25,13 @@
   function getStatusColor(status: string): string {
     switch (status) {
       case 'active':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
+        return 'bg-success-subtle/20 text-success-fg border-success-line/30';
       case 'remission':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+        return 'bg-warning-subtle/20 text-warning-fg border-warning-line/30';
       case 'resolved':
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+        return 'bg-surface-selected/20 text-fg-muted border-line-strong/30';
       default:
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+        return 'bg-accent-subtle/20 text-accent-fg border-accent-line/30';
     }
   }
 
@@ -49,21 +49,21 @@
   }
 </script>
 
-<div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+<div class="p-4 bg-surface-raised rounded-card border border-line">
   <div class="flex justify-between items-start mb-2">
     <div class="flex-1">
       <div class="flex items-center gap-2 mb-1">
-        <span class="font-mono text-sm text-blue-600 dark:text-blue-400"
-          >{diagnosis.icd10_code}</span
+        <span class="font-mono text-body text-accent-fg">{diagnosis.icd10_code}</span>
+        <span
+          class="px-2 py-0.5 rounded-full text-caption border {getStatusColor(diagnosis.status)}"
         >
-        <span class="px-2 py-0.5 rounded-full text-xs border {getStatusColor(diagnosis.status)}">
           {getStatusLabel(diagnosis.status)}
         </span>
       </div>
-      <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">
+      <h3 class="text-body font-medium text-fg">
         {diagnosis.description}
       </h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <p class="text-body text-fg-muted mt-1">
         Diagnostiziert: {formatDate(diagnosis.diagnosed_date)}
         {#if diagnosis.resolved_date}
           • Aufgelöst: {formatDate(diagnosis.resolved_date)}
@@ -74,7 +74,7 @@
       {#if onEdit}
         <button
           type="button"
-          class="p-2 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onEdit}
           title="Bearbeiten"
         >
@@ -91,7 +91,7 @@
       {#if onDelete}
         <button
           type="button"
-          class="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          class="p-2 text-fg-muted hover:text-danger-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onDelete}
           title="Löschen"
         >
@@ -108,6 +108,6 @@
     </div>
   </div>
   {#if diagnosis.notes}
-    <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{diagnosis.notes}</p>
+    <p class="text-body text-fg-muted mt-2">{diagnosis.notes}</p>
   {/if}
 </div>
