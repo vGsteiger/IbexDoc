@@ -11,8 +11,8 @@ Never commit directly to `main`. For every code change, without waiting to be as
    `<type>/<short-description>` per [CONTRIBUTING.md](CONTRIBUTING.md#branch-naming)
    (`feat/`, `fix/`, `docs/`, `chore/`, `refactor/`, `test/`, `ci/`, `style/`).
    When the work resolves a GitHub issue, include the number: `fix/337-sqlcipher-key-guard`.
-2. **Verify before committing.** `cargo fmt`, `cargo clippy --all-targets -- -D warnings`,
-   and the relevant tests must pass. Do not commit a change that adds new warnings.
+2. **Verify before committing.** Run the relevant format/lint/tests from [CONTRIBUTING.md](CONTRIBUTING.md#code-style) (e.g., Rust: `cd dokassist/src-tauri && cargo fmt && cargo clippy -- -D warnings`; Frontend: `cd dokassist && pnpm lint && pnpm test`).
+   Do not commit a change that adds new warnings or fails checks.
 3. **Commit** using [Conventional Commits](https://www.conventionalcommits.org/), and
    reference the issue in the body (`Fixes #337`) so it closes on merge.
 4. **Push** the branch to `origin` with upstream tracking (`git push -u origin <branch>`).
@@ -26,7 +26,7 @@ Never commit directly to `main`. For every code change, without waiting to be as
      skipped scope, assumptions made.
 6. **Report the PR URL** back to the user.
 
-Do not merge the PR. A maintainer reviews and merges; add `merge when ready` only if asked.
+Do not merge the PR. A maintainer reviews and merges; if auto-merge is desired, apply the `merge when ready` label once the PR is approved and all checks are green (per [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ### Scope
 
