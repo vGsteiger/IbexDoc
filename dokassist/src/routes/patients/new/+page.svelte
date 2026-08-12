@@ -3,6 +3,7 @@
   import { createPatient, parseError, type CreatePatient, type UpdatePatient } from '$lib/api';
   import PatientForm from '$lib/components/PatientForm.svelte';
   import { addToast } from '$lib/stores/toast';
+  import { Alert, Card, PageHeader } from '$lib/components/ui';
 
   let isSubmitting = $state(false);
   let error = $state('');
@@ -32,7 +33,6 @@
   function handleCancel() {
     goto('/patients');
   }
-  import { Alert, Card, PageHeader } from '$lib/components/ui';
 </script>
 
 <div class="p-8">

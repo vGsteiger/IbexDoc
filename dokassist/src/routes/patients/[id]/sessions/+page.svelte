@@ -4,6 +4,8 @@
   import { goto } from '$app/navigation';
   import { listSessionsForPatient, type Session } from '$lib/api';
   import SessionCard from '$lib/components/SessionCard.svelte';
+  import { Alert, Button, EmptyState, PageHeader, Spinner } from '$lib/components/ui';
+  import { CalendarClock, Plus } from 'lucide-svelte';
 
   const patientId = $derived($page.params.id!);
 
@@ -36,8 +38,6 @@
   function handleSessionClick(sessionId: string) {
     goto(`/patients/${patientId}/sessions/${sessionId}`);
   }
-  import { Alert, Button, EmptyState, PageHeader, Spinner } from '$lib/components/ui';
-  import { CalendarClock, Plus } from 'lucide-svelte';
 </script>
 
 <div class="p-8">

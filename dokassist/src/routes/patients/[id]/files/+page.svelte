@@ -7,6 +7,7 @@
   import FileViewer from '$lib/components/FileViewer.svelte';
   import { FolderOpen } from 'lucide-svelte';
   import { t } from '$lib/translations';
+  import { Alert, EmptyState, PageHeader, Spinner } from '$lib/components/ui';
 
   let patientId = $derived($page.params.id!);
   let files = $state<FileRecord[]>([]);
@@ -86,7 +87,6 @@
   onMount(() => {
     loadFiles();
   });
-  import { Alert, EmptyState, PageHeader, Spinner } from '$lib/components/ui';
 </script>
 
 <div class="p-8">

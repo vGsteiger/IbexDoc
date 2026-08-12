@@ -132,7 +132,7 @@
   class="space-y-4"
 >
   <Field label={$t('patients.ahvNumber')} for="ahv_number" required>
-    <AhvInput bind:value={formData.ahv_number} error={errors.ahv_number} />
+    <AhvInput id="ahv_number" bind:value={formData.ahv_number} error={errors.ahv_number} />
   </Field>
 
   <div class="grid grid-cols-2 gap-3">
