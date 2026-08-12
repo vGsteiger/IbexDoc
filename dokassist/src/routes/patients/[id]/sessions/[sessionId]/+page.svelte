@@ -299,7 +299,7 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
   <div class="max-w-4xl mx-auto">
     {#if isLoading}
       <div class="flex justify-center items-center py-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     {:else if !session}
       <div class="text-center py-12">
@@ -362,30 +362,42 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
         {#if isEditing}
           <div class="space-y-4 mb-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                for="session-type"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 {$t('sessions.sessionType')}
               </label>
               <input
+                id="session-type"
                 type="text"
                 bind:value={editedSessionType}
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                for="session-date"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 {$t('sessions.date')}
               </label>
               <input
+                id="session-date"
                 type="date"
                 bind:value={editedSessionDate}
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                for="session-duration"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 {$t('sessions.duration')}
               </label>
               <input
+                id="session-duration"
                 type="number"
                 bind:value={editedDuration}
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -396,17 +408,24 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
 
         <!-- Notes -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {$t('sessions.notes')}
-          </label>
           {#if isEditing}
+            <label
+              for="session-notes"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              {$t('sessions.notes')}
+            </label>
             <textarea
+              id="session-notes"
               bind:value={editedNotes}
               rows="10"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm"
               placeholder={$t('sessions.notesPlaceholder')}
-            />
+            ></textarea>
           {:else}
+            <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {$t('sessions.notes')}
+            </p>
             <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               {#if session.notes}
                 <pre class="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">{session.notes}</pre>
@@ -443,7 +462,7 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
                 rows="15"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-sans text-sm"
                 placeholder={$t('sessions.clinicalSummaryPlaceholder')}
-              />
+              ></textarea>
             </div>
           {:else if session.clinical_summary}
             <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
@@ -517,11 +536,15 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
         {#if editingScore}
           <div class="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{$t('common.edit')}</h3>
-            <OutcomeScoreForm
-              outcomeScore={editingScore}
-              onSave={handleSaveScore}
-              onCancel={handleCancelEditScore}
-            />
+            <!-- Keyed so switching to a different score remounts the form: it
+                 snapshots its props and would otherwise keep the previous values. -->
+            {#key editingScore.id}
+              <OutcomeScoreForm
+                outcomeScore={editingScore}
+                onSave={handleSaveScore}
+                onCancel={handleCancelEditScore}
+              />
+            {/key}
           </div>
         {/if}
 

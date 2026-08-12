@@ -261,7 +261,15 @@
     }, 300);
   }
 
-  // Handle keyboard navigation
+  // Close only when the backdrop itself is clicked, not a click inside the dialog
+  function handleBackdropClick(e: MouseEvent) {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }
+
+  // Handle keyboard navigation. Bound on the dialog so it also covers focus
+  // landing on the dialog container rather than the search input.
   function handleKeydown(e: KeyboardEvent) {
     const items = allItems();
 
@@ -383,16 +391,17 @@
   <!-- Backdrop -->
   <div
     class="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-32"
-    onclick={onClose}
+    onclick={handleBackdropClick}
     role="presentation"
   >
     <!-- Command Palette Modal -->
     <div
       class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden"
-      onclick={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-label={$t('commandPalette.title')}
+      tabindex="-1"
+      onkeydown={handleKeydown}
     >
       <!-- Search Input -->
       <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
@@ -404,7 +413,6 @@
           class="flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
           value={searchQuery}
           oninput={handleSearchInput}
-          onkeydown={handleKeydown}
         />
         <kbd
           class="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"

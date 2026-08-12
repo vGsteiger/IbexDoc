@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import { checkForUpdates, installUpdate, parseError, type UpdateInfo } from '$lib/api';
+  import { t } from '$lib/translations';
 
   function renderMarkdown(text: string): string {
     function escape(s: string) {
@@ -148,6 +149,7 @@
       <button
         onclick={dismiss}
         disabled={installing}
+        aria-label={$t('common.close')}
         class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

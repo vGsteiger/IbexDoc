@@ -581,10 +581,11 @@
                   {#if showAddGoalForm}
                     <form onsubmit={handleSubmitGoal} class="bg-white dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700 mb-3 space-y-3">
                       <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label for="goal-description" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                           Description *
                         </label>
                         <textarea
+                          id="goal-description"
                           bind:value={goalDescription}
                           required
                           rows="2"
@@ -593,20 +594,22 @@
                       </div>
                       <div class="grid grid-cols-3 gap-3">
                         <div>
-                          <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label for="goal-target-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Target Date
                           </label>
                           <input
+                            id="goal-target-date"
                             type="date"
                             bind:value={goalTargetDate}
                             class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
-                          <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label for="goal-status" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Status
                           </label>
                           <select
+                            id="goal-status"
                             bind:value={goalStatus}
                             class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
@@ -616,10 +619,11 @@
                           </select>
                         </div>
                         <div>
-                          <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label for="goal-priority" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Priority
                           </label>
                           <input
+                            id="goal-priority"
                             type="number"
                             bind:value={goalSortOrder}
                             min="0"
@@ -667,6 +671,7 @@
                               <button
                                 onclick={() => handleEditGoal(goal)}
                                 class="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                aria-label="Edit goal"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -675,6 +680,7 @@
                               <button
                                 onclick={() => handleDeleteGoal(goal.id)}
                                 class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                aria-label="Delete goal"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -710,10 +716,11 @@
                   {#if showAddInterventionForm}
                     <form onsubmit={handleSubmitIntervention} class="bg-white dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700 mb-3 space-y-3">
                       <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label for="intervention-type" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                           Type *
                         </label>
                         <select
+                          id="intervention-type"
                           bind:value={interventionType}
                           required
                           class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -724,10 +731,11 @@
                         </select>
                       </div>
                       <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label for="intervention-description" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                           Description *
                         </label>
                         <textarea
+                          id="intervention-description"
                           bind:value={interventionDescription}
                           required
                           rows="2"
@@ -735,10 +743,11 @@
                         ></textarea>
                       </div>
                       <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        <label for="intervention-frequency" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                           Frequency
                         </label>
                         <input
+                          id="intervention-frequency"
                           type="text"
                           bind:value={interventionFrequency}
                           placeholder="e.g., Weekly, Twice per week"
@@ -785,6 +794,7 @@
                               <button
                                 onclick={() => handleEditIntervention(intervention)}
                                 class="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                aria-label="Edit intervention"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -793,6 +803,7 @@
                               <button
                                 onclick={() => handleDeleteIntervention(intervention.id)}
                                 class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                aria-label="Delete intervention"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

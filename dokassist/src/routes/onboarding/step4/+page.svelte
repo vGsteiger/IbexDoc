@@ -102,11 +102,12 @@
     <div class="bg-gray-900 border border-gray-800 rounded-lg p-8 space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {#each features as feature}
+          {@const FeatureIcon = feature.icon}
           <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div
               class="inline-block p-3 {colorClasses[feature.color].bg} rounded-lg mb-4"
             >
-              <svelte:component this={feature.icon} size={28} class={colorClasses[feature.color].text} />
+              <FeatureIcon size={28} class={colorClasses[feature.color].text} />
             </div>
             <h3 class="text-gray-100 font-semibold mb-2">{feature.title}</h3>
             <p class="text-gray-400 text-sm">{feature.description}</p>

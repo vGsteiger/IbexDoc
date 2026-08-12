@@ -201,10 +201,11 @@
     <div class="space-y-6">
       <!-- Letter Type Selection -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-type" class="block text-sm font-medium text-gray-700 mb-2">
           {$t('letters.selectType')}
         </label>
         <select
+          id="letter-type"
           bind:value={letterType}
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
@@ -219,10 +220,11 @@
 
       <!-- Language Selection -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-language" class="block text-sm font-medium text-gray-700 mb-2">
           {$t('letters.selectLanguage')}
         </label>
         <select
+          id="letter-language"
           bind:value={letterLanguage}
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
@@ -234,10 +236,11 @@
       <!-- Recipient Information -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="letter-recipient-name" class="block text-sm font-medium text-gray-700 mb-2">
             {$t('letters.recipientName')}
           </label>
           <input
+            id="letter-recipient-name"
             type="text"
             bind:value={recipientName}
             placeholder={$t('letters.recipientNamePlaceholder')}
@@ -246,10 +249,11 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="letter-subject" class="block text-sm font-medium text-gray-700 mb-2">
             {$t('letters.subject')}
           </label>
           <input
+            id="letter-subject"
             type="text"
             bind:value={subject}
             placeholder={$t('letters.subjectPlaceholder')}
@@ -259,10 +263,11 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-recipient-address" class="block text-sm font-medium text-gray-700 mb-2">
           {$t('letters.recipientAddress')}
         </label>
         <textarea
+          id="letter-recipient-address"
           bind:value={recipientAddress}
           placeholder={$t('letters.recipientAddressPlaceholder')}
           rows="2"
@@ -272,10 +277,11 @@
 
       <!-- Patient Context -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-patient-context" class="block text-sm font-medium text-gray-700 mb-2">
           {$t('letters.patientContext')} <span class="text-gray-500 text-xs">{$t('letters.patientContextHint')}</span>
         </label>
         <textarea
+          id="letter-patient-context"
           bind:value={patientContext}
           rows="6"
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
@@ -284,10 +290,11 @@
 
       <!-- Clinical Summary -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="letter-clinical-summary" class="block text-sm font-medium text-gray-700 mb-2">
           {$t('letters.clinicalSummary')}
         </label>
         <textarea
+          id="letter-clinical-summary"
           bind:value={clinicalSummary}
           placeholder={$t('letters.clinicalSummaryPlaceholder')}
           rows="4"
@@ -319,7 +326,7 @@
       <!-- Generated Content -->
       {#if generatedContent || editableContent}
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="letter-generated" class="block text-sm font-medium text-gray-700 mb-2">
             {$t('letters.generatedLetter')}
             {#if isGenerating}
               <span class="text-blue-600 text-xs">({$t('letters.generating')})</span>
@@ -328,6 +335,7 @@
           <p class="text-sm text-gray-500 mb-2">{$t('letters.reviewBeforeSaving')}</p>
           {#if isGenerating}
             <textarea
+              id="letter-generated"
               value={generatedContent}
               rows="20"
               readonly
@@ -335,6 +343,7 @@
             ></textarea>
           {:else}
             <textarea
+              id="letter-generated"
               bind:value={editableContent}
               rows="20"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
