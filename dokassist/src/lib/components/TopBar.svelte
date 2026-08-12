@@ -10,6 +10,7 @@
     type SearchResult,
   } from '$lib/api';
   import { t } from '$lib/translations';
+  import { Search } from 'lucide-svelte';
 
   let searchInput = $state<HTMLInputElement | null>(null);
   let engineStatus = $state<LlmEngineStatus | null>(null);
@@ -142,15 +143,20 @@
   });
 </script>
 
-<header
-  class="h-16 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-6 gap-4"
->
-  <div class="flex-1 max-w-2xl relative">
+<!-- The bar sits on the page surface with a single hairline under it; the old
+     sunken slab read as a second chrome layer above the content. -->
+<header class="flex h-14 shrink-0 items-center gap-3 border-b border-line-subtle px-4">
+  <div class="relative w-full max-w-md">
+    <Search
+      size={14}
+      class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle"
+      aria-hidden="true"
+    />
     <input
       bind:this={searchInput}
-      type="text"
+      type="search"
       placeholder={$t('topbar.searchPlaceholder')}
-      class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="h-8 w-full rounded-control border border-line bg-surface-raised pl-8 pr-2.5 text-body text-fg transition-colors duration-150 ease-standard focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
       value={searchQuery}
       oninput={handleSearch}
       onblur={handleBlur}
@@ -158,38 +164,34 @@
 
     {#if showDropdown && searchQuery.trim()}
       <div
-        class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto"
+        class="absolute left-0 right-0 top-full z-50 mt-1 max-h-96 overflow-y-auto rounded-card border border-line bg-surface-overlay py-1 shadow-popover"
       >
         {#if isSearching}
-          <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+          <div class="px-3 py-2 text-body text-fg-muted">
             {$t('topbar.searching')}
           </div>
         {:else if searchResults.length === 0}
-          <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+          <div class="px-3 py-2 text-body text-fg-muted">
             {$t('topbar.noResults').replace('{query}', searchQuery)}
           </div>
         {:else}
           {#each searchResults as result (result.entity_id)}
             <button
-              class="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 last:border-0"
+              class="w-full px-3 py-2 text-left transition-colors duration-150 ease-standard hover:bg-surface-hover"
               onclick={() => navigateTo(result)}
             >
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0">
+              <div class="flex items-baseline gap-2">
+                <span class="truncate text-body text-fg">{result.title}</span>
+                <span class="ml-auto shrink-0 text-caption text-fg-subtle">
                   {typeLabel[result.result_type] ?? result.result_type}
                 </span>
-                <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0"
-                  >{result.patient_name}</span
-                >
               </div>
-              <div class="text-sm text-gray-900 dark:text-gray-100 mt-0.5 truncate">
-                {result.title}
+              <div class="mt-0.5 flex items-baseline gap-2 text-caption text-fg-muted">
+                <span class="shrink-0">{result.patient_name}</span>
+                {#if result.snippet}
+                  <span class="line-clamp-1 text-fg-subtle">{result.snippet}</span>
+                {/if}
               </div>
-              {#if result.snippet}
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
-                  {result.snippet}
-                </div>
-              {/if}
             </button>
           {/each}
         {/if}
@@ -197,18 +199,18 @@
     {/if}
   </div>
 
-  <div class="flex items-center gap-2">
-    <span class="text-sm text-gray-500 dark:text-gray-400">LLM:</span>
+  <div class="ml-auto flex items-center gap-2">
+    <span class="text-caption text-fg-subtle">LLM</span>
     <button
       onclick={handleDotClick}
       disabled={isLoaded || isLoadingModel}
-      class="w-3 h-3 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 {isLoadingModel
-        ? 'bg-amber-400 animate-pulse cursor-wait'
+      class="h-2 w-2 rounded-full transition-colors duration-150 ease-standard {isLoadingModel
+        ? 'animate-pulse cursor-wait bg-warning'
         : isLoaded
-          ? 'bg-green-500 cursor-default'
+          ? 'cursor-default bg-success'
           : isDownloaded
-            ? 'bg-amber-400 cursor-pointer hover:bg-amber-300'
-            : 'bg-red-500 cursor-pointer hover:bg-red-400'}"
+            ? 'cursor-pointer bg-warning'
+            : 'cursor-pointer bg-danger'}"
       aria-label={isLoadingModel
         ? $t('topbar.loadingModel')
         : isLoaded

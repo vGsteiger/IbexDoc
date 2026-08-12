@@ -138,9 +138,9 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Medikation</h1>
+    <h1 class="text-display font-semibold text-fg">Medikation</h1>
     <button
-      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
       onclick={() => {
         showAddForm = !showAddForm;
         editingMedication = null;
@@ -151,16 +151,14 @@
   </div>
 
   {#if error}
-    <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-lg mb-6">
+    <div class="bg-danger-subtle border border-danger-line text-danger-fg p-4 rounded-card mb-6">
       {error}
     </div>
   {/if}
 
   {#if showAddForm}
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
-    >
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <div class="bg-surface-raised border border-line rounded-card p-6 mb-6">
+      <h2 class="text-heading font-semibold text-fg mb-4">
         {editingMedication ? 'Medikament bearbeiten' : 'Neues Medikament hinzufügen'}
       </h2>
       <MedicationForm
@@ -175,14 +173,14 @@
 
   {#if loading}
     <div class="flex justify-center items-center py-12">
-      <div class="text-gray-500 dark:text-gray-400">Lädt...</div>
+      <div class="text-fg-muted">Lädt...</div>
     </div>
   {:else if medications.length === 0}
     <div class="text-center py-12">
-      <p class="text-gray-500 dark:text-gray-400 mb-4">Noch keine Medikamente erfasst</p>
+      <p class="text-fg-muted mb-4">Noch keine Medikamente erfasst</p>
       {#if !showAddForm}
         <button
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
           onclick={() => (showAddForm = true)}
         >
           Erstes Medikament erfassen
@@ -192,46 +190,44 @@
   {:else}
     <div class="grid gap-4">
       {#each medications as medication (medication.id)}
-        <div
-          class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-        >
+        <div class="p-4 bg-surface-raised rounded-card border border-line">
           <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h3 class="text-heading font-semibold text-fg">
                   {medication.substance}
                 </h3>
                 {#if isActive(medication)}
                   <span
-                    class="px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400 border border-green-500/30"
+                    class="px-2 py-0.5 rounded-full text-caption bg-success-subtle text-success-fg border border-success-line"
                   >
                     Aktiv
                   </span>
                 {:else}
                   <span
-                    class="px-2 py-0.5 rounded-full text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30"
+                    class="px-2 py-0.5 rounded-full text-caption bg-surface-selected/20 text-fg-muted border border-line-strong/30"
                   >
                     Beendet
                   </span>
                 {/if}
               </div>
-              <p class="text-sm text-gray-600 dark:text-gray-300">
+              <p class="text-body text-fg-muted">
                 {medication.dosage} • {medication.frequency}
               </p>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p class="text-body text-fg-muted mt-1">
                 Von {formatDate(medication.start_date)}
                 {#if medication.end_date}
                   bis {formatDate(medication.end_date)}
                 {/if}
               </p>
               {#if medication.notes}
-                <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{medication.notes}</p>
+                <p class="text-body text-fg-muted mt-2">{medication.notes}</p>
               {/if}
             </div>
             <div class="flex gap-2 ml-2">
               <button
                 type="button"
-                class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
                 onclick={() => handleEdit(medication)}
                 title="Bearbeiten"
               >
@@ -246,7 +242,7 @@
               </button>
               <button
                 type="button"
-                class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                class="p-2 text-fg-muted hover:text-danger-fg hover:bg-surface-hover rounded-control transition-colors"
                 onclick={() => handleDelete(medication.id)}
                 title="Löschen"
               >

@@ -309,13 +309,10 @@
 <div class="p-8">
   <div class="max-w-5xl mx-auto">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <h2 class="text-display font-semibold text-fg">
         {$t('reports.newReportTitle')}
       </h2>
-      <a
-        href={`/patients/${patientId}/reports`}
-        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-      >
+      <a href={`/patients/${patientId}/reports`} class="text-body text-fg-muted hover:text-fg">
         {$t('reports.backToReports')}
       </a>
     </div>
@@ -327,18 +324,16 @@
         <ReportTypeSelector bind:selectedType />
 
         {#if !llmStatus?.is_loaded && !error}
-          <div
-            class="p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-500 rounded"
-          >
-            <h3 class="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
+          <div class="p-6 bg-warning-subtle border border-warning-line rounded-card">
+            <h3 class="text-heading font-semibold text-warning-fg mb-2">
               {$t('reports.llmNotConfigured')}
             </h3>
-            <p class="text-gray-600 dark:text-gray-300 mb-4">
+            <p class="text-fg-muted mb-4">
               {$t('reports.llmNotConfiguredDesc')}
             </p>
             <a
               href="/settings"
-              class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              class="inline-flex items-center inline-block h-8 px-3 bg-accent text-on-accent rounded-card hover:bg-accent-hover transition-colors"
             >
               {$t('reports.goToSettings')}
             </a>
@@ -347,10 +342,8 @@
 
         <!-- Creation mode selection -->
         {#if selectedType && !isGenerating}
-          <div
-            class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
-          >
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          <div class="bg-surface-hover border border-line rounded-card p-6">
+            <h3 class="text-heading font-semibold text-fg mb-4">
               {$t('reports.howToCreate')}
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -359,11 +352,11 @@
                   createMode = 'generate';
                 }}
                 disabled={!llmStatus?.is_loaded}
-                class="p-6 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                class="p-6 bg-surface-raised border-2 border-line rounded-control hover:border-accent transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div class="flex items-center gap-3 mb-2">
                   <svg
-                    class="w-6 h-6 text-blue-500 dark:text-blue-400"
+                    class="w-6 h-6 text-accent-fg"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -375,22 +368,22 @@
                       d="M13 10V3L4 14h7v7l9-11h-7z"
                     ></path>
                   </svg>
-                  <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h4 class="text-heading font-semibold text-fg">
                     {$t('reports.generateWithLlm')}
                   </h4>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
+                <p class="text-body text-fg-muted">
                   {$t('reports.generateWithLlmDesc')}
                 </p>
               </button>
 
               <button
                 on:click={startDirectCreation}
-                class="p-6 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-green-500 transition-colors text-left"
+                class="p-6 bg-surface-raised border-2 border-line rounded-control hover:border-success transition-colors text-left"
               >
                 <div class="flex items-center gap-3 mb-2">
                   <svg
-                    class="w-6 h-6 text-green-500 dark:text-green-400"
+                    class="w-6 h-6 text-success-fg"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -402,11 +395,11 @@
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     ></path>
                   </svg>
-                  <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h4 class="text-heading font-semibold text-fg">
                     {$t('reports.writeManually')}
                   </h4>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
+                <p class="text-body text-fg-muted">
                   {$t('reports.writeManuallyDesc')}
                 </p>
               </button>
@@ -416,92 +409,104 @@
 
         {#if createMode === 'generate'}
           <div>
-            <label
-              for="patient-context"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
+            <label for="patient-context" class="block text-body font-medium text-fg-muted mb-2">
               {$t('reports.patientContext')}
-              <span class="text-gray-400 dark:text-gray-500"
-                >{$t('reports.patientContextHint')}</span
-              >
+              <span class="text-fg-subtle">{$t('reports.patientContextHint')}</span>
             </label>
             <textarea
               id="patient-context"
               bind:value={patientContext}
-              class="w-full h-32 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
-              placeholder={$t('reports.patientContextPlaceholder')}
-            ></textarea>
+              class="w-full h-32 px-4 py-3 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
+              placeholder={$t('reports.patientContextPlaceholder')}></textarea>
           </div>
 
           <div>
-            <label
-              for="session-notes"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
+            <label for="session-notes" class="block text-body font-medium text-fg-muted mb-2">
               {$t('reports.sessionNotes')}
-              <span class="text-gray-400 dark:text-gray-500">{$t('reports.optional')}</span>
+              <span class="text-fg-subtle">{$t('reports.optional')}</span>
             </label>
             <textarea
               id="session-notes"
               bind:value={sessionNotes}
-              class="w-full h-48 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 font-mono text-sm"
-              placeholder={$t('reports.sessionNotesPlaceholder')}
-            ></textarea>
+              class="w-full h-48 px-4 py-3 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent font-mono text-body"
+              placeholder={$t('reports.sessionNotesPlaceholder')}></textarea>
           </div>
 
           <div>
             <!-- Section caption, not a control label: the file input below is wrapped
                  by its own <label>. -->
-            <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <p class="block text-body font-medium text-fg-muted mb-2">
               {$t('reports.additionalContext')}
-              <span class="text-gray-400 dark:text-gray-500">{$t('reports.additionalContextHint')}</span>
+              <span class="text-fg-subtle">{$t('reports.additionalContextHint')}</span>
             </p>
             {#if uploadedFileName}
-              <div class="flex items-center gap-3 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg">
-                <svg class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-sm text-green-800 dark:text-green-300 flex-1">
-                  {$t('reports.uploadedFile').replace('{name}', uploadedFileName)}
-                  <span class="text-gray-500 dark:text-gray-400 ml-2">({uploadedFileContent.length} chars)</span>
-                </span>
-                <button
-                  on:click={clearFile}
-                  class="text-sm text-red-600 dark:text-red-400 hover:underline"
+              <div
+                class="flex items-center gap-3 px-4 py-2 bg-success-subtle border border-success rounded-card"
+              >
+                <svg
+                  class="w-4 h-4 text-success-fg flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <span class="text-body text-success-fg flex-1">
+                  {$t('reports.uploadedFile').replace('{name}', uploadedFileName)}
+                  <span class="text-fg-muted ml-2">({uploadedFileContent.length} chars)</span>
+                </span>
+                <button on:click={clearFile} class="text-body text-danger-fg hover:underline">
                   {$t('reports.clearFile')}
                 </button>
               </div>
             {:else}
-              <label class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors w-fit">
-                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+              <label
+                class="flex items-center gap-2 px-4 py-2 bg-surface-raised border border-line rounded-card cursor-pointer hover:border-accent transition-colors w-fit"
+              >
+                <svg
+                  class="w-4 h-4 text-fg-muted"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  ></path>
                 </svg>
-                <span class="text-sm text-gray-700 dark:text-gray-300">{$t('reports.uploadTxtFile')}</span>
-                <input type="file" accept=".txt,text/plain" class="hidden" on:change={handleFileUpload} />
+                <span class="text-body text-fg-muted">{$t('reports.uploadTxtFile')}</span>
+                <input
+                  type="file"
+                  accept=".txt,text/plain"
+                  class="hidden"
+                  on:change={handleFileUpload}
+                />
               </label>
             {/if}
           </div>
 
           <div>
-            <label
-              for="report-instructions"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
+            <label for="report-instructions" class="block text-body font-medium text-fg-muted mb-2">
               {$t('reports.instructions')}
-              <span class="text-gray-400 dark:text-gray-500">{$t('reports.instructionsHint')}</span>
+              <span class="text-fg-subtle">{$t('reports.instructionsHint')}</span>
             </label>
             <textarea
               id="report-instructions"
               bind:value={instructions}
-              class="w-full h-20 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 text-sm"
-              placeholder={$t('reports.instructionsPlaceholder')}
-            ></textarea>
+              class="w-full h-20 px-4 py-3 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent text-body"
+              placeholder={$t('reports.instructionsPlaceholder')}></textarea>
           </div>
 
           {#if isGenerating}
             <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 class="text-heading font-semibold text-fg">
                 {$t('reports.generatedReport')}
               </h3>
               <ReportStream content={generatedContent} isStreaming={isGenerating} {isSummarizing} />
@@ -511,7 +516,7 @@
           <div class="flex justify-end space-x-4">
             <button
               on:click={reset}
-              class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              class="h-8 px-3 bg-surface-selected text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
               disabled={isGenerating}
             >
               {$t('reports.reset')}
@@ -519,7 +524,7 @@
             <button
               on:click={generateReport}
               disabled={!selectedType || isGenerating}
-              class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? $t('reports.generating') : $t('reports.generate')}
             </button>
@@ -529,10 +534,10 @@
     {:else}
       <div class="space-y-6">
         <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 class="text-heading font-semibold text-fg mb-2">
             {createMode === 'generate' ? $t('reports.editGenerated') : $t('reports.writeNew')}
           </h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p class="text-body text-fg-muted mb-4">
             {createMode === 'generate'
               ? $t('reports.reviewBeforeSaving')
               : $t('reports.writeWithSuggestions')}
@@ -551,13 +556,13 @@
               editableContent = '';
               createMode = null;
             }}
-            class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            class="h-8 px-3 bg-surface-selected text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
           >
             {createMode === 'generate' ? $t('reports.regenerate') : $t('common.cancel')}
           </button>
           <button
             on:click={saveReport}
-            class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+            class="h-8 px-3 bg-success text-on-success rounded-control hover:bg-success-hover transition-colors"
           >
             {$t('reports.save')}
           </button>

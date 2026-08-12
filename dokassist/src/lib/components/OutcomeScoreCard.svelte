@@ -15,7 +15,7 @@
       return date.toLocaleDateString('de-CH', {
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
       });
     } catch {
       return dateStr;
@@ -23,40 +23,44 @@
   }
 
   function getSeverityColor(interpretation: string | null): string {
-    if (!interpretation) return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    if (!interpretation) return 'bg-surface-selected/20 text-fg-muted border-line-strong/30';
 
     const lower = interpretation.toLowerCase();
     if (lower.includes('minimal')) {
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
+      return 'bg-success-subtle/20 text-success-fg border-success-line/30';
     } else if (lower.includes('moderately severe')) {
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-danger-subtle/20 text-danger-fg border-danger-line/30';
     } else if (lower.includes('mild')) {
-      return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      return 'bg-warning-subtle/20 text-warning-fg border-warning-line/30';
     } else if (lower.includes('moderate')) {
-      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      return 'bg-warning-subtle/20 text-warning-fg border-warning-line/30';
     } else if (lower.includes('severe')) {
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-danger-subtle/20 text-danger-fg border-danger-line/30';
     }
-    return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    return 'bg-accent-subtle/20 text-accent-fg border-accent-line/30';
   }
 </script>
 
-<div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+<div class="p-4 bg-surface-raised rounded-card border border-line">
   <div class="flex justify-between items-start mb-2">
     <div class="flex-1">
       <div class="flex items-center gap-2 mb-1">
-        <span class="font-semibold text-sm text-blue-600 dark:text-blue-400">{outcomeScore.scale_type}</span>
+        <span class="font-semibold text-body text-accent-fg">{outcomeScore.scale_type}</span>
         {#if outcomeScore.interpretation}
-          <span class="px-2 py-0.5 rounded-full text-xs border {getSeverityColor(outcomeScore.interpretation)}">
+          <span
+            class="px-2 py-0.5 rounded-full text-caption border {getSeverityColor(
+              outcomeScore.interpretation
+            )}"
+          >
             {outcomeScore.interpretation}
           </span>
         {/if}
       </div>
       <div class="flex items-baseline gap-2">
-        <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">{outcomeScore.score}</span>
-        <span class="text-sm text-gray-500 dark:text-gray-400">Punkte</span>
+        <span class="text-display font-semibold text-fg">{outcomeScore.score}</span>
+        <span class="text-body text-fg-muted">Punkte</span>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <p class="text-body text-fg-muted mt-1">
         {formatDate(outcomeScore.administered_at)}
       </p>
     </div>
@@ -64,16 +68,11 @@
       {#if onEdit}
         <button
           type="button"
-          class="p-2 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onEdit}
           title="Bearbeiten"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -86,16 +85,11 @@
       {#if onDelete}
         <button
           type="button"
-          class="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          class="p-2 text-fg-muted hover:text-danger-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onDelete}
           title="Löschen"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -108,6 +102,6 @@
     </div>
   </div>
   {#if outcomeScore.notes}
-    <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{outcomeScore.notes}</p>
+    <p class="text-body text-fg-muted mt-2">{outcomeScore.notes}</p>
   {/if}
 </div>

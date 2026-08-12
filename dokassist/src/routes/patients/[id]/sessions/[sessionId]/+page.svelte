@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
-  import { onMount, onDestroy } from "svelte";
-  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import { onMount, onDestroy } from 'svelte';
+  import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import {
     getSession,
     getPatient,
@@ -24,13 +24,13 @@
     type OutcomeScore,
     type CreateOutcomeScore,
     type UpdateOutcomeScore,
-  } from "$lib/api";
-  import { invoke } from "@tauri-apps/api/core";
-  import ReportStream from "$lib/components/ReportStream.svelte";
-  import ErrorDisplay from "$lib/components/ErrorDisplay.svelte";
-  import OutcomeScoreCard from "$lib/components/OutcomeScoreCard.svelte";
-  import OutcomeScoreForm from "$lib/components/OutcomeScoreForm.svelte";
-  import { t } from "$lib/translations";
+  } from '$lib/api';
+  import { invoke } from '@tauri-apps/api/core';
+  import ReportStream from '$lib/components/ReportStream.svelte';
+  import ErrorDisplay from '$lib/components/ErrorDisplay.svelte';
+  import OutcomeScoreCard from '$lib/components/OutcomeScoreCard.svelte';
+  import OutcomeScoreForm from '$lib/components/OutcomeScoreForm.svelte';
+  import { t } from '$lib/translations';
 
   const patientId = $derived($page.params.id!);
   const sessionId = $derived($page.params.sessionId!);
@@ -52,20 +52,26 @@
   let error = $state<AppError | null>(null);
   let llmStatus = $state<LlmEngineStatus | null>(null);
 
-  let editedNotes = $state("");
+  let editedNotes = $state('');
   let editedDuration = $state<number | null>(null);
-  let editedSessionType = $state("");
-  let editedSessionDate = $state("");
+  let editedSessionType = $state('');
+  let editedSessionDate = $state('');
 
-  let generatedSummary = $state("");
-  let editableSummary = $state("");
+  let generatedSummary = $state('');
+  let editableSummary = $state('');
   let showSummaryEditor = $state(false);
 
   let unlistenChunk: UnlistenFn | null = null;
   let unlistenDone: UnlistenFn | null = null;
 
   onMount(async () => {
-    await Promise.all([loadSession(), loadPatient(), loadDiagnoses(), checkLlmStatus(), loadScores()]);
+    await Promise.all([
+      loadSession(),
+      loadPatient(),
+      loadDiagnoses(),
+      checkLlmStatus(),
+      loadScores(),
+    ]);
   });
 
   onDestroy(() => {
@@ -78,14 +84,14 @@
       isLoading = true;
       error = null;
       session = await getSession(sessionId);
-      editedNotes = session.notes || "";
+      editedNotes = session.notes || '';
       editedDuration = session.duration_minutes;
       editedSessionType = session.session_type;
       editedSessionDate = session.session_date;
-      editableSummary = session.clinical_summary || "";
+      editableSummary = session.clinical_summary || '';
     } catch (e) {
       error = parseError(e);
-      console.error("Failed to load session:", e);
+      console.error('Failed to load session:', e);
     } finally {
       isLoading = false;
     }
@@ -95,7 +101,7 @@
     try {
       patient = await getPatient(patientId);
     } catch (e) {
-      console.error("Failed to load patient:", e);
+      console.error('Failed to load patient:', e);
     }
   }
 
@@ -103,7 +109,7 @@
     try {
       diagnoses = await listDiagnosesForPatient(patientId);
     } catch (e) {
-      console.error("Failed to load diagnoses:", e);
+      console.error('Failed to load diagnoses:', e);
     }
   }
 
@@ -111,7 +117,7 @@
     try {
       llmStatus = await getEngineStatus();
     } catch (e) {
-      console.error("Failed to check LLM status:", e);
+      console.error('Failed to check LLM status:', e);
     }
   }
 
@@ -122,7 +128,7 @@
       scores = await listScoresForSession(sessionId);
     } catch (e) {
       error = parseError(e);
-      console.error("Failed to load scores:", e);
+      console.error('Failed to load scores:', e);
     } finally {
       loadingScores = false;
     }
@@ -139,15 +145,15 @@
         duration_minutes: editedDuration ?? undefined,
         session_type: editedSessionType,
         session_date: editedSessionDate,
-        clinical_summary: editableSummary ?? "",
+        clinical_summary: editableSummary ?? '',
       };
       session = await updateSession(sessionId, updateData);
-      editableSummary = session.clinical_summary || "";
+      editableSummary = session.clinical_summary || '';
       isEditing = false;
       showSummaryEditor = false;
     } catch (e) {
       error = parseError(e);
-      console.error("Failed to update session:", e);
+      console.error('Failed to update session:', e);
     } finally {
       isSaving = false;
     }
@@ -162,14 +168,16 @@
       await goto(`/patients/${patientId}/sessions`);
     } catch (e) {
       error = parseError(e);
-      console.error("Failed to delete session:", e);
+      console.error('Failed to delete session:', e);
     } finally {
       isDeleting = false;
       showDeleteConfirm = false;
     }
   }
 
-  async function handleSaveScore(input: CreateOutcomeScore | { id: string; update: UpdateOutcomeScore }) {
+  async function handleSaveScore(
+    input: CreateOutcomeScore | { id: string; update: UpdateOutcomeScore }
+  ) {
     try {
       savingScore = true;
       error = null;
@@ -183,7 +191,7 @@
       editingScore = null;
     } catch (e) {
       error = parseError(e);
-      console.error("Failed to save score:", e);
+      console.error('Failed to save score:', e);
     } finally {
       savingScore = false;
     }
@@ -196,7 +204,7 @@
       await loadScores();
     } catch (e) {
       error = parseError(e);
-      console.error("Failed to delete score:", e);
+      console.error('Failed to delete score:', e);
     }
   }
 
@@ -215,64 +223,82 @@
 
     if (!llmStatus?.is_loaded) {
       error = {
-        code: "LLM_ERROR",
+        code: 'LLM_ERROR',
         message: $t('sessions.llmModelNotLoaded'),
-        ref: "LLM_NOT_LOADED",
+        ref: 'LLM_NOT_LOADED',
       };
       return;
     }
 
     try {
-      if (unlistenChunk) { unlistenChunk(); unlistenChunk = null; }
-      if (unlistenDone) { unlistenDone(); unlistenDone = null; }
+      if (unlistenChunk) {
+        unlistenChunk();
+        unlistenChunk = null;
+      }
+      if (unlistenDone) {
+        unlistenDone();
+        unlistenDone = null;
+      }
 
       isGenerating = true;
       error = null;
-      generatedSummary = "";
+      generatedSummary = '';
 
       const activeDiagnoses = diagnoses
-        .filter((d) => d.status === "active")
+        .filter((d) => d.status === 'active')
         .map((d) => `${d.icd10_code}: ${d.description}`)
-        .join("\n");
+        .join('\n');
 
       const patientContext = `
 Patient: ${patient.first_name} ${patient.last_name}
 Geburtsdatum: ${patient.date_of_birth}
-${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
+${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ''}
       `.trim();
 
-      unlistenChunk = await listen<string>("session-summary-chunk", (event) => {
+      unlistenChunk = await listen<string>('session-summary-chunk', (event) => {
         generatedSummary += event.payload;
       });
 
-      unlistenDone = await listen("session-summary-done", () => {
+      unlistenDone = await listen('session-summary-done', () => {
         isGenerating = false;
         editableSummary = generatedSummary;
         showSummaryEditor = true;
-        if (unlistenChunk) { unlistenChunk(); unlistenChunk = null; }
-        if (unlistenDone) { unlistenDone(); unlistenDone = null; }
+        if (unlistenChunk) {
+          unlistenChunk();
+          unlistenChunk = null;
+        }
+        if (unlistenDone) {
+          unlistenDone();
+          unlistenDone = null;
+        }
       });
 
-      await invoke("generate_session_summary", {
+      await invoke('generate_session_summary', {
         patientContext,
-        sessionNotes: editedNotes || session.notes || "",
+        sessionNotes: editedNotes || session.notes || '',
         systemPrompt: null,
       });
     } catch (e) {
       error = parseError(e);
       isGenerating = false;
-      if (unlistenChunk) { unlistenChunk(); unlistenChunk = null; }
-      if (unlistenDone) { unlistenDone(); unlistenDone = null; }
+      if (unlistenChunk) {
+        unlistenChunk();
+        unlistenChunk = null;
+      }
+      if (unlistenDone) {
+        unlistenDone();
+        unlistenDone = null;
+      }
     }
   }
 
   function formatDate(dateStr: string): string {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString("de-CH", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
+      return date.toLocaleDateString('de-CH', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
       });
     } catch {
       return dateStr;
@@ -282,12 +308,12 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
   function formatDateTime(dateStr: string): string {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleString("de-CH", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
+      return date.toLocaleString('de-CH', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
       });
     } catch {
       return dateStr;
@@ -299,17 +325,17 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
   <div class="max-w-4xl mx-auto">
     {#if isLoading}
       <div class="flex justify-center items-center py-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
       </div>
     {:else if !session}
       <div class="text-center py-12">
-        <p class="text-gray-500 dark:text-gray-400">{$t('common.notFound')}</p>
+        <p class="text-fg-muted">{$t('common.notFound')}</p>
       </div>
     {:else}
       <div class="mb-6">
         <button
           onclick={() => goto(`/patients/${patientId}/sessions`)}
-          class="text-blue-600 dark:text-blue-400 hover:underline"
+          class="text-accent-fg hover:underline"
         >
           ← {$t('common.back')}
         </button>
@@ -322,21 +348,22 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
       {/if}
 
       <!-- Session Detail Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      <div class="bg-surface-raised rounded-card shadow-popover p-6 mb-6">
         <div class="flex justify-between items-start mb-6">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 class="text-display font-semibold text-fg">
               {session.session_type}
             </h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">
+            <p class="text-fg-muted mt-1">
               {formatDate(session.session_date)}
               {#if session.duration_minutes}
                 • {session.duration_minutes} {$t('sessions.duration')}
               {/if}
             </p>
             {#if patient}
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {$t('common.patient')}: {patient.first_name} {patient.last_name}
+              <p class="text-body text-fg-muted mt-1">
+                {$t('common.patient')}: {patient.first_name}
+                {patient.last_name}
               </p>
             {/if}
           </div>
@@ -344,14 +371,14 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
             {#if !isEditing}
               <button
                 onclick={() => (isEditing = true)}
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
               >
                 {$t('common.edit')}
               </button>
             {/if}
             <button
               onclick={() => (showDeleteConfirm = true)}
-              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              class="h-8 px-3 bg-danger text-on-danger rounded-control hover:bg-danger-hover transition-colors"
               disabled={isDeleting}
             >
               {isDeleting ? $t('common.deleting') : $t('common.delete')}
@@ -362,45 +389,36 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
         {#if isEditing}
           <div class="space-y-4 mb-6">
             <div>
-              <label
-                for="session-type"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
+              <label for="session-type" class="block text-body font-medium text-fg-muted mb-1">
                 {$t('sessions.sessionType')}
               </label>
               <input
                 id="session-type"
                 type="text"
                 bind:value={editedSessionType}
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                class="w-full px-3 py-2 border border-line rounded-control bg-surface-raised text-fg"
               />
             </div>
             <div>
-              <label
-                for="session-date"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
+              <label for="session-date" class="block text-body font-medium text-fg-muted mb-1">
                 {$t('sessions.date')}
               </label>
               <input
                 id="session-date"
                 type="date"
                 bind:value={editedSessionDate}
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                class="w-full px-3 py-2 border border-line rounded-control bg-surface-raised text-fg"
               />
             </div>
             <div>
-              <label
-                for="session-duration"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
+              <label for="session-duration" class="block text-body font-medium text-fg-muted mb-1">
                 {$t('sessions.duration')}
               </label>
               <input
                 id="session-duration"
                 type="number"
                 bind:value={editedDuration}
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                class="w-full px-3 py-2 border border-line rounded-control bg-surface-raised text-fg"
               />
             </div>
           </div>
@@ -409,43 +427,39 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
         <!-- Notes -->
         <div class="mb-6">
           {#if isEditing}
-            <label
-              for="session-notes"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
+            <label for="session-notes" class="block text-body font-medium text-fg-muted mb-2">
               {$t('sessions.notes')}
             </label>
             <textarea
               id="session-notes"
               bind:value={editedNotes}
               rows="10"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm"
-              placeholder={$t('sessions.notesPlaceholder')}
-            ></textarea>
+              class="w-full px-3 py-2 border border-line rounded-control bg-surface-raised text-fg font-mono text-body"
+              placeholder={$t('sessions.notesPlaceholder')}></textarea>
           {:else}
-            <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <p class="block text-body font-medium text-fg-muted mb-2">
               {$t('sessions.notes')}
             </p>
-            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div class="bg-surface-sunken rounded-card p-4 border border-line">
               {#if session.notes}
-                <pre class="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">{session.notes}</pre>
+                <pre class="whitespace-pre-wrap font-sans text-fg">{session.notes}</pre>
               {:else}
-                <p class="text-gray-400 dark:text-gray-500 italic">{$t('sessions.noNotes')}</p>
+                <p class="text-fg-subtle italic">{$t('sessions.noNotes')}</p>
               {/if}
             </div>
           {/if}
         </div>
 
         <!-- Clinical Summary -->
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+        <div class="border-t border-line pt-6 mb-6">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h2 class="text-heading font-semibold text-fg">
               {$t('sessions.clinicalSummary')}
             </h2>
             {#if !isGenerating && llmStatus?.is_loaded}
               <button
                 onclick={generateSummary}
-                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                class="h-8 px-3 bg-success text-on-success rounded-control hover:bg-success-hover transition-colors"
                 disabled={isGenerating || !editedNotes || editedNotes.trim().length === 0}
               >
                 {$t('sessions.generateSummary')}
@@ -460,41 +474,40 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
               <textarea
                 bind:value={editableSummary}
                 rows="15"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-sans text-sm"
-                placeholder={$t('sessions.clinicalSummaryPlaceholder')}
-              ></textarea>
+                class="w-full px-3 py-2 border border-line rounded-control bg-surface-raised text-fg font-sans text-body"
+                placeholder={$t('sessions.clinicalSummaryPlaceholder')}></textarea>
             </div>
           {:else if session.clinical_summary}
-            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <pre class="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">{session.clinical_summary}</pre>
+            <div class="bg-surface-sunken rounded-card p-4 border border-line">
+              <pre class="whitespace-pre-wrap font-sans text-fg">{session.clinical_summary}</pre>
             </div>
           {:else}
-            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p class="text-gray-400 dark:text-gray-500 italic">{$t('sessions.noSummary')}</p>
+            <div class="bg-surface-sunken rounded-card p-4 border border-line">
+              <p class="text-fg-subtle italic">{$t('sessions.noSummary')}</p>
             </div>
           {/if}
         </div>
 
         {#if isEditing || showSummaryEditor}
-          <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex justify-end space-x-3 pt-4 border-t border-line">
             <button
               onclick={() => {
                 isEditing = false;
                 showSummaryEditor = false;
-                editedNotes = session?.notes || "";
+                editedNotes = session?.notes || '';
                 editedDuration = session?.duration_minutes || null;
-                editedSessionType = session?.session_type || "";
-                editedSessionDate = session?.session_date || "";
-                editableSummary = session?.clinical_summary || "";
+                editedSessionType = session?.session_type || '';
+                editedSessionDate = session?.session_date || '';
+                editableSummary = session?.clinical_summary || '';
               }}
-              class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              class="h-8 px-3 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
               disabled={isSaving}
             >
               {$t('common.cancel')}
             </button>
             <button
               onclick={handleUpdate}
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
               disabled={isSaving}
             >
               {isSaving ? $t('common.saving') : $t('common.save')}
@@ -502,20 +515,20 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
           </div>
         {/if}
 
-        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+        <div class="mt-6 pt-6 border-t border-line text-body text-fg-muted">
           <p>{$t('common.createdAt')}: {formatDateTime(session.created_at)}</p>
           <p>{$t('common.updatedAt')}: {formatDateTime(session.updated_at)}</p>
         </div>
       </div>
 
       <!-- Outcome Scores Section -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+      <div class="border-t border-line pt-6">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{$t('outcomeScores.title')}</h2>
+          <h2 class="text-title font-semibold text-fg">{$t('outcomeScores.title')}</h2>
           {#if !showAddForm && !editingScore}
             <button
               onclick={() => (showAddForm = true)}
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
             >
               + {$t('outcomeScores.newScore')}
             </button>
@@ -523,10 +536,10 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
         </div>
 
         {#if showAddForm}
-          <div class="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{$t('outcomeScores.newScore')}</h3>
+          <div class="mb-6 p-6 bg-surface-raised rounded-card border border-line">
+            <h3 class="text-heading font-medium text-fg mb-4">{$t('outcomeScores.newScore')}</h3>
             <OutcomeScoreForm
-              sessionId={sessionId}
+              {sessionId}
               onSave={handleSaveScore}
               onCancel={handleCancelEditScore}
             />
@@ -534,8 +547,8 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
         {/if}
 
         {#if editingScore}
-          <div class="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{$t('common.edit')}</h3>
+          <div class="mb-6 p-6 bg-surface-raised rounded-card border border-line">
+            <h3 class="text-heading font-medium text-fg mb-4">{$t('common.edit')}</h3>
             <!-- Keyed so switching to a different score remounts the form: it
                  snapshots its props and would otherwise keep the previous values. -->
             {#key editingScore.id}
@@ -550,14 +563,14 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
 
         {#if loadingScores}
           <div class="flex justify-center items-center py-12">
-            <div class="text-gray-500 dark:text-gray-400">{$t('common.loading')}</div>
+            <div class="text-fg-muted">{$t('common.loading')}</div>
           </div>
         {:else if scores.length === 0 && !showAddForm}
-          <div class="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400 mb-4">{$t('outcomeScores.noScores')}</p>
+          <div class="text-center py-12 bg-surface-sunken rounded-card border border-line">
+            <p class="text-fg-muted mb-4">{$t('outcomeScores.noScores')}</p>
             <button
               onclick={() => (showAddForm = true)}
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
             >
               {$t('outcomeScores.newScore')}
             </button>
@@ -580,24 +593,24 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ""}
 
 {#if showDeleteConfirm}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <div class="bg-surface-raised rounded-card p-6 max-w-md w-full mx-4">
+      <h3 class="text-heading font-semibold text-fg mb-4">
         {$t('sessions.confirmDelete')}
       </h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-6">
+      <p class="text-fg-muted mb-6">
         {$t('sessions.confirmDeleteMessage')}
       </p>
       <div class="flex justify-end space-x-3">
         <button
           onclick={() => (showDeleteConfirm = false)}
-          class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          class="h-8 px-3 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
           disabled={isDeleting}
         >
           {$t('common.cancel')}
         </button>
         <button
           onclick={handleDelete}
-          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          class="h-8 px-3 bg-danger text-on-danger rounded-control hover:bg-danger-hover transition-colors"
           disabled={isDeleting}
         >
           {isDeleting ? $t('common.deleting') : $t('common.delete')}

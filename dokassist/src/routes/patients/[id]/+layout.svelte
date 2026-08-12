@@ -42,44 +42,44 @@
   {#if isLoading}
     <div class="flex-1 flex items-center justify-center">
       <div class="text-center">
-        <div class="mb-4 flex justify-center text-gray-400 dark:text-gray-400">
+        <div class="mb-4 flex justify-center text-fg-subtle">
           <Hourglass size={48} />
         </div>
-        <p class="text-gray-500 dark:text-gray-400">{$t('patients.loadingPatient')}</p>
+        <p class="text-fg-muted">{$t('patients.loadingPatient')}</p>
       </div>
     </div>
   {:else if errorMessage}
     <div class="flex-1 flex items-center justify-center p-8">
-      <div
-        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md"
-      >
-        <p class="text-red-600 dark:text-red-400">{$t('patients.loadError')}</p>
+      <div class="bg-danger-subtle border border-danger-line rounded-card p-6 max-w-md">
+        <p class="text-danger-fg">{$t('patients.loadError')}</p>
       </div>
     </div>
   {:else if patient}
-    <div class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+    <div class="bg-surface-sunken border-b border-line-subtle p-6">
+      <h1 class="text-display font-semibold text-fg mb-2">
         {patient.first_name}
         {patient.last_name}
       </h1>
       {#if patient.date_of_birth}
-        <p class="text-gray-500 dark:text-gray-400">
+        <p class="text-fg-muted">
           {$t('patients.bornOn')}
           {patient.date_of_birth}
         </p>
       {/if}
     </div>
 
-    <div class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <div class="bg-surface-sunken border-b border-line-subtle">
       <nav class="flex gap-1 px-6">
         {#each tabs as tab}
           <a
             href={tab.path}
-            class="px-4 py-3 font-medium transition-colors {(tab.exact
-              ? currentPath === tab.path
-              : currentPath === tab.path || currentPath.startsWith(tab.path + '/'))
-              ? 'text-blue-500 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+            class="px-4 py-3 font-medium transition-colors {(
+              tab.exact
+                ? currentPath === tab.path
+                : currentPath === tab.path || currentPath.startsWith(tab.path + '/')
+            )
+              ? 'text-accent-fg border-b-2 border-accent'
+              : 'text-fg-muted hover:text-fg'}"
           >
             {$t(tab.labelKey)}
           </a>

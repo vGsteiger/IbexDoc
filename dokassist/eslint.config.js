@@ -52,6 +52,15 @@ export default tseslint.config(
     },
   },
 
+  // UI primitives render whatever href their caller passes, so they cannot
+  // wrap it in resolve() themselves — resolution belongs at the call site.
+  {
+    files: ['src/lib/components/ui/**/*.svelte'],
+    rules: {
+      'svelte/no-navigation-without-resolve': ['error', { ignoreLinks: true }],
+    },
+  },
+
   // Ignore generated/build output
   {
     ignores: [

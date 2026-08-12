@@ -110,17 +110,17 @@
     oninput={handleInput}
     onblur={handleBlur}
     placeholder="756.____.____.__ "
-    class="w-full px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 {!isValid &&
+    class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {!isValid &&
     displayValue
-      ? 'border-red-500'
+      ? 'border-danger-line'
       : error
-        ? 'border-red-500'
-        : 'border-gray-300 dark:border-gray-700'}"
+        ? 'border-danger-line'
+        : 'border-line'}"
     maxlength="16"
   />
   {#if validationError && displayValue}
-    <p class="mt-1 text-sm text-red-400">{validationError}</p>
+    <p class="mt-1 text-body text-danger-fg">{validationError}</p>
   {:else if error}
-    <p class="mt-1 text-sm text-red-400">{error}</p>
+    <p class="mt-1 text-body text-danger-fg">{error}</p>
   {/if}
 </div>

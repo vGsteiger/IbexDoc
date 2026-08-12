@@ -117,9 +117,11 @@
     role="combobox"
     aria-expanded={showDropdown}
     aria-controls="{id}-listbox"
-    aria-activedescendant={showDropdown && suggestions[selectedIndex] ? `${id}-option-${selectedIndex}` : undefined}
+    aria-activedescendant={showDropdown && suggestions[selectedIndex]
+      ? `${id}-option-${selectedIndex}`
+      : undefined}
     aria-autocomplete="list"
-    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    class="w-full px-3 py-2 bg-surface-selected border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
   />
 
   {#if showDropdown && suggestions.length > 0}
@@ -127,7 +129,7 @@
       id="{id}-listbox"
       role="listbox"
       aria-label="Medication suggestions"
-      class="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+      class="absolute z-20 w-full mt-1 bg-surface-hover border border-line rounded-card shadow-modal max-h-64 overflow-y-auto"
     >
       {#each suggestions as entry, index}
         <button
@@ -136,21 +138,21 @@
           role="option"
           aria-selected={index === selectedIndex}
           class="w-full px-3 py-2 text-left transition-colors flex items-start gap-2"
-          class:bg-gray-700={index === selectedIndex}
+          class:bg-surface-selected={index === selectedIndex}
           onmouseenter={() => (selectedIndex = index)}
           onclick={() => handleSelect(entry)}
         >
           <div class="flex-1 min-w-0">
-            <span class="text-sm text-gray-100 font-medium">{entry.name_de}</span>
+            <span class="text-body text-fg font-medium">{entry.name_de}</span>
             {#if entry.trade_names.length > 0}
-              <span class="ml-2 text-xs text-gray-400 truncate"
+              <span class="ml-2 text-caption text-fg-muted truncate"
                 >{entry.trade_names.slice(0, 2).join(', ')}</span
               >
             {/if}
           </div>
           {#if entry.atc_code}
             <span
-              class="shrink-0 text-xs font-mono bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded"
+              class="shrink-0 text-caption font-mono bg-accent-subtle text-accent-fg px-1.5 py-0.5 rounded-card"
             >
               {entry.atc_code}
             </span>

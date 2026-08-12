@@ -29,29 +29,23 @@
 
 <div class="space-y-4">
   {#if thinkContent}
-    <div
-      class="bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-    >
-      <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
-        Thinking
-      </p>
+    <div class="bg-surface-hover border border-line rounded-card p-4">
+      <p class="text-caption font-medium text-fg-subtle uppercase tracking-wide mb-2">Thinking</p>
       <pre
-        class="not-prose whitespace-pre-wrap font-sans text-sm text-gray-500 dark:text-gray-400 italic">{thinkContent}</pre>
+        class="not-prose whitespace-pre-wrap font-sans text-body text-fg-muted italic">{thinkContent}</pre>
       {#if isStreaming && !reportContent}
-        <div class="flex items-center space-x-2 text-gray-400 dark:text-gray-500 mt-2">
-          <div class="animate-pulse text-xs">●</div>
-          <span class="text-xs">Thinking...</span>
+        <div class="flex items-center space-x-2 text-fg-subtle mt-2">
+          <div class="animate-pulse text-caption">●</div>
+          <span class="text-caption">Thinking...</span>
         </div>
       {/if}
     </div>
   {/if}
 
-  <div
-    class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 min-h-[300px] relative"
-  >
+  <div class="bg-surface-raised border border-line rounded-card p-6 min-h-[300px] relative">
     {#if isStreaming && reportContent}
       <div class="absolute top-4 right-4">
-        <div class="flex items-center space-x-2 text-sm text-blue-500 dark:text-blue-400">
+        <div class="flex items-center space-x-2 text-body text-accent-fg">
           <div class="animate-pulse">●</div>
           <span>Generating...</span>
         </div>
@@ -60,24 +54,21 @@
 
     <div class="prose dark:prose-invert max-w-none">
       {#if reportContent}
-        <pre
-          class="not-prose whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">{reportContent}</pre>
+        <pre class="not-prose whitespace-pre-wrap font-sans text-fg">{reportContent}</pre>
       {:else if !isStreaming && !thinkContent}
-        <p class="text-gray-400 dark:text-gray-500 italic">
-          Report will appear here as it's generated...
-        </p>
+        <p class="text-fg-subtle italic">Report will appear here as it's generated...</p>
       {:else if isStreaming && isSummarizing && !thinkContent && !reportContent}
-        <div class="flex items-center space-x-2 text-gray-400 dark:text-gray-500">
-          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
+        <div class="flex items-center space-x-2 text-fg-subtle">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-warning"></div>
           <span>Kontext wird komprimiert...</span>
         </div>
       {:else if isStreaming && !thinkContent && !reportContent}
-        <div class="flex items-center space-x-2 text-gray-400 dark:text-gray-500">
-          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+        <div class="flex items-center space-x-2 text-fg-subtle">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
           <span>Waiting for LLM...</span>
         </div>
       {:else if !isStreaming && thinkContent && !reportContent}
-        <p class="text-gray-400 dark:text-gray-500 italic">No report content was generated.</p>
+        <p class="text-fg-subtle italic">No report content was generated.</p>
       {/if}
     </div>
   </div>

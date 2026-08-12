@@ -36,22 +36,22 @@
 
 <button
   {onclick}
-  class="w-full text-left p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+  class="w-full text-left p-4 bg-surface-raised border border-line rounded-control hover:bg-surface-hover hover:border-line-strong transition-colors"
 >
   <div class="flex justify-between items-start mb-2">
     <div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h3 class="text-heading font-semibold text-fg">
         {patient.last_name}, {patient.first_name}
       </h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-body text-fg-muted">
         AHV: {patient.ahv_number}
       </p>
     </div>
     <div class="text-right">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-body text-fg-muted">
         {formatDate(patient.date_of_birth)}
       </p>
-      <p class="text-xs text-gray-400 dark:text-gray-500">
+      <p class="text-caption text-fg-subtle">
         {$t('patients.age')}: {calculateAge(patient.date_of_birth)}
       </p>
     </div>
@@ -59,16 +59,14 @@
 
   {#if patient.gender}
     <div class="flex gap-2 items-center">
-      <span
-        class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
-      >
+      <span class="text-caption px-2 py-1 bg-surface-hover text-fg-muted rounded-card">
         {patient.gender}
       </span>
     </div>
   {/if}
 
   {#if patient.insurance}
-    <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+    <div class="mt-2 text-body text-fg-muted">
       {$t('patients.insurance')}: {patient.insurance}
     </div>
   {/if}

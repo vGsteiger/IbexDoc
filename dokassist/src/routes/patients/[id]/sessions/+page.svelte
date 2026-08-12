@@ -40,9 +40,9 @@
 
 <div class="p-8">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-100">Sitzungen</h1>
+    <h1 class="text-display font-semibold text-fg">Sitzungen</h1>
     <button
-      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
       onclick={handleNewSession}
     >
       + Neue Sitzung
@@ -51,17 +51,17 @@
 
   {#if loading}
     <div class="flex justify-center items-center py-12">
-      <div class="text-gray-400">Lädt...</div>
+      <div class="text-fg-muted">Lädt...</div>
     </div>
   {:else if error}
-    <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-lg">
+    <div class="bg-danger-subtle border border-danger-line text-danger-fg p-4 rounded-card">
       {error}
     </div>
   {:else if sessions.length === 0}
     <div class="text-center py-12">
-      <p class="text-gray-400 mb-4">Noch keine Sitzungen vorhanden</p>
+      <p class="text-fg-muted mb-4">Noch keine Sitzungen vorhanden</p>
       <button
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
         onclick={handleNewSession}
       >
         Erste Sitzung erfassen

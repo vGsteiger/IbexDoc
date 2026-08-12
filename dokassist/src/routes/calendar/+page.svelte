@@ -1,7 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { listAllSessions, listPatients, updateSession, type SessionWithPatient, type Patient } from '$lib/api';
+  import {
+    listAllSessions,
+    listPatients,
+    updateSession,
+    type SessionWithPatient,
+    type Patient,
+  } from '$lib/api';
   import { addToast } from '$lib/stores/toast';
 
   let allSessions = $state<SessionWithPatient[]>([]);
@@ -103,8 +109,12 @@
   });
 
   // Get month view data
-  const monthStart = $derived(new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth(), 1));
-  const monthEnd = $derived(new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth() + 1, 0));
+  const monthStart = $derived(
+    new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth(), 1)
+  );
+  const monthEnd = $derived(
+    new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth() + 1, 0)
+  );
 
   const monthLabel = $derived(
     currentWeekStart.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' })
@@ -183,7 +193,9 @@
     return `${hour.toString().padStart(2, '0')}:00`;
   }
 
-  function getSessionStatus(session: SessionWithPatient): 'scheduled' | 'completed' | 'note-pending' {
+  function getSessionStatus(
+    session: SessionWithPatient
+  ): 'scheduled' | 'completed' | 'note-pending' {
     // A session is completed if it has notes
     // Note pending if it has a scheduled_time but no notes yet
     // Scheduled if it has a future scheduled_time
@@ -202,12 +214,12 @@
   function getStatusColor(status: 'scheduled' | 'completed' | 'note-pending'): string {
     switch (status) {
       case 'completed':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
+        return 'bg-success-subtle/20 text-success-fg border-success-line/30';
       case 'note-pending':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+        return 'bg-warning-subtle/20 text-warning-fg border-warning-line/30';
       case 'scheduled':
       default:
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+        return 'bg-accent-subtle/20 text-accent-fg border-accent-line/30';
     }
   }
 
@@ -259,19 +271,23 @@
 
 <div class="p-8 max-w-7xl mx-auto">
   <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Kalender</h1>
+    <h1 class="text-display font-semibold text-fg">Kalender</h1>
 
     <!-- View mode toggle -->
     <div class="flex gap-2">
       <button
-        onclick={() => viewMode = 'week'}
-        class="px-3 py-1.5 rounded-lg text-sm transition-colors {viewMode === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'}"
+        onclick={() => (viewMode = 'week')}
+        class="h-7 px-2.5 rounded-control text-body transition-colors {viewMode === 'week'
+          ? 'bg-accent text-on-accent'
+          : 'bg-surface-selected text-fg hover:bg-surface-selected'}"
       >
         Woche
       </button>
       <button
-        onclick={() => viewMode = 'month'}
-        class="px-3 py-1.5 rounded-lg text-sm transition-colors {viewMode === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'}"
+        onclick={() => (viewMode = 'month')}
+        class="h-7 px-2.5 rounded-control text-body transition-colors {viewMode === 'month'
+          ? 'bg-accent text-on-accent'
+          : 'bg-surface-selected text-fg hover:bg-surface-selected'}"
       >
         Monat
       </button>
@@ -282,22 +298,22 @@
   <div class="flex items-center gap-3 mb-6">
     <button
       onclick={viewMode === 'week' ? prevWeek : prevMonth}
-      class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm transition-colors"
+      class="h-7 px-2.5 rounded-control bg-surface-selected hover:bg-surface-selected text-fg text-body transition-colors"
     >
       ‹
     </button>
-    <span class="text-gray-700 dark:text-gray-200 text-sm font-medium flex-1 text-center">
+    <span class="text-fg-muted text-body font-medium flex-1 text-center">
       {viewMode === 'week' ? weekLabel : monthLabel}
     </span>
     <button
       onclick={viewMode === 'week' ? nextWeek : nextMonth}
-      class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm transition-colors"
+      class="h-7 px-2.5 rounded-control bg-surface-selected hover:bg-surface-selected text-fg text-body transition-colors"
     >
       ›
     </button>
     <button
       onclick={goToToday}
-      class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm transition-colors"
+      class="h-7 px-2.5 rounded-control bg-surface-selected hover:bg-surface-selected text-fg text-body transition-colors"
     >
       Heute
     </button>
@@ -306,10 +322,12 @@
   <!-- Sessions -->
   {#if viewMode === 'week'}
     <!-- Week view grid -->
-    <div class="grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-700 border-x border-b border-gray-200 dark:border-gray-700 rounded-b-lg overflow-hidden">
+    <div
+      class="grid grid-cols-8 gap-px bg-surface-selected border-x border-b border-line rounded-b-lg overflow-hidden"
+    >
       {#each hours as hour}
         <!-- Hour label -->
-        <div class="bg-white dark:bg-gray-800 p-2 text-xs text-gray-500 dark:text-gray-400 text-right">
+        <div class="bg-surface-raised p-2 text-caption text-fg-muted text-right">
           {formatTime(hour)}
         </div>
 
@@ -319,13 +337,13 @@
           {@const daySessions = weekSessions.get(dateStr)?.get(hour) || []}
           {@const untimed = weekSessions.get(dateStr)?.get(-1) || []}
 
-          <div class="bg-white dark:bg-gray-800 p-1 min-h-[60px] relative group">
+          <div class="bg-surface-raised p-1 min-h-[60px] relative group">
             <!-- Empty slot - clickable to create new session -->
             {#if daySessions.length === 0}
               <button
                 onclick={() => handleTimeSlotClick(day, hour)}
                 aria-label="New session at {formatTime(hour)} on {toLocalISODate(day)}"
-                class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-blue-500/10 hover:bg-blue-500/20 transition-opacity flex items-center justify-center text-xs text-blue-600 dark:text-blue-400"
+                class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-accent-subtle hover:bg-accent-subtle/20 transition-opacity flex items-center justify-center text-caption text-accent-fg"
               >
                 +
               </button>
@@ -335,14 +353,22 @@
             {#each daySessions as session}
               {@const status = getSessionStatus(session)}
               <div
-                class="w-full mb-1 p-1 rounded border text-xs {getStatusColor(status)} group/card relative"
+                class="w-full mb-1 p-1 rounded-card border text-caption {getStatusColor(
+                  status
+                )} group/card relative"
               >
                 <button
                   onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
                   aria-label="Session with {session.patient_name}, status: {status}"
                   class="w-full text-left hover:opacity-80 transition-opacity"
                 >
-                  <span class="sr-only">{status === 'completed' ? 'Completed' : status === 'note-pending' ? 'Pending notes' : 'Scheduled'} — </span>
+                  <span class="sr-only"
+                    >{status === 'completed'
+                      ? 'Completed'
+                      : status === 'note-pending'
+                        ? 'Pending notes'
+                        : 'Scheduled'} —
+                  </span>
                   <div class="font-medium truncate">{session.patient_name}</div>
                   {#if session.session.duration_minutes}
                     <div class="text-[10px] opacity-70">{session.session.duration_minutes} min</div>
@@ -352,9 +378,9 @@
                   <button
                     onclick={() => openCompleteModal(session)}
                     aria-label="Mark session with {session.patient_name} as completed"
-                    class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded bg-green-600 text-white text-[10px] hover:bg-green-500 transition-all"
-                    title="Mark as completed"
-                  >✓</button>
+                    class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded-control bg-success text-on-success text-[10px] hover:bg-success transition-colors"
+                    title="Mark as completed">✓</button
+                  >
                 {/if}
               </div>
             {/each}
@@ -363,13 +389,23 @@
             {#if hour === 7}
               {#each untimed as session}
                 {@const status = getSessionStatus(session)}
-                <div class="w-full mb-1 p-1 rounded border text-xs {getStatusColor(status)} opacity-60 group/card relative">
+                <div
+                  class="w-full mb-1 p-1 rounded-card border text-caption {getStatusColor(
+                    status
+                  )} opacity-60 group/card relative"
+                >
                   <button
                     onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
                     aria-label="Session with {session.patient_name} (no scheduled time), status: {status}"
                     class="w-full text-left hover:opacity-80 transition-opacity"
                   >
-                    <span class="sr-only">{status === 'completed' ? 'Completed' : status === 'note-pending' ? 'Pending notes' : 'Scheduled'} — </span>
+                    <span class="sr-only"
+                      >{status === 'completed'
+                        ? 'Completed'
+                        : status === 'note-pending'
+                          ? 'Pending notes'
+                          : 'Scheduled'} —
+                    </span>
                     <div class="font-medium truncate">{session.patient_name}</div>
                     <div class="text-[10px]">Keine Zeit</div>
                   </button>
@@ -377,9 +413,9 @@
                     <button
                       onclick={() => openCompleteModal(session)}
                       aria-label="Mark session with {session.patient_name} as completed"
-                      class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded bg-green-600 text-white text-[10px] hover:bg-green-500 transition-all"
-                      title="Mark as completed"
-                    >✓</button>
+                      class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded-control bg-success text-on-success text-[10px] hover:bg-success transition-colors"
+                      title="Mark as completed">✓</button
+                    >
                   {/if}
                 </div>
               {/each}
@@ -390,17 +426,17 @@
     </div>
 
     <!-- Legend -->
-    <div class="mt-4 flex gap-4 text-xs text-gray-600 dark:text-gray-400">
+    <div class="mt-4 flex gap-4 text-caption text-fg-muted">
       <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded border bg-blue-500/20 border-blue-500/30"></span>
+        <span class="w-3 h-3 rounded-card border bg-accent-subtle border-accent-line"></span>
         <span>Geplant</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded border bg-green-500/20 border-green-500/30"></span>
+        <span class="w-3 h-3 rounded-card border bg-success-subtle border-success-line"></span>
         <span>Abgeschlossen</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded border bg-amber-500/20 border-amber-500/30"></span>
+        <span class="w-3 h-3 rounded-card border bg-warning-subtle border-warning-line"></span>
         <span>Notizen ausstehend</span>
       </div>
     </div>
@@ -408,10 +444,12 @@
     <!-- Month view - calendar grid with session counts -->
     <div>
       <!-- Month calendar grid -->
-      <div class="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <div
+        class="grid grid-cols-7 gap-px bg-surface-selected border border-line rounded-card overflow-hidden"
+      >
         <!-- Day headers -->
         {#each ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as dayName}
-          <div class="bg-white dark:bg-gray-800 p-2 text-center text-xs font-semibold text-gray-900 dark:text-gray-100">
+          <div class="bg-surface-raised p-2 text-center text-caption font-semibold text-fg">
             {dayName}
           </div>
         {/each}
@@ -419,21 +457,21 @@
         <!-- Calendar days -->
         {#each monthDays as day}
           {#if day === null}
-            <div class="bg-gray-50 dark:bg-gray-900 p-2 min-h-[80px]"></div>
+            <div class="bg-surface-sunken p-2 min-h-[80px]"></div>
           {:else}
             {@const dateStr = toLocalISODate(day)}
             {@const daySessions = monthSessions.get(dateStr) || []}
             {@const isToday = dateStr === toLocalISODate(new Date())}
 
-            <div class="bg-white dark:bg-gray-800 p-2 min-h-[80px] flex flex-col">
+            <div class="bg-surface-raised p-2 min-h-[80px] flex flex-col">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-sm {isToday ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}">
+                <span class="text-body {isToday ? 'font-semibold text-accent-fg' : 'text-fg'}">
                   {day.getDate()}
                 </span>
                 {#if daySessions.length > 0}
                   <button
                     onclick={() => toggleDayExpansion(dateStr)}
-                    class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                    class="text-caption px-1.5 py-0.5 rounded-control bg-accent-subtle text-accent-fg hover:bg-accent-subtle transition-colors"
                   >
                     {daySessions.length}
                   </button>
@@ -447,11 +485,14 @@
                     {@const status = getSessionStatus(session)}
                     <button
                       onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                      class="w-full text-left p-1 rounded border text-[10px] {getStatusColor(status)} hover:opacity-80 transition-opacity"
+                      class="w-full text-left p-1 rounded-control border text-[10px] {getStatusColor(
+                        status
+                      )} hover:opacity-80 transition-opacity"
                     >
                       <div class="font-medium truncate">{session.patient_name}</div>
                       {#if session.session.scheduled_time}
-                        {@const timeMatch = session.session.scheduled_time.match(/T(\d{2}):(\d{2})/)}
+                        {@const timeMatch =
+                          session.session.scheduled_time.match(/T(\d{2}):(\d{2})/)}
                         {#if timeMatch}
                           <div class="opacity-70">{timeMatch[1]}:{timeMatch[2]}</div>
                         {/if}
@@ -464,7 +505,13 @@
                 <div class="flex flex-wrap gap-1 mt-1">
                   {#each daySessions.slice(0, 3) as session}
                     {@const status = getSessionStatus(session)}
-                    <div class="w-2 h-2 rounded-full {status === 'completed' ? 'bg-green-500' : status === 'note-pending' ? 'bg-amber-500' : 'bg-blue-500'}"></div>
+                    <div
+                      class="w-2 h-2 rounded-full {status === 'completed'
+                        ? 'bg-success'
+                        : status === 'note-pending'
+                          ? 'bg-warning'
+                          : 'bg-accent'}"
+                    ></div>
                   {/each}
                 </div>
               {/if}
@@ -474,17 +521,17 @@
       </div>
 
       <!-- Legend -->
-      <div class="mt-4 flex gap-4 text-xs text-gray-600 dark:text-gray-400">
+      <div class="mt-4 flex gap-4 text-caption text-fg-muted">
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded border bg-blue-500/20 border-blue-500/30"></span>
+          <span class="w-3 h-3 rounded-card border bg-accent-subtle border-accent-line"></span>
           <span>Geplant</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded border bg-green-500/20 border-green-500/30"></span>
+          <span class="w-3 h-3 rounded-card border bg-success-subtle border-success-line"></span>
           <span>Abgeschlossen</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded border bg-amber-500/20 border-amber-500/30"></span>
+          <span class="w-3 h-3 rounded-card border bg-warning-subtle border-warning-line"></span>
           <span>Notizen ausstehend</span>
         </div>
       </div>
@@ -500,17 +547,19 @@
     aria-modal="true"
     aria-label="New session"
   >
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-96 max-w-full mx-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Neue Sitzung</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{modalDate.split('-').reverse().join('.')} um {modalTime}</p>
+    <div class="bg-surface-raised rounded-card shadow-modal p-6 w-96 max-w-full mx-4">
+      <h2 class="text-heading font-semibold text-fg mb-1">Neue Sitzung</h2>
+      <p class="text-body text-fg-muted mb-4">
+        {modalDate.split('-').reverse().join('.')} um {modalTime}
+      </p>
 
-      <label for="modal-patient" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label for="modal-patient" class="block text-body font-medium text-fg-muted mb-2">
         Patient
       </label>
       <select
         id="modal-patient"
         bind:value={modalPatientId}
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 mb-6"
       >
         <option value="">— Select patient —</option>
         {#each allPatients as patient}
@@ -521,14 +570,14 @@
       <div class="flex gap-3 justify-end">
         <button
           onclick={() => (showNewSessionModal = false)}
-          class="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
+          class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors"
         >
           Cancel
         </button>
         <button
           onclick={confirmNewSession}
           disabled={!modalPatientId}
-          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
         >
           Continue
         </button>
@@ -545,11 +594,17 @@
     aria-modal="true"
     aria-label="Complete session"
   >
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-96 max-w-full mx-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Sitzung abschliessen</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{completeSession.patient_name} · {completeSession.session.session_date.slice(0, 10).split('-').reverse().join('.')}</p>
+    <div class="bg-surface-raised rounded-card shadow-modal p-6 w-96 max-w-full mx-4">
+      <h2 class="text-heading font-semibold text-fg mb-1">Sitzung abschliessen</h2>
+      <p class="text-body text-fg-muted mb-4">
+        {completeSession.patient_name} · {completeSession.session.session_date
+          .slice(0, 10)
+          .split('-')
+          .reverse()
+          .join('.')}
+      </p>
 
-      <label for="complete-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label for="complete-notes" class="block text-body font-medium text-fg-muted mb-2">
         Notizen (optional)
       </label>
       <textarea
@@ -557,21 +612,24 @@
         bind:value={completeNotes}
         rows="4"
         placeholder="Gesprächsnotizen..."
-        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-6"
+        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none mb-6"
       ></textarea>
 
       <div class="flex gap-3 justify-end">
         <button
-          onclick={() => { showCompleteModal = false; completeSession = null; }}
+          onclick={() => {
+            showCompleteModal = false;
+            completeSession = null;
+          }}
           disabled={isSavingCompletion}
-          class="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors disabled:opacity-50"
+          class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           onclick={confirmComplete}
           disabled={isSavingCompletion}
-          class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          class="h-8 px-3 text-body rounded-control bg-success hover:bg-success-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-success transition-colors"
         >
           {isSavingCompletion ? 'Saving…' : 'Mark Completed'}
         </button>

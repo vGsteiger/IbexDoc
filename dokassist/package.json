@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"src/**/*.{js,ts,svelte,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{js,ts,svelte,json,css}\"",
-    "lint": "eslint \"src/**/*.{js,ts,svelte}\""
+    "lint": "eslint \"src/**/*.{js,ts,svelte}\"",
+    "check:design": "node scripts/check-design-tokens.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

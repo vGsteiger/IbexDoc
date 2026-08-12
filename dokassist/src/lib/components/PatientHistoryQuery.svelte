@@ -135,32 +135,30 @@
   });
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+<div class="bg-surface-raised rounded-card border border-line">
   <button
     onclick={() => (isExpanded = !isExpanded)}
-    class="flex items-center justify-between w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-t-lg"
+    class="flex items-center justify-between w-full p-4 hover:bg-surface-hover transition-colors rounded-t-lg"
   >
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-      Ask about this patient
-    </h3>
+    <h3 class="text-heading font-semibold text-fg">Ask about this patient</h3>
     {#if isExpanded}
-      <ChevronUp class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+      <ChevronUp class="w-5 h-5 text-fg-muted" />
     {:else}
-      <ChevronDown class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+      <ChevronDown class="w-5 h-5 text-fg-muted" />
     {/if}
   </button>
 
   {#if isExpanded}
-    <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+    <div class="p-4 border-t border-line space-y-4">
       <!-- Suggested queries -->
       <div class="space-y-2">
-        <p class="text-sm text-gray-600 dark:text-gray-400">Suggested queries:</p>
+        <p class="text-body text-fg-muted">Suggested queries:</p>
         <div class="flex flex-wrap gap-2">
           {#each suggestedQueries as suggested (suggested)}
             <button
               onclick={() => handleSuggestedQuery(suggested)}
               disabled={isQuerying}
-              class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="h-7 px-2.5 text-body bg-surface-hover text-fg-muted rounded-full hover:bg-surface-selected transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {suggested}
             </button>
@@ -175,13 +173,12 @@
           onkeydown={handleKeydown}
           disabled={isQuerying}
           placeholder="Ask a question about this patient's history..."
-          class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
-          rows="2"
-        ></textarea>
+          class="flex-1 px-4 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30 focus:border-transparent bg-surface-raised text-fg disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+          rows="2"></textarea>
         <button
           onclick={handleQuery}
           disabled={isQuerying || !question.trim()}
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 self-start"
+          class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 self-start"
         >
           {#if isQuerying}
             <Loader2 class="w-4 h-4 animate-spin" />
@@ -195,20 +192,18 @@
 
       <!-- Error display -->
       {#if error}
-        <div
-          class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400"
-        >
+        <div class="bg-danger-subtle border border-danger-line rounded-card p-4 text-danger-fg">
           {error}
         </div>
       {/if}
 
       <!-- Response display -->
       {#if response || isQuerying}
-        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+        <div class="bg-surface-sunken rounded-card p-4 border border-line">
           <div class="flex items-center justify-between mb-2">
-            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Response:</h4>
+            <h4 class="text-body font-semibold text-fg-muted">Response:</h4>
             {#if isQuerying}
-              <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div class="flex items-center gap-2 text-body text-fg-muted">
                 <Loader2 class="w-4 h-4 animate-spin" />
                 <span>Generating...</span>
               </div>
@@ -216,11 +211,11 @@
           </div>
           <div class="prose prose-sm dark:prose-invert max-w-none">
             {#if response}
-              <div class="whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+              <div class="whitespace-pre-wrap text-fg">
                 {response}
               </div>
             {:else}
-              <div class="text-gray-500 dark:text-gray-400 italic">Waiting for response...</div>
+              <div class="text-fg-muted italic">Waiting for response...</div>
             {/if}
           </div>
         </div>
@@ -228,25 +223,25 @@
 
       <!-- Evidence behind the answer -->
       {#if manifest && !isQuerying}
-        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+        <div class="rounded-card border border-line p-4 space-y-3">
           <button
             onclick={() => (showEvidence = !showEvidence)}
             class="flex items-center justify-between w-full text-left"
           >
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <span class="text-body font-semibold text-fg-muted">
               Evidence ({manifest.entries.length} excerpts, {manifest.prompt_tokens} of {manifest.token_budget}
               tokens)
             </span>
             {#if showEvidence}
-              <ChevronUp class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <ChevronUp class="w-4 h-4 text-fg-muted" />
             {:else}
-              <ChevronDown class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <ChevronDown class="w-4 h-4 text-fg-muted" />
             {/if}
           </button>
 
           {#if citationWarnings.length > 0}
             <div
-              class="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-md p-2"
+              class="flex items-start gap-2 text-body text-warning-fg bg-warning-subtle rounded-card p-2"
             >
               <AlertTriangle class="w-4 h-4 mt-0.5 shrink-0" />
               <span>
@@ -257,31 +252,29 @@
           {/if}
 
           {#if showEvidence}
-            <ul class="space-y-2 text-sm">
+            <ul class="space-y-2 text-body">
               {#each citedEntries as { check, entry } (check.citation)}
-                <li class="text-gray-700 dark:text-gray-300">
-                  <span class="font-mono text-xs">[{check.citation}]</span>
+                <li class="text-fg-muted">
+                  <span class="font-mono text-caption">[{check.citation}]</span>
                   {entry?.label}
-                  <span class="text-gray-500 dark:text-gray-400">
+                  <span class="text-fg-muted">
                     — {entry?.occurred_at}, characters {entry?.char_start}–{entry?.char_end},
                     revision {entry?.revision}
                   </span>
                   {#if !check.traceable}
-                    <span class="text-amber-700 dark:text-amber-400"> (source changed)</span>
+                    <span class="text-warning-fg"> (source changed)</span>
                   {/if}
-                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                  <div class="text-caption text-fg-muted">
                     Selected because: {entry?.selection_reasons?.join('; ') ?? '—'}
                   </div>
                 </li>
               {/each}
               {#if citedEntries.length === 0}
-                <li class="text-gray-500 dark:text-gray-400 italic">
-                  The answer cited no excerpts.
-                </li>
+                <li class="text-fg-muted italic">The answer cited no excerpts.</li>
               {/if}
             </ul>
             {#if manifest.omitted.length > 0}
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-caption text-fg-muted">
                 {manifest.omitted.length} further excerpt(s) were not included (budget or archive pointers).
               </p>
             {/if}

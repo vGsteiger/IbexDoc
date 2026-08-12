@@ -89,38 +89,34 @@
 </script>
 
 <div class="p-8">
-  <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">{$t('files.title')}</h2>
+  <h2 class="text-title font-semibold text-fg mb-6">{$t('files.title')}</h2>
 
   <div class="mb-8">
     <FileUploader {patientId} onUpload={handleUpload} />
   </div>
 
   {#if errorMessage}
-    <div
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
-    >
-      <p class="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+    <div class="bg-danger-subtle border border-danger-line rounded-card p-4 mb-6">
+      <p class="text-body text-danger-fg">{errorMessage}</p>
     </div>
   {/if}
 
   {#if isLoading}
     <div class="flex items-center justify-center py-12">
       <div class="text-center">
-        <div class="mb-4 flex justify-center text-gray-400">
+        <div class="mb-4 flex justify-center text-fg-muted">
           <Hourglass size={48} />
         </div>
-        <p class="text-gray-500 dark:text-gray-400">{$t('files.loading')}</p>
+        <p class="text-fg-muted">{$t('files.loading')}</p>
       </div>
     </div>
   {:else if files.length === 0}
-    <div
-      class="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800"
-    >
-      <div class="mb-4 flex justify-center text-gray-400">
+    <div class="text-center py-12 bg-surface-sunken rounded-card border border-line-subtle">
+      <div class="mb-4 flex justify-center text-fg-muted">
         <FolderOpen size={48} />
       </div>
-      <p class="text-gray-500 dark:text-gray-400">{$t('files.noFilesUploaded')}</p>
-      <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">{$t('files.uploadHint')}</p>
+      <p class="text-fg-muted">{$t('files.noFilesUploaded')}</p>
+      <p class="text-body text-fg-subtle mt-2">{$t('files.uploadHint')}</p>
     </div>
   {:else}
     <div class="space-y-4">

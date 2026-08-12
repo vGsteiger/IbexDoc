@@ -97,9 +97,9 @@
 
 <div class="space-y-4">
   <div
-    class="relative border-2 border-dashed rounded-lg p-8 transition-colors {isDragging
-      ? 'border-blue-500 bg-blue-500/10'
-      : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'}"
+    class="relative border-2 border-dashed rounded-card p-8 transition-colors {isDragging
+      ? 'border-accent bg-accent-subtle'
+      : 'border-line bg-surface-sunken'}"
     role="region"
     aria-label="File upload area"
     ondragover={handleDragOver}
@@ -115,27 +115,27 @@
     />
 
     <div class="text-center pointer-events-none">
-      <div class="mb-4 flex justify-center text-gray-400">
+      <div class="mb-4 flex justify-center text-fg-muted">
         <Paperclip size={48} />
       </div>
-      <p class="text-gray-600 dark:text-gray-300 font-medium mb-2">
+      <p class="text-fg-muted font-medium mb-2">
         {$t('files.dropOrBrowse')}
       </p>
-      <p class="text-sm text-gray-400 dark:text-gray-500">
+      <p class="text-body text-fg-subtle">
         {$t('files.supportedTypes')}
       </p>
     </div>
   </div>
 
   {#if isUploading}
-    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+    <div class="bg-surface-sunken rounded-card p-4">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm text-gray-600 dark:text-gray-300">{$t('files.uploading')}</span>
-        <span class="text-sm text-gray-500 dark:text-gray-400">{uploadProgress}%</span>
+        <span class="text-body text-fg-muted">{$t('files.uploading')}</span>
+        <span class="text-body text-fg-muted">{uploadProgress}%</span>
       </div>
-      <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+      <div class="w-full bg-surface-selected rounded-full h-2">
         <div
-          class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+          class="bg-accent h-2 rounded-full transition-colors duration-300"
           style="width: {uploadProgress}%"
         ></div>
       </div>
@@ -143,10 +143,8 @@
   {/if}
 
   {#if errorMessage}
-    <div
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
-    >
-      <p class="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+    <div class="bg-danger-subtle border border-danger-line rounded-card p-4">
+      <p class="text-body text-danger-fg">{errorMessage}</p>
     </div>
   {/if}
 </div>

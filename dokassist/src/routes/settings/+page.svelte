@@ -68,8 +68,7 @@
           return `<p class="font-semibold mt-2 mb-0.5">${inline(escape(line.slice(3)))}</p>`;
         if (/^### /.test(line))
           return `<p class="font-medium mt-1 mb-0.5">${inline(escape(line.slice(4)))}</p>`;
-        if (/^- /.test(line))
-          return `<p class="ml-3">&bull; ${inline(escape(line.slice(2)))}</p>`;
+        if (/^- /.test(line)) return `<p class="ml-3">&bull; ${inline(escape(line.slice(2)))}</p>`;
         if (line.trim() === '') return '<div class="mt-1"></div>';
         return `<p>${inline(escape(line))}</p>`;
       })
@@ -159,10 +158,13 @@
       }
 
       // Build a map of task -> model_id for easy lookup
-      selectedTaskModel = taskModels.reduce((acc, tm) => {
-        acc[tm.task_type] = tm.model_id;
-        return acc;
-      }, {} as Record<string, string>);
+      selectedTaskModel = taskModels.reduce(
+        (acc, tm) => {
+          acc[tm.task_type] = tm.model_id;
+          return acc;
+        },
+        {} as Record<string, string>
+      );
     } catch (e) {
       modelManagementError = parseError(e).message;
     } finally {
@@ -409,18 +411,18 @@
 
   // Backup & Restore state
   let creatingBackup = $state(false);
-  let backupError = $state("");
+  let backupError = $state('');
   let restoring = $state(false);
   let showRestoreConfirm = $state(false);
-  let restoreInput = $state("");
-  let restoreError = $state("");
+  let restoreInput = $state('');
+  let restoreError = $state('');
   let selectedBackupFile: File | null = null;
   let validatedBackupInfo = $state<BackupInfo | null>(null);
 
   // CSV Import state
   let selectedCsvPath = $state<string | null>(null);
   let csvPreview = $state<CsvPreview | null>(null);
-  let csvError = $state("");
+  let csvError = $state('');
   let importing = $state(false);
   let importResult = $state<ImportResult | null>(null);
   let columnMappings = $state<ColumnMapping[]>([]);
@@ -470,16 +472,16 @@
 
   async function handleCreateBackup() {
     creatingBackup = true;
-    backupError = "";
+    backupError = '';
     try {
       const backupData = await createVaultBackup();
 
       // Convert number array to Uint8Array and create download
       const blob = new Blob([new Uint8Array(backupData)], {
-        type: "application/octet-stream",
+        type: 'application/octet-stream',
       });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = `RamDoc_Backup_${new Date().toISOString().split('T')[0]}.dokassist`;
       document.body.appendChild(a);
@@ -493,9 +495,7 @@
     }
   }
 
-  async function handleSelectRestoreFile(
-    event: Event & { currentTarget: HTMLInputElement },
-  ) {
+  async function handleSelectRestoreFile(event: Event & { currentTarget: HTMLInputElement }) {
     const file = event.currentTarget.files?.[0];
     if (!file) {
       selectedBackupFile = null;
@@ -504,7 +504,7 @@
     }
 
     selectedBackupFile = file;
-    restoreError = "";
+    restoreError = '';
 
     // Validate the backup file
     try {
@@ -522,7 +522,7 @@
     if (!selectedBackupFile || !validatedBackupInfo) return;
 
     restoring = true;
-    restoreError = "";
+    restoreError = '';
     try {
       const arrayBuffer = await selectedBackupFile.arrayBuffer();
       const backupArray = Array.from(new Uint8Array(arrayBuffer));
@@ -530,12 +530,12 @@
 
       // Reset state
       showRestoreConfirm = false;
-      restoreInput = "";
+      restoreInput = '';
       selectedBackupFile = null;
       validatedBackupInfo = null;
 
       // Redirect to unlock page since database was replaced
-      goto("/");
+      goto('/');
     } catch (e) {
       restoreError = parseError(e).message;
     } finally {
@@ -547,11 +547,13 @@
     try {
       const selected = await open({
         title: 'Select CSV file',
-        filters: [{
-          name: 'CSV',
-          extensions: ['csv']
-        }],
-        multiple: false
+        filters: [
+          {
+            name: 'CSV',
+            extensions: ['csv'],
+          },
+        ],
+        multiple: false,
       });
 
       if (!selected) {
@@ -561,7 +563,7 @@
       }
 
       selectedCsvPath = selected as string;
-      csvError = "";
+      csvError = '';
       csvPreview = null;
       importResult = null;
 
@@ -578,7 +580,7 @@
     if (!selectedCsvPath || !csvPreview) return;
 
     importing = true;
-    csvError = "";
+    csvError = '';
     try {
       importResult = await importCsvData(selectedCsvPath, columnMappings);
 
@@ -602,59 +604,56 @@
         index === existingIndex ? { ...m, patient_field: patientField } : m
       );
     } else {
-      columnMappings = [
-        ...columnMappings,
-        { csv_header: csvHeader, patient_field: patientField }
-      ];
+      columnMappings = [...columnMappings, { csv_header: csvHeader, patient_field: patientField }];
     }
   }
 
   // Check if all required fields are mapped
   function hasAllRequiredFieldsMapped(): boolean {
     const requiredFields = ['ahv_number', 'first_name', 'last_name', 'date_of_birth'];
-    const mappedFields = new Set(columnMappings.map(m => m.patient_field).filter(f => f));
-    return requiredFields.every(field => mappedFields.has(field));
+    const mappedFields = new Set(columnMappings.map((m) => m.patient_field).filter((f) => f));
+    return requiredFields.every((field) => mappedFields.has(field));
   }
 
   const patientFields = [
-    { value: "", label: "(Skip)" },
-    { value: "ahv_number", label: "AHV Number *" },
-    { value: "first_name", label: "First Name *" },
-    { value: "last_name", label: "Last Name *" },
-    { value: "date_of_birth", label: "Date of Birth *" },
-    { value: "gender", label: "Gender" },
-    { value: "address", label: "Address" },
-    { value: "phone", label: "Phone" },
-    { value: "email", label: "Email" },
-    { value: "insurance", label: "Insurance" },
-    { value: "gp_name", label: "GP Name" },
-    { value: "gp_address", label: "GP Address" },
-    { value: "notes", label: "Notes" },
+    { value: '', label: '(Skip)' },
+    { value: 'ahv_number', label: 'AHV Number *' },
+    { value: 'first_name', label: 'First Name *' },
+    { value: 'last_name', label: 'Last Name *' },
+    { value: 'date_of_birth', label: 'Date of Birth *' },
+    { value: 'gender', label: 'Gender' },
+    { value: 'address', label: 'Address' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'email', label: 'Email' },
+    { value: 'insurance', label: 'Insurance' },
+    { value: 'gp_name', label: 'GP Name' },
+    { value: 'gp_address', label: 'GP Address' },
+    { value: 'notes', label: 'Notes' },
   ];
 </script>
 
 <div class="p-8 max-w-xl">
-  <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{$t('settings.title')}</h1>
+  <h1 class="text-display font-semibold text-fg mb-6">{$t('settings.title')}</h1>
 
   <section class="mb-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
+    <h2 class="text-heading font-semibold text-fg mb-4">
       {$t('settings.applicationUpdates')}
     </h2>
 
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+    <div class="bg-surface-hover rounded-card p-4 mb-4">
       <div class="flex items-center justify-between mb-3">
         <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <p class="text-body font-medium text-fg">
             {$t('settings.currentVersion')}
           </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p class="text-caption text-fg-muted mt-1">
             {appVersion || $t('common.loading')}
           </p>
         </div>
         <button
           onclick={handleCheckForUpdates}
           disabled={checkingUpdate || installingUpdate}
-          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
         >
           {checkingUpdate ? $t('settings.checking') : $t('settings.checkForUpdates')}
         </button>
@@ -662,13 +661,13 @@
 
       {#if updateInfo}
         {#if updateInfo.update_available}
-          <div class="border-t border-gray-300 dark:border-gray-700 pt-3 mt-3">
+          <div class="border-t border-line pt-3 mt-3">
             <div class="flex items-start justify-between gap-4 mb-2">
               <div>
-                <p class="text-sm font-medium text-green-400">
+                <p class="text-body font-medium text-success-fg">
                   {$t('settings.updateAvailable')}
                 </p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <p class="text-caption text-fg-muted mt-1">
                   {$t('settings.version')}
                   {updateInfo.latest_version}
                   {$t('settings.versionAvailable')}
@@ -678,7 +677,7 @@
 
             {#if updateInfo.body}
               <div
-                class="text-xs text-gray-600 dark:text-gray-400 mb-3 max-h-32 overflow-y-auto bg-gray-200 dark:bg-gray-900 rounded p-2"
+                class="text-caption text-fg-muted mb-3 max-h-32 overflow-y-auto bg-surface-selected rounded-card p-2"
               >
                 <p class="font-medium mb-1">{$t('settings.releaseNotes')}</p>
                 <div>{@html renderMarkdown(updateInfo.body)}</div>
@@ -687,68 +686,68 @@
 
             {#if installingUpdate}
               <div class="mb-3">
-                <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                <div class="flex justify-between text-caption text-fg-muted mb-1">
                   <span>{$t('settings.downloadingAndInstalling')}</span>
                   <span>{updateProgress}%</span>
                 </div>
-                <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
+                <div class="w-full bg-surface-selected rounded-full h-2">
                   <div
-                    class="bg-blue-500 h-2 rounded-full transition-all"
+                    class="bg-accent h-2 rounded-full transition-colors"
                     style="width: {updateProgress}%"
                   ></div>
                 </div>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                <p class="text-caption text-fg-muted mt-2">
                   {$t('settings.autoRestart')}
                 </p>
               </div>
             {/if}
 
             {#if updateError}
-              <p class="text-xs text-red-400 mb-3">{updateError}</p>
+              <p class="text-caption text-danger-fg mb-3">{updateError}</p>
             {/if}
 
             {#if !installingUpdate}
               <button
                 onclick={handleInstallUpdate}
-                class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-500 text-white transition-colors"
+                class="h-8 px-3 text-body rounded-control bg-success hover:bg-success text-on-success transition-colors"
               >
                 {$t('settings.installUpdate')}
               </button>
             {/if}
           </div>
         {:else}
-          <div class="border-t border-gray-300 dark:border-gray-700 pt-3 mt-3">
-            <p class="text-sm text-green-400">{$t('settings.noUpdatesAvailable')}</p>
+          <div class="border-t border-line pt-3 mt-3">
+            <p class="text-body text-success-fg">{$t('settings.noUpdatesAvailable')}</p>
           </div>
         {/if}
       {/if}
 
       {#if updateError && !updateInfo}
-        <div class="border-t border-gray-300 dark:border-gray-700 pt-3 mt-3">
-          <p class="text-xs text-red-400">{updateError}</p>
+        <div class="border-t border-line pt-3 mt-3">
+          <p class="text-caption text-danger-fg">{updateError}</p>
         </div>
       {/if}
     </div>
   </section>
 
   <section class="mb-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
+    <h2 class="text-heading font-semibold text-fg mb-4">
       {$t('settings.appearance')}
     </h2>
 
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
-      <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+    <div class="bg-surface-hover rounded-card p-4 mb-4">
+      <p class="text-body font-medium text-fg mb-3">
         {$t('settings.theme')}
       </p>
-      <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+      <p class="text-caption text-fg-muted mb-4">
         {$t('settings.themeDescription')}
       </p>
 
       <div class="space-y-2">
         <label
-          class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors {$themePreference ===
+          class="flex items-center gap-3 p-3 rounded-card border border-line cursor-pointer hover:bg-surface-hover transition-colors {$themePreference ===
           'light'
-            ? 'bg-gray-200 dark:bg-gray-700 border-blue-500'
+            ? 'bg-surface-selected border-accent'
             : ''}"
         >
           <input
@@ -757,22 +756,22 @@
             value="light"
             checked={$themePreference === 'light'}
             onchange={() => themePreference.set('light')}
-            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+            class="w-4 h-4 text-accent-fg focus:ring-accent/30"
           />
           <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-body font-medium text-fg">
               {$t('settings.light')}
             </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">
+            <p class="text-caption text-fg-muted">
               {$t('settings.lightDescription')}
             </p>
           </div>
         </label>
 
         <label
-          class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors {$themePreference ===
+          class="flex items-center gap-3 p-3 rounded-card border border-line cursor-pointer hover:bg-surface-hover transition-colors {$themePreference ===
           'dark'
-            ? 'bg-gray-200 dark:bg-gray-700 border-blue-500'
+            ? 'bg-surface-selected border-accent'
             : ''}"
         >
           <input
@@ -781,20 +780,20 @@
             value="dark"
             checked={$themePreference === 'dark'}
             onchange={() => themePreference.set('dark')}
-            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+            class="w-4 h-4 text-accent-fg focus:ring-accent/30"
           />
           <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-body font-medium text-fg">
               {$t('settings.dark')}
             </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">{$t('settings.darkDescription')}</p>
+            <p class="text-caption text-fg-muted">{$t('settings.darkDescription')}</p>
           </div>
         </label>
 
         <label
-          class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors {$themePreference ===
+          class="flex items-center gap-3 p-3 rounded-card border border-line cursor-pointer hover:bg-surface-hover transition-colors {$themePreference ===
           'system'
-            ? 'bg-gray-200 dark:bg-gray-700 border-blue-500'
+            ? 'bg-surface-selected border-accent'
             : ''}"
         >
           <input
@@ -803,13 +802,13 @@
             value="system"
             checked={$themePreference === 'system'}
             onchange={() => themePreference.set('system')}
-            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+            class="w-4 h-4 text-accent-fg focus:ring-accent/30"
           />
           <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-body font-medium text-fg">
               {$t('settings.system')}
             </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">
+            <p class="text-caption text-fg-muted">
               {$t('settings.systemDescription')}
             </p>
           </div>
@@ -817,19 +816,19 @@
       </div>
     </div>
 
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
-      <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+    <div class="bg-surface-hover rounded-card p-4">
+      <p class="text-body font-medium text-fg mb-3">
         {$t('settings.language')}
       </p>
-      <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+      <p class="text-caption text-fg-muted mb-4">
         {$t('settings.languageDescription')}
       </p>
 
       <div class="space-y-2">
         <label
-          class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors {$language ===
+          class="flex items-center gap-3 p-3 rounded-card border border-line cursor-pointer hover:bg-surface-hover transition-colors {$language ===
           'en'
-            ? 'bg-gray-200 dark:bg-gray-700 border-blue-500'
+            ? 'bg-surface-selected border-accent'
             : ''}"
         >
           <input
@@ -838,20 +837,20 @@
             value="en"
             checked={$language === 'en'}
             onchange={() => language.set('en')}
-            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+            class="w-4 h-4 text-accent-fg focus:ring-accent/30"
           />
           <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-body font-medium text-fg">
               {$t('settings.english')}
             </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">English</p>
+            <p class="text-caption text-fg-muted">English</p>
           </div>
         </label>
 
         <label
-          class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors {$language ===
+          class="flex items-center gap-3 p-3 rounded-card border border-line cursor-pointer hover:bg-surface-hover transition-colors {$language ===
           'de'
-            ? 'bg-gray-200 dark:bg-gray-700 border-blue-500'
+            ? 'bg-surface-selected border-accent'
             : ''}"
         >
           <input
@@ -860,464 +859,469 @@
             value="de"
             checked={$language === 'de'}
             onchange={() => language.set('de')}
-            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+            class="w-4 h-4 text-accent-fg focus:ring-accent/30"
           />
           <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-body font-medium text-fg">
               {$t('settings.german')}
             </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">Deutsch</p>
+            <p class="text-caption text-fg-muted">Deutsch</p>
           </div>
         </label>
       </div>
     </div>
   </section>
 
-<!-- Enhanced Model Management Section -->
-<section>
-  <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
-    {$t('settings.modelManagement')}
-  </h2>
+  <!-- Enhanced Model Management Section -->
+  <section>
+    <h2 class="text-heading font-semibold text-fg mb-4">
+      {$t('settings.modelManagement')}
+    </h2>
 
-  <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6">
-    <label
-      for="inference-profile"
-      class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2"
-    >
-      {$t('settings.inferenceProfile')}
-    </label>
-    <select
-      id="inference-profile"
-      bind:value={inferenceProfile}
-      disabled={phase === 'loading'}
-      class="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-    >
-      <option value="conservative">{$t('settings.inferenceConservative')}</option>
-      <option value="f16-32k">{$t('settings.inferenceF16')}</option>
-      <option value="q8-32k">{$t('settings.inferenceQ8')}</option>
-      <option value="q4-32k">{$t('settings.inferenceQ4')}</option>
-    </select>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-      {$t('settings.inferenceProfileDescription')}
-    </p>
-  </div>
-
-  <!-- Currently loaded model status -->
-  <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6">
-    <div class="flex items-center gap-3 mb-4">
-      <div
-        class="w-3 h-3 rounded-full shrink-0 {status?.is_loaded ? 'bg-green-500' : 'bg-gray-400'}"
-      ></div>
-      <div class="flex-1">
-        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-          {status?.is_loaded
-            ? $t('settings.loadedModel').replace('{name}', status.model_name ?? '')
-            : $t('settings.noModelLoaded')}
-        </p>
-        {#if status?.total_ram_bytes}
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            {$t('settings.systemRam').replace('{ram}', formatBytes(status.total_ram_bytes))}
-          </p>
-        {/if}
-      </div>
-    </div>
-
-    {#if status?.inference_config}
-      {@const config = status.inference_config}
-      {@const fallbackDiagnostic = inferenceFallbackDiagnostic(config)}
-      <div class="border-t border-gray-300 dark:border-gray-700 pt-3 mb-3">
-        <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {$t('settings.activeInferenceConfiguration')}
-        </p>
-        <p class="text-xs text-gray-600 dark:text-gray-400">
-          {$t('settings.inferenceConfigSummary')
-            .replace('{context}', String(Math.round(config.context_size / 1024)))
-            .replace('{key}', config.kv_cache_k)
-            .replace('{value}', config.kv_cache_v)
-            .replace('{batch}', String(config.n_batch))
-            .replace('{microBatch}', String(config.n_ubatch))
-            .replace(
-              '{flash}',
-              $t(
-                config.flash_attention === 'enabled'
-                  ? 'settings.flashEnabled'
-                  : 'settings.flashAuto',
-              ),
-            )}
-        </p>
-        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-          {$t('settings.completionHeadroom').replace(
-            '{tokens}',
-            String(config.completion_headroom),
-          )}
-        </p>
-        {#if fallbackDiagnostic}
-          <p
-            class="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-md px-2.5 py-2 mt-2"
-          >
-            {fallbackDiagnostic}
-          </p>
-        {/if}
-      </div>
-    {/if}
-
-    {#if status?.last_generation_stats}
-      {@const s = status.last_generation_stats}
-      <div class="border-t border-gray-300 dark:border-gray-700 pt-3">
-        <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Last generation performance
-        </p>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-gray-200 dark:bg-gray-900 rounded-lg p-2.5 text-center">
-            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {(s.ttft_ms / 1000).toFixed(2)}s
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Time to first token</p>
-          </div>
-          <div class="bg-gray-200 dark:bg-gray-900 rounded-lg p-2.5 text-center">
-            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {s.tps.toFixed(1)} tok/s
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Throughput</p>
-          </div>
-        </div>
-        <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
-          {s.prompt_tokens} prompt tokens · {s.completion_tokens} generated tokens
-        </p>
-        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-          {s.cache_hit ? 'Warm context' : 'Cold context'} · {s.reused_prompt_tokens} reused ·
-          {s.evaluated_prompt_tokens} evaluated · {s.prefill_ms.toFixed(0)}ms prefill
-        </p>
-      </div>
-    {/if}
-  </div>
-
-  <!-- Installed Models List -->
-  <div class="mb-6">
-    <h3 class="text-md font-semibold text-gray-900 dark:text-gray-200 mb-3">
-      {$t('settings.installedModels')}
-    </h3>
-
-    {#if loadingModels}
-      <p class="text-sm text-gray-600 dark:text-gray-400">{$t('settings.loadingModels')}</p>
-    {:else if installedModels.length === 0}
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        {$t('settings.noModelsInstalled')}
-      </p>
-    {:else}
-      <div class="space-y-3">
-        {#each installedModels as model}
-          <div
-            class="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="flex items-start justify-between mb-2">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {model.name}
-                  </p>
-                  {#if model.is_default}
-                    <span class="px-2 py-0.5 text-xs rounded bg-blue-500 text-white">
-                      {$t('settings.defaultBadge')}
-                    </span>
-                  {/if}
-                  {#if model.is_loaded}
-                    <span class="px-2 py-0.5 text-xs rounded bg-green-500 text-white">
-                      {$t('settings.loadedBadge')}
-                    </span>
-                  {/if}
-                  {#if !model.exists_on_disk}
-                    <span class="px-2 py-0.5 text-xs rounded bg-red-500 text-white">
-                      {$t('settings.modelMissingOnDisk')}
-                    </span>
-                  {/if}
-                </div>
-                <p class="text-xs text-gray-600 dark:text-gray-400">
-                  {model.filename} • {formatBytes(model.size_bytes)}
-                </p>
-                {#if model.last_used}
-                  <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    {$t('settings.lastUsed').replace(
-                      '{date}',
-                      new Date(model.last_used).toLocaleDateString()
-                    )}
-                  </p>
-                {/if}
-              </div>
-            </div>
-
-            <div class="flex gap-2 mt-3">
-              {#if model.exists_on_disk && !model.is_loaded}
-                <button
-                  onclick={() => handleLoadModel(model.filename)}
-                  disabled={phase === 'loading'}
-                  class="px-3 py-1.5 text-xs rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-                >
-                  {$t('settings.load')}
-                </button>
-              {/if}
-              {#if model.exists_on_disk && !model.is_default}
-                <button
-                  onclick={() => handleSetDefaultModel(model.id)}
-                  class="px-3 py-1.5 text-xs rounded-lg bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
-                >
-                  {$t('settings.setDefault')}
-                </button>
-              {/if}
-              {#if !model.is_loaded}
-                <button
-                  onclick={() => handleDeleteModel(model.id)}
-                  class="px-3 py-1.5 text-xs rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
-                >
-                  {$t('settings.delete')}
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </div>
-
-  <!-- Available Models Card -->
-  <div class="mb-6">
-    <h3 class="text-md font-semibold text-gray-900 dark:text-gray-200 mb-3">
-      Available Models
-    </h3>
-    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
-      Choose a model based on your system's available RAM. Your system has {status?.total_ram_bytes ? formatBytes(status.total_ram_bytes) : '...'} of RAM.
-    </p>
-
-    {#if loadingModels}
-      <p class="text-sm text-gray-600 dark:text-gray-400">Loading available models...</p>
-    {:else}
-      <div class="space-y-3">
-        {#each availableModels as model}
-          {@const canRunModel = status?.total_ram_bytes ? status.total_ram_bytes >= model.min_ram_gb * 1024 * 1024 * 1024 : false}
-          {@const modelChoice = { name: model.name, filename: model.filename, size_bytes: model.size_bytes, reason: model.description }}
-
-          <div
-            class="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 {!canRunModel ? 'opacity-60' : ''}"
-          >
-            <div class="flex items-start justify-between gap-4 mb-2">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {model.name}
-                  </p>
-                  {#if model.is_downloaded}
-                    <span class="px-2 py-0.5 text-xs rounded bg-green-500 text-white">
-                      Downloaded
-                    </span>
-                  {/if}
-                  {#if !canRunModel}
-                    <span class="px-2 py-0.5 text-xs rounded bg-amber-600 text-white">
-                      Needs {model.min_ram_gb}GB+ RAM
-                    </span>
-                  {:else}
-                    <span class="px-2 py-0.5 text-xs rounded bg-blue-500 text-white">
-                      Compatible
-                    </span>
-                  {/if}
-                </div>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                  {model.description}
-                </p>
-                {#if model.disclaimer}
-                  <p class="text-xs text-amber-700 dark:text-amber-300 mb-1">
-                    {model.disclaimer}
-                  </p>
-                {/if}
-                <p class="text-xs text-gray-500 dark:text-gray-500">
-                  Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB • Native context: {Math.round(model.context_window_tokens / 1024)}K
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  {model.parameters} • {model.license}
-                </p>
-              </div>
-            </div>
-
-            {#if !model.is_downloaded}
-              <div class="mt-3">
-                {#if phase === 'downloading' && activeDownloadFilename === model.filename}
-                  <div class="mb-3">
-                    <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                      <span>Downloading...</span>
-                      <span>{downloadProgress ?? 0}%</span>
-                    </div>
-                    <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        class="bg-blue-500 h-2 rounded-full transition-all"
-                        style="width: {downloadProgress ?? 0}%"
-                      ></div>
-                    </div>
-                  </div>
-                {/if}
-
-                <button
-                  onclick={() => handleDownloadNewModel(modelChoice)}
-                  disabled={phase === 'downloading' || phase === 'loading' || !canRunModel}
-                  class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-                >
-                  {phase === 'downloading' && activeDownloadFilename === model.filename
-                    ? 'Downloading...'
-                    : 'Download Model'}
-                </button>
-                {#if !canRunModel}
-                  <p class="text-xs text-amber-400 mt-2">
-                    This model requires at least {model.min_ram_gb}GB RAM. Your system has {status?.total_ram_bytes ? formatBytes(status.total_ram_bytes) : '...'}.
-                  </p>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </div>
-
-  <!-- Download New Model -->
-  {#if recommended}
-    <div class="mb-6">
-      <h3 class="text-md font-semibold text-gray-900 dark:text-gray-200 mb-3">
-        {$t('settings.recommendedModelSection')}
-      </h3>
-      <div
-        class="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4"
+    <div class="bg-surface-hover rounded-card p-4 mb-6">
+      <label for="inference-profile" class="block text-body font-medium text-fg mb-2">
+        {$t('settings.inferenceProfile')}
+      </label>
+      <select
+        id="inference-profile"
+        bind:value={inferenceProfile}
+        disabled={phase === 'loading'}
+        class="w-full max-w-md rounded-control border border-line bg-surface-raised px-3 py-2 text-body text-fg"
       >
-        <div class="flex items-start justify-between gap-4 mb-2">
-          <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {recommended.name}
-            </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              {recommended.reason}
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              {$t('settings.size').replace('{size}', formatBytes(recommended.size_bytes))}
-            </p>
-          </div>
-        </div>
-
-        {#if phase === 'downloading'}
-          <div class="mb-3">
-            <div
-              class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1"
-            >
-              <span>{$t('settings.downloadingLabel')}</span>
-              <span>{downloadProgress ?? 0}%</span>
-            </div>
-            <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
-              <div
-                class="bg-blue-500 h-2 rounded-full transition-all"
-                style="width: {downloadProgress ?? 0}%"
-              ></div>
-            </div>
-          </div>
-        {/if}
-
-        {#if phase === 'error'}
-          <p class="text-xs text-red-400 mb-3">{errorMsg}</p>
-        {/if}
-
-        <button
-          onclick={() => handleDownloadNewModel(recommended!)}
-          disabled={phase === 'downloading' || phase === 'loading'}
-          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-        >
-          {phase === 'downloading'
-            ? $t('settings.downloadingLabel')
-            : $t('settings.downloadModel')}
-        </button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Task-Specific Model Assignment -->
-  <div class="mb-6">
-    <h3 class="text-md font-semibold text-gray-900 dark:text-gray-200 mb-3">
-      {$t('settings.taskSpecificModels')}
-    </h3>
-    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
-      {$t('settings.taskSpecificModelsDesc')}
-    </p>
-
-    {#if installedModels.length > 0}
-      <div class="space-y-3">
-        {#each ['summary', 'letter', 'report'] as taskType}
-          <div
-            class="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4"
-          >
-            <label
-              for="task-{taskType}"
-              class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 capitalize"
-            >
-              {$t(`settings.${taskType}`)}
-            </label>
-            <select
-              id="task-{taskType}"
-              value={selectedTaskModel[taskType] || ''}
-              onchange={(e) => handleSetTaskModel(taskType, e.currentTarget.value)}
-              class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">{$t('settings.useDefaultModel')}</option>
-              {#each installedModels as model}
-                <option value={model.id}>
-                  {model.name} ({formatBytes(model.size_bytes)})
-                </option>
-              {/each}
-            </select>
-          </div>
-        {/each}
-      </div>
-    {:else}
-      <p class="text-xs text-gray-600 dark:text-gray-400">
-        {$t('settings.installModelFirst')}
+        <option value="conservative">{$t('settings.inferenceConservative')}</option>
+        <option value="f16-32k">{$t('settings.inferenceF16')}</option>
+        <option value="q8-32k">{$t('settings.inferenceQ8')}</option>
+        <option value="q4-32k">{$t('settings.inferenceQ4')}</option>
+      </select>
+      <p class="text-caption text-fg-muted mt-2">
+        {$t('settings.inferenceProfileDescription')}
       </p>
-    {/if}
-  </div>
-
-  {#if modelManagementError}
-    <div
-      class="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg p-3 mb-4"
-    >
-      <p class="text-sm text-red-600 dark:text-red-400">{modelManagementError}</p>
     </div>
-  {/if}
-</section>
+
+    <!-- Currently loaded model status -->
+    <div class="bg-surface-hover rounded-card p-4 mb-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div
+          class="w-3 h-3 rounded-full shrink-0 {status?.is_loaded
+            ? 'bg-success'
+            : 'bg-surface-selected'}"
+        ></div>
+        <div class="flex-1">
+          <p class="text-body font-medium text-fg">
+            {status?.is_loaded
+              ? $t('settings.loadedModel').replace('{name}', status.model_name ?? '')
+              : $t('settings.noModelLoaded')}
+          </p>
+          {#if status?.total_ram_bytes}
+            <p class="text-caption text-fg-muted">
+              {$t('settings.systemRam').replace('{ram}', formatBytes(status.total_ram_bytes))}
+            </p>
+          {/if}
+        </div>
+      </div>
+
+      {#if status?.inference_config}
+        {@const config = status.inference_config}
+        {@const fallbackDiagnostic = inferenceFallbackDiagnostic(config)}
+        <div class="border-t border-line pt-3 mb-3">
+          <p class="text-caption font-medium text-fg-muted mb-1">
+            {$t('settings.activeInferenceConfiguration')}
+          </p>
+          <p class="text-caption text-fg-muted">
+            {$t('settings.inferenceConfigSummary')
+              .replace('{context}', String(Math.round(config.context_size / 1024)))
+              .replace('{key}', config.kv_cache_k)
+              .replace('{value}', config.kv_cache_v)
+              .replace('{batch}', String(config.n_batch))
+              .replace('{microBatch}', String(config.n_ubatch))
+              .replace(
+                '{flash}',
+                $t(
+                  config.flash_attention === 'enabled'
+                    ? 'settings.flashEnabled'
+                    : 'settings.flashAuto'
+                )
+              )}
+          </p>
+          <p class="text-caption text-fg-subtle mt-1">
+            {$t('settings.completionHeadroom').replace(
+              '{tokens}',
+              String(config.completion_headroom)
+            )}
+          </p>
+          {#if fallbackDiagnostic}
+            <p
+              class="text-caption text-warning-fg bg-warning-subtle border border-warning-line rounded-card px-2.5 py-2 mt-2"
+            >
+              {fallbackDiagnostic}
+            </p>
+          {/if}
+        </div>
+      {/if}
+
+      {#if status?.last_generation_stats}
+        {@const s = status.last_generation_stats}
+        <div class="border-t border-line pt-3">
+          <p class="text-caption font-medium text-fg-muted mb-2">Last generation performance</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-surface-selected rounded-card p-2.5 text-center">
+              <p class="text-heading font-semibold text-fg">
+                {(s.ttft_ms / 1000).toFixed(2)}s
+              </p>
+              <p class="text-caption text-fg-muted">Time to first token</p>
+            </div>
+            <div class="bg-surface-selected rounded-card p-2.5 text-center">
+              <p class="text-heading font-semibold text-fg">
+                {s.tps.toFixed(1)} tok/s
+              </p>
+              <p class="text-caption text-fg-muted">Throughput</p>
+            </div>
+          </div>
+          <p class="text-caption text-fg-subtle mt-2">
+            {s.prompt_tokens} prompt tokens · {s.completion_tokens} generated tokens
+          </p>
+          <p class="text-caption text-fg-subtle mt-1">
+            {s.cache_hit ? 'Warm context' : 'Cold context'} · {s.reused_prompt_tokens} reused ·
+            {s.evaluated_prompt_tokens} evaluated · {s.prefill_ms.toFixed(0)}ms prefill
+          </p>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Installed Models List -->
+    <div class="mb-6">
+      <h3 class="text-md font-semibold text-fg mb-3">
+        {$t('settings.installedModels')}
+      </h3>
+
+      {#if loadingModels}
+        <p class="text-body text-fg-muted">{$t('settings.loadingModels')}</p>
+      {:else if installedModels.length === 0}
+        <p class="text-body text-fg-muted mb-4">
+          {$t('settings.noModelsInstalled')}
+        </p>
+      {:else}
+        <div class="space-y-3">
+          {#each installedModels as model}
+            <div class="bg-surface-hover border border-line rounded-card p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <p class="text-body font-medium text-fg">
+                      {model.name}
+                    </p>
+                    {#if model.is_default}
+                      <span class="px-2 py-0.5 text-caption rounded-card bg-accent text-on-accent">
+                        {$t('settings.defaultBadge')}
+                      </span>
+                    {/if}
+                    {#if model.is_loaded}
+                      <span
+                        class="px-2 py-0.5 text-caption rounded-card bg-success text-on-success"
+                      >
+                        {$t('settings.loadedBadge')}
+                      </span>
+                    {/if}
+                    {#if !model.exists_on_disk}
+                      <span class="px-2 py-0.5 text-caption rounded-card bg-danger text-on-danger">
+                        {$t('settings.modelMissingOnDisk')}
+                      </span>
+                    {/if}
+                  </div>
+                  <p class="text-caption text-fg-muted">
+                    {model.filename} • {formatBytes(model.size_bytes)}
+                  </p>
+                  {#if model.last_used}
+                    <p class="text-caption text-fg-subtle mt-1">
+                      {$t('settings.lastUsed').replace(
+                        '{date}',
+                        new Date(model.last_used).toLocaleDateString()
+                      )}
+                    </p>
+                  {/if}
+                </div>
+              </div>
+
+              <div class="flex gap-2 mt-3">
+                {#if model.exists_on_disk && !model.is_loaded}
+                  <button
+                    onclick={() => handleLoadModel(model.filename)}
+                    disabled={phase === 'loading'}
+                    class="h-7 px-2.5 text-caption rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
+                  >
+                    {$t('settings.load')}
+                  </button>
+                {/if}
+                {#if model.exists_on_disk && !model.is_default}
+                  <button
+                    onclick={() => handleSetDefaultModel(model.id)}
+                    class="h-7 px-2.5 text-caption rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors"
+                  >
+                    {$t('settings.setDefault')}
+                  </button>
+                {/if}
+                {#if !model.is_loaded}
+                  <button
+                    onclick={() => handleDeleteModel(model.id)}
+                    class="h-7 px-2.5 text-caption rounded-control bg-danger hover:bg-danger text-on-danger transition-colors"
+                  >
+                    {$t('settings.delete')}
+                  </button>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Available Models Card -->
+    <div class="mb-6">
+      <h3 class="text-md font-semibold text-fg mb-3">Available Models</h3>
+      <p class="text-caption text-fg-muted mb-4">
+        Choose a model based on your system's available RAM. Your system has {status?.total_ram_bytes
+          ? formatBytes(status.total_ram_bytes)
+          : '...'} of RAM.
+      </p>
+
+      {#if loadingModels}
+        <p class="text-body text-fg-muted">Loading available models...</p>
+      {:else}
+        <div class="space-y-3">
+          {#each availableModels as model}
+            {@const canRunModel = status?.total_ram_bytes
+              ? status.total_ram_bytes >= model.min_ram_gb * 1024 * 1024 * 1024
+              : false}
+            {@const modelChoice = {
+              name: model.name,
+              filename: model.filename,
+              size_bytes: model.size_bytes,
+              reason: model.description,
+            }}
+
+            <div
+              class="bg-surface-hover border border-line rounded-card p-4 {!canRunModel
+                ? 'opacity-60'
+                : ''}"
+            >
+              <div class="flex items-start justify-between gap-4 mb-2">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <p class="text-body font-medium text-fg">
+                      {model.name}
+                    </p>
+                    {#if model.is_downloaded}
+                      <span
+                        class="px-2 py-0.5 text-caption rounded-card bg-success text-on-success"
+                      >
+                        Downloaded
+                      </span>
+                    {/if}
+                    {#if !canRunModel}
+                      <span
+                        class="px-2 py-0.5 text-caption rounded-card bg-warning text-on-warning"
+                      >
+                        Needs {model.min_ram_gb}GB+ RAM
+                      </span>
+                    {:else}
+                      <span class="px-2 py-0.5 text-caption rounded-card bg-accent text-on-accent">
+                        Compatible
+                      </span>
+                    {/if}
+                  </div>
+                  <p class="text-caption text-fg-muted mb-1">
+                    {model.description}
+                  </p>
+                  {#if model.disclaimer}
+                    <p class="text-caption text-warning-fg mb-1">
+                      {model.disclaimer}
+                    </p>
+                  {/if}
+                  <p class="text-caption text-fg-subtle">
+                    Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB •
+                    Native context: {Math.round(model.context_window_tokens / 1024)}K
+                  </p>
+                  <p class="text-caption text-fg-subtle mt-1">
+                    {model.parameters} • {model.license}
+                  </p>
+                </div>
+              </div>
+
+              {#if !model.is_downloaded}
+                <div class="mt-3">
+                  {#if phase === 'downloading' && activeDownloadFilename === model.filename}
+                    <div class="mb-3">
+                      <div class="flex justify-between text-caption text-fg-muted mb-1">
+                        <span>Downloading...</span>
+                        <span>{downloadProgress ?? 0}%</span>
+                      </div>
+                      <div class="w-full bg-surface-selected rounded-full h-2">
+                        <div
+                          class="bg-accent h-2 rounded-full transition-colors"
+                          style="width: {downloadProgress ?? 0}%"
+                        ></div>
+                      </div>
+                    </div>
+                  {/if}
+
+                  <button
+                    onclick={() => handleDownloadNewModel(modelChoice)}
+                    disabled={phase === 'downloading' || phase === 'loading' || !canRunModel}
+                    class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
+                  >
+                    {phase === 'downloading' && activeDownloadFilename === model.filename
+                      ? 'Downloading...'
+                      : 'Download Model'}
+                  </button>
+                  {#if !canRunModel}
+                    <p class="text-caption text-warning-fg mt-2">
+                      This model requires at least {model.min_ram_gb}GB RAM. Your system has {status?.total_ram_bytes
+                        ? formatBytes(status.total_ram_bytes)
+                        : '...'}.
+                    </p>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Download New Model -->
+    {#if recommended}
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-fg mb-3">
+          {$t('settings.recommendedModelSection')}
+        </h3>
+        <div class="bg-surface-hover border border-line rounded-card p-4">
+          <div class="flex items-start justify-between gap-4 mb-2">
+            <div>
+              <p class="text-body font-medium text-fg">
+                {recommended.name}
+              </p>
+              <p class="text-caption text-fg-muted mt-1">
+                {recommended.reason}
+              </p>
+              <p class="text-caption text-fg-subtle mt-1">
+                {$t('settings.size').replace('{size}', formatBytes(recommended.size_bytes))}
+              </p>
+            </div>
+          </div>
+
+          {#if phase === 'downloading'}
+            <div class="mb-3">
+              <div class="flex justify-between text-caption text-fg-muted mb-1">
+                <span>{$t('settings.downloadingLabel')}</span>
+                <span>{downloadProgress ?? 0}%</span>
+              </div>
+              <div class="w-full bg-surface-selected rounded-full h-2">
+                <div
+                  class="bg-accent h-2 rounded-full transition-colors"
+                  style="width: {downloadProgress ?? 0}%"
+                ></div>
+              </div>
+            </div>
+          {/if}
+
+          {#if phase === 'error'}
+            <p class="text-caption text-danger-fg mb-3">{errorMsg}</p>
+          {/if}
+
+          <button
+            onclick={() => handleDownloadNewModel(recommended!)}
+            disabled={phase === 'downloading' || phase === 'loading'}
+            class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
+          >
+            {phase === 'downloading'
+              ? $t('settings.downloadingLabel')
+              : $t('settings.downloadModel')}
+          </button>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Task-Specific Model Assignment -->
+    <div class="mb-6">
+      <h3 class="text-md font-semibold text-fg mb-3">
+        {$t('settings.taskSpecificModels')}
+      </h3>
+      <p class="text-caption text-fg-muted mb-4">
+        {$t('settings.taskSpecificModelsDesc')}
+      </p>
+
+      {#if installedModels.length > 0}
+        <div class="space-y-3">
+          {#each ['summary', 'letter', 'report'] as taskType}
+            <div class="bg-surface-hover border border-line rounded-card p-4">
+              <label
+                for="task-{taskType}"
+                class="block text-body font-medium text-fg mb-2 capitalize"
+              >
+                {$t(`settings.${taskType}`)}
+              </label>
+              <select
+                id="task-{taskType}"
+                value={selectedTaskModel[taskType] || ''}
+                onchange={(e) => handleSetTaskModel(taskType, e.currentTarget.value)}
+                class="w-full px-3 py-2 text-body border border-line rounded-control bg-surface-raised text-fg focus:ring-2 focus:ring-accent/30 focus:border-transparent"
+              >
+                <option value="">{$t('settings.useDefaultModel')}</option>
+                {#each installedModels as model}
+                  <option value={model.id}>
+                    {model.name} ({formatBytes(model.size_bytes)})
+                  </option>
+                {/each}
+              </select>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <p class="text-caption text-fg-muted">
+          {$t('settings.installModelFirst')}
+        </p>
+      {/if}
+    </div>
+
+    {#if modelManagementError}
+      <div class="bg-danger-subtle border border-danger-line rounded-card p-3 mb-4">
+        <p class="text-body text-danger-fg">{modelManagementError}</p>
+      </div>
+    {/if}
+  </section>
 
   <section class="mt-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
+    <h2 class="text-heading font-semibold text-fg mb-4">
       {$t('settings.embeddingModel')}
     </h2>
-    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+    <p class="text-caption text-fg-muted mb-4">
       {$t('settings.embeddingModelDesc')}
     </p>
 
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 flex items-center gap-3">
+    <div class="bg-surface-hover rounded-card p-4 mb-4 flex items-center gap-3">
       <div
         class="w-3 h-3 rounded-full shrink-0 {embedStatus?.is_loaded
-          ? 'bg-green-500'
+          ? 'bg-success'
           : embedStatus?.is_downloaded
-            ? 'bg-amber-400'
-            : 'bg-red-500'}"
+            ? 'bg-warning'
+            : 'bg-danger'}"
       ></div>
       <div class="flex-1">
         {#if embedStatus?.is_loaded}
-          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">nomic-embed-text-v1.5</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">{$t('settings.embeddingLoaded')}</p>
+          <p class="text-body text-fg font-medium">nomic-embed-text-v1.5</p>
+          <p class="text-caption text-fg-muted">{$t('settings.embeddingLoaded')}</p>
         {:else if embedStatus?.is_downloaded}
-          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">
+          <p class="text-body text-fg font-medium">
             {$t('settings.embeddingCached')}
           </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
+          <p class="text-caption text-fg-muted">
             {$t('settings.embeddingCachedDesc')}
           </p>
         {:else}
-          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">
+          <p class="text-body text-fg font-medium">
             {$t('settings.embeddingNotDownloaded')}
           </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
+          <p class="text-caption text-fg-muted">
             {$t('settings.embeddingNotDownloadedDesc')}
           </p>
         {/if}
@@ -1327,7 +1331,7 @@
         <button
           onclick={handleInitEmbed}
           disabled={embedPhase === 'loading'}
-          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+          class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors shrink-0"
         >
           {embedPhase === 'loading' ? $t('common.loading') : $t('settings.loadNow')}
         </button>
@@ -1335,42 +1339,38 @@
     </div>
 
     {#if embedPhase === 'loading'}
-      <p class="text-xs text-blue-400">
+      <p class="text-caption text-accent-fg">
         {$t('settings.embeddingInitializing')}
       </p>
     {/if}
     {#if embedPhase === 'error'}
-      <p class="text-xs text-red-400">{embedError}</p>
+      <p class="text-caption text-danger-fg">{embedError}</p>
     {/if}
   </section>
 
   <section class="mt-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
-      Medikamenten-Referenzdatenbank
-    </h2>
-    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+    <h2 class="text-heading font-semibold text-fg mb-4">Medikamenten-Referenzdatenbank</h2>
+    <p class="text-caption text-fg-muted mb-4">
       Offizielle Wirkstoffdaten aus dem Swissmedic AIPS-Kompendium für Autocomplete und
-      Fachinformationen. Die Daten werden lokal gespeichert — keine Patientendaten verlassen
-      das Gerät.
+      Fachinformationen. Die Daten werden lokal gespeichert — keine Patientendaten verlassen das
+      Gerät.
     </p>
 
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 flex items-center gap-3">
+    <div class="bg-surface-hover rounded-card p-4 mb-4 flex items-center gap-3">
       <div
-        class="w-3 h-3 rounded-full shrink-0 {medRefVersion
-          ? 'bg-green-500'
-          : 'bg-gray-500'}"
+        class="w-3 h-3 rounded-full shrink-0 {medRefVersion ? 'bg-success' : 'bg-surface-selected'}"
       ></div>
       <div class="flex-1">
         {#if medRefVersion}
-          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">
+          <p class="text-body text-fg font-medium">
             Installiert — Version {medRefVersion}
           </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
+          <p class="text-caption text-fg-muted">
             Aktualisierung empfohlen, wenn eine neue AIPS-Version verfügbar ist.
           </p>
         {:else}
-          <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">Nicht installiert</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
+          <p class="text-body text-fg font-medium">Nicht installiert</p>
+          <p class="text-caption text-fg-muted">
             Herunterladen, um Autocomplete und Fachinformationen zu aktivieren.
           </p>
         {/if}
@@ -1379,7 +1379,7 @@
       <button
         onclick={handleDownloadMedRef}
         disabled={medRefPhase === 'downloading'}
-        class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+        class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors shrink-0"
       >
         {#if medRefPhase === 'downloading'}
           {medRefProgress}%…
@@ -1392,56 +1392,53 @@
     </div>
 
     {#if medRefPhase === 'downloading'}
-      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">
+      <div class="w-full bg-surface-selected rounded-full h-1.5 mb-2">
         <div
-          class="bg-blue-600 h-1.5 rounded-full transition-all"
+          class="bg-accent h-1.5 rounded-full transition-colors"
           style="width: {medRefProgress}%"
         ></div>
       </div>
-      <p class="text-xs text-blue-400">Datenbank wird heruntergeladen und verifiziert…</p>
+      <p class="text-caption text-accent-fg">Datenbank wird heruntergeladen und verifiziert…</p>
     {/if}
     {#if medRefPhase === 'error'}
-      <p class="text-xs text-red-400">{medRefError}</p>
+      <p class="text-caption text-danger-fg">{medRefError}</p>
     {/if}
   </section>
 
   <section class="mt-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
-      CSV Patient Import
-    </h2>
+    <h2 class="text-heading font-semibold text-fg mb-4">CSV Patient Import</h2>
 
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+    <div class="bg-surface-hover rounded-card p-4">
       <div class="mb-3">
-        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-          Import Patients from CSV
-        </p>
-        <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
-          Import patient records from a CSV file. The wizard will detect columns and allow you to map them to patient fields.
+        <p class="text-body font-medium text-fg mb-1">Import Patients from CSV</p>
+        <p class="text-caption text-fg-muted mb-3">
+          Import patient records from a CSV file. The wizard will detect columns and allow you to
+          map them to patient fields.
         </p>
       </div>
 
       <div class="mb-3">
         <button
           onclick={handleSelectCsvFile}
-          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+          class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover text-on-accent transition-colors"
         >
           Select CSV File
         </button>
         {#if selectedCsvPath}
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+          <p class="text-caption text-fg-muted mt-2">
             Selected: {selectedCsvPath.split('/').pop() || selectedCsvPath.split('\\').pop()}
           </p>
         {/if}
       </div>
 
       {#if csvPreview}
-        <div class="mb-4 p-3 bg-blue-900/20 border border-blue-700 rounded-lg">
-          <p class="text-xs font-medium text-blue-400 mb-2">
+        <div class="mb-4 p-3 bg-accent-subtle border border-accent rounded-card">
+          <p class="text-caption font-medium text-accent-fg mb-2">
             ✓ CSV file parsed: {csvPreview.total_rows} rows detected
           </p>
 
           {#if csvPreview.warnings.length > 0}
-            <div class="mb-3 text-xs text-amber-400">
+            <div class="mb-3 text-caption text-warning-fg">
               <p class="font-medium mb-1">Warnings:</p>
               {#each csvPreview.warnings as warning}
                 <p>• {warning.row ? `Row ${warning.row}: ` : ''}{warning.message}</p>
@@ -1450,16 +1447,16 @@
           {/if}
 
           <div class="mb-3">
-            <p class="text-xs font-medium text-gray-300 mb-2">Column Mapping:</p>
+            <p class="text-caption font-medium text-fg-muted mb-2">Column Mapping:</p>
             <div class="space-y-2">
               {#each csvPreview.headers as header}
                 <div class="flex items-center gap-2">
-                  <span class="text-xs text-gray-400 flex-1">{header}</span>
-                  <span class="text-xs text-gray-500">→</span>
+                  <span class="text-caption text-fg-muted flex-1">{header}</span>
+                  <span class="text-caption text-fg-muted">→</span>
                   <select
-                    value={columnMappings.find(m => m.csv_header === header)?.patient_field || ""}
+                    value={columnMappings.find((m) => m.csv_header === header)?.patient_field || ''}
                     onchange={(e) => updateColumnMapping(header, e.currentTarget.value)}
-                    class="text-xs px-2 py-1 rounded bg-gray-800 border border-gray-600 text-gray-100 focus:outline-none focus:border-blue-500"
+                    class="text-caption px-2 py-1 rounded-control bg-surface-hover border border-line text-fg focus:outline-none focus:border-accent"
                   >
                     {#each patientFields as field}
                       <option value={field.value}>{field.label}</option>
@@ -1471,21 +1468,21 @@
           </div>
 
           <div class="mb-3">
-            <p class="text-xs font-medium text-gray-300 mb-2">Sample Data (first 3 rows):</p>
+            <p class="text-caption font-medium text-fg-muted mb-2">Sample Data (first 3 rows):</p>
             <div class="overflow-x-auto">
-              <table class="text-xs w-full">
+              <table class="text-caption w-full">
                 <thead>
-                  <tr class="border-b border-gray-700">
+                  <tr class="border-b border-line">
                     {#each csvPreview.headers as header}
-                      <th class="text-left px-2 py-1 text-gray-300">{header}</th>
+                      <th class="text-left px-2 py-1 text-fg-muted">{header}</th>
                     {/each}
                   </tr>
                 </thead>
                 <tbody>
                   {#each csvPreview.sample_rows.slice(0, 3) as row}
-                    <tr class="border-b border-gray-800">
+                    <tr class="border-b border-line-subtle">
                       {#each row as cell}
-                        <td class="px-2 py-1 text-gray-400">{cell}</td>
+                        <td class="px-2 py-1 text-fg-muted">{cell}</td>
                       {/each}
                     </tr>
                   {/each}
@@ -1497,13 +1494,13 @@
           <button
             onclick={handleImportCsv}
             disabled={importing || !hasAllRequiredFieldsMapped()}
-            class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+            class="h-8 px-3 text-body rounded-control bg-success hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed text-on-success transition-colors"
           >
-            {importing ? "Importing…" : "Import Patients"}
+            {importing ? 'Importing…' : 'Import Patients'}
           </button>
 
           {#if !hasAllRequiredFieldsMapped()}
-            <p class="text-xs text-amber-400 mt-2">
+            <p class="text-caption text-warning-fg mt-2">
               * Please map all required fields (AHV Number, First Name, Last Name, Date of Birth)
             </p>
           {/if}
@@ -1511,23 +1508,33 @@
       {/if}
 
       {#if importResult}
-        <div class="mb-3 p-3 {importResult.success ? 'bg-green-900/20 border border-green-700' : 'bg-amber-900/20 border border-amber-700'} rounded-lg">
-          <p class="text-xs font-medium {importResult.success ? 'text-green-400' : 'text-amber-400'} mb-2">
-            {importResult.success ? "✓" : "⚠"} Import completed
+        <div
+          class="mb-3 p-3 {importResult.success
+            ? 'bg-success-subtle border border-success'
+            : 'bg-warning-subtle border border-warning-line'} rounded-card"
+        >
+          <p
+            class="text-caption font-medium {importResult.success
+              ? 'text-success-fg'
+              : 'text-warning-fg'} mb-2"
+          >
+            {importResult.success ? '✓' : '⚠'} Import completed
           </p>
-          <div class="text-xs text-gray-300 space-y-1">
+          <div class="text-caption text-fg-muted space-y-1">
             <p>Imported: {importResult.imported_count}</p>
             <p>Failed: {importResult.failed_count}</p>
           </div>
 
           {#if importResult.errors.length > 0}
-            <div class="mt-2 text-xs text-red-400 max-h-40 overflow-y-auto">
+            <div class="mt-2 text-caption text-danger-fg max-h-40 overflow-y-auto">
               <p class="font-medium mb-1">Errors:</p>
               {#each importResult.errors.slice(0, 10) as error}
                 <p>• {error.row ? `Row ${error.row}: ` : ''}{error.message}</p>
               {/each}
               {#if importResult.errors.length > 10}
-                <p class="text-gray-400 mt-1">... and {importResult.errors.length - 10} more errors</p>
+                <p class="text-fg-muted mt-1">
+                  ... and {importResult.errors.length - 10} more errors
+                </p>
               {/if}
             </div>
           {/if}
@@ -1535,59 +1542,50 @@
       {/if}
 
       {#if csvError}
-        <p class="text-xs text-red-400 mt-2">{csvError}</p>
+        <p class="text-caption text-danger-fg mt-2">{csvError}</p>
       {/if}
     </div>
   </section>
 
   <section class="mt-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
-      Encrypted Backup & Restore
-    </h2>
+    <h2 class="text-heading font-semibold text-fg mb-4">Encrypted Backup & Restore</h2>
 
     <!-- Create Backup -->
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+    <div class="bg-surface-hover rounded-card p-4 mb-4">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Create Encrypted Backup
-          </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            Export your entire vault (database + encrypted files) as a single
-            encrypted .dokassist archive. The backup is encrypted with your master
-            password and includes checksums for verification.
+          <p class="text-body font-medium text-fg">Create Encrypted Backup</p>
+          <p class="text-caption text-fg-muted mt-1">
+            Export your entire vault (database + encrypted files) as a single encrypted .dokassist
+            archive. The backup is encrypted with your master password and includes checksums for
+            verification.
           </p>
         </div>
         <button
           onclick={handleCreateBackup}
           disabled={creatingBackup}
-          class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+          class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors shrink-0"
         >
-          {creatingBackup ? "Creating…" : "Export Backup"}
+          {creatingBackup ? 'Creating…' : 'Export Backup'}
         </button>
       </div>
       {#if backupError}
-        <p class="text-xs text-red-400 mt-2">{backupError}</p>
+        <p class="text-caption text-danger-fg mt-2">{backupError}</p>
       {/if}
     </div>
 
     <!-- Restore Backup -->
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+    <div class="bg-surface-hover rounded-card p-4">
       <div class="mb-3">
-        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-          Restore from Backup
-        </p>
-        <p class="text-xs text-gray-600 dark:text-gray-400">
-          Restore your vault from a .dokassist backup archive. This will replace
-          ALL current data with the backup contents.
+        <p class="text-body font-medium text-fg mb-1">Restore from Backup</p>
+        <p class="text-caption text-fg-muted">
+          Restore your vault from a .dokassist backup archive. This will replace ALL current data
+          with the backup contents.
         </p>
       </div>
 
       <div class="mb-3">
-        <label
-          for="restore-backup-file"
-          class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
+        <label for="restore-backup-file" class="block text-caption font-medium text-fg-muted mb-2">
           Select Backup File (.dokassist)
         </label>
         <input
@@ -1595,18 +1593,16 @@
           type="file"
           accept=".dokassist"
           onchange={handleSelectRestoreFile}
-          class="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-400 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-200 dark:bg-gray-900 focus:outline-none"
+          class="block w-full text-body text-fg border border-line-strong rounded-control cursor-pointer bg-surface-selected focus:outline-none"
         />
       </div>
 
       {#if validatedBackupInfo}
-        <div
-          class="mb-3 p-3 bg-green-900/20 border border-green-700 rounded-lg"
-        >
-          <p class="text-xs font-medium text-green-400 mb-2">
+        <div class="mb-3 p-3 bg-success-subtle border border-success rounded-card">
+          <p class="text-caption font-medium text-success-fg mb-2">
             ✓ Backup validated successfully
           </p>
-          <div class="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+          <div class="text-caption text-fg-muted space-y-1">
             <p>
               Created: {new Date(validatedBackupInfo.created_at).toLocaleString()}
             </p>
@@ -1619,46 +1615,45 @@
           <button
             onclick={() => {
               showRestoreConfirm = true;
-              restoreInput = "";
-              restoreError = "";
+              restoreInput = '';
+              restoreError = '';
             }}
-            class="px-4 py-2 text-sm rounded-lg bg-amber-700 hover:bg-amber-600 text-white transition-colors"
+            class="h-8 px-3 text-body rounded-control bg-warning hover:bg-warning text-on-warning transition-colors"
           >
             Restore from This Backup
           </button>
         {/if}
 
         {#if showRestoreConfirm}
-          <div class="mt-3 border-t border-amber-700 pt-3">
-            <p class="text-sm text-amber-300 mb-3">
-              <strong>⚠️ WARNING:</strong> This will replace ALL current data with
-              the backup. Type <strong>RESTORE</strong> to confirm.
+          <div class="mt-3 border-t border-warning-line pt-3">
+            <p class="text-body text-warning-fg mb-3">
+              <strong>⚠️ WARNING:</strong> This will replace ALL current data with the backup. Type
+              <strong>RESTORE</strong> to confirm.
             </p>
             <div class="flex gap-2">
               <input
                 type="text"
                 bind:value={restoreInput}
                 placeholder="RESTORE"
-                class="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-500"
+                class="flex-1 px-3 py-2 text-body rounded-control bg-surface-selected border border-line-strong text-fg focus:outline-none focus:border-warning"
                 onkeydown={(e) => {
-                  if (e.key === "Enter" && restoreInput === "RESTORE")
-                    handleRestoreBackup();
+                  if (e.key === 'Enter' && restoreInput === 'RESTORE') handleRestoreBackup();
                 }}
               />
               <button
                 onclick={handleRestoreBackup}
-                disabled={restoring || restoreInput !== "RESTORE"}
-                class="px-4 py-2 text-sm rounded-lg bg-amber-700 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+                disabled={restoring || restoreInput !== 'RESTORE'}
+                class="h-8 px-3 text-body rounded-control bg-warning hover:bg-warning disabled:opacity-50 disabled:cursor-not-allowed text-on-warning transition-colors shrink-0"
               >
-                {restoring ? "Restoring…" : "Confirm Restore"}
+                {restoring ? 'Restoring…' : 'Confirm Restore'}
               </button>
               <button
                 onclick={() => {
                   showRestoreConfirm = false;
-                  restoreInput = "";
-                  restoreError = "";
+                  restoreInput = '';
+                  restoreError = '';
                 }}
-                class="px-4 py-2 text-sm rounded-lg bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors shrink-0"
+                class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors shrink-0"
               >
                 Cancel
               </button>
@@ -1668,32 +1663,32 @@
       {/if}
 
       {#if restoreError}
-        <p class="text-xs text-red-400 mt-2">{restoreError}</p>
+        <p class="text-caption text-danger-fg mt-2">{restoreError}</p>
       {/if}
     </div>
   </section>
 
   <section class="mt-10">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-2">
+    <h2 class="text-heading font-semibold text-fg mb-2">
       {$t('settings.about')}
     </h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400">
+    <p class="text-body text-fg-muted">
       {$t('settings.appVersion')}:
-      <span class="text-gray-900 dark:text-gray-100">{appVersion || '…'}</span>
+      <span class="text-fg">{appVersion || '…'}</span>
     </p>
   </section>
 
   <section class="mt-10">
-    <h2 class="text-lg font-semibold text-red-400 mb-4">{$t('settings.dangerZone')}</h2>
+    <h2 class="text-heading font-semibold text-danger-fg mb-4">{$t('settings.dangerZone')}</h2>
 
     <!-- Emergency Export -->
-    <div class="border border-amber-600 rounded-lg p-4 mb-4">
+    <div class="border border-warning rounded-card p-4 mb-4">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <p class="text-body font-medium text-fg">
             {$t('settings.emergencyExport')}
           </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <p class="text-caption text-fg-muted mt-1">
             {$t('settings.emergencyExportDesc')}
           </p>
         </div>
@@ -1704,7 +1699,7 @@
               exportInput = '';
               exportError = '';
             }}
-            class="px-4 py-2 text-sm rounded-lg bg-amber-700 hover:bg-amber-600 text-white transition-colors shrink-0"
+            class="h-8 px-3 text-body rounded-control bg-warning hover:bg-warning text-on-warning transition-colors shrink-0"
           >
             {$t('settings.exportData')}
           </button>
@@ -1712,8 +1707,8 @@
       </div>
 
       {#if showExportConfirm}
-        <div class="mt-4 border-t border-amber-700 pt-4">
-          <p class="text-sm text-amber-300 mb-3">
+        <div class="mt-4 border-t border-warning-line pt-4">
+          <p class="text-body text-warning-fg mb-3">
             {$t('settings.exportConfirmHint')}
           </p>
           <div class="flex gap-2">
@@ -1721,7 +1716,7 @@
               type="text"
               bind:value={exportInput}
               placeholder={$t('settings.exportConfirmWord')}
-              class="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-500"
+              class="flex-1 px-3 py-2 text-body rounded-control bg-surface-selected border border-line-strong text-fg focus:outline-none focus:border-warning"
               onkeydown={(e) => {
                 if (e.key === 'Enter' && exportInput === $t('settings.exportConfirmWord'))
                   handleExport();
@@ -1730,7 +1725,7 @@
             <button
               onclick={handleExport}
               disabled={exporting || exportInput !== $t('settings.exportConfirmWord')}
-              class="px-4 py-2 text-sm rounded-lg bg-amber-700 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+              class="h-8 px-3 text-body rounded-control bg-warning hover:bg-warning disabled:opacity-50 disabled:cursor-not-allowed text-on-warning transition-colors shrink-0"
             >
               {exporting ? $t('settings.exporting') : $t('settings.confirmExport')}
             </button>
@@ -1740,26 +1735,26 @@
                 exportInput = '';
                 exportError = '';
               }}
-              class="px-4 py-2 text-sm rounded-lg bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors shrink-0"
+              class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors shrink-0"
             >
               {$t('common.cancel')}
             </button>
           </div>
           {#if exportError}
-            <p class="text-xs text-red-400 mt-2">{exportError}</p>
+            <p class="text-caption text-danger-fg mt-2">{exportError}</p>
           {/if}
         </div>
       {/if}
     </div>
 
     <!-- Factory Reset -->
-    <div class="border border-red-800 rounded-lg p-4">
+    <div class="border border-danger-line rounded-card p-4">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <p class="text-body font-medium text-fg">
             {$t('settings.factoryReset')}
           </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <p class="text-caption text-fg-muted mt-1">
             {$t('settings.factoryResetShortDesc')}
           </p>
         </div>
@@ -1770,7 +1765,7 @@
               resetInput = '';
               resetError = '';
             }}
-            class="px-4 py-2 text-sm rounded-lg bg-red-700 hover:bg-red-600 text-white transition-colors shrink-0"
+            class="h-8 px-3 text-body rounded-control bg-danger hover:bg-danger-hover text-on-danger transition-colors shrink-0"
           >
             {$t('settings.factoryReset')}
           </button>
@@ -1778,8 +1773,8 @@
       </div>
 
       {#if showResetConfirm}
-        <div class="mt-4 border-t border-red-800 pt-4">
-          <p class="text-sm text-red-300 mb-3">
+        <div class="mt-4 border-t border-danger-line pt-4">
+          <p class="text-body text-danger-fg mb-3">
             {$t('settings.resetConfirmHint')}
           </p>
           <div class="flex gap-2">
@@ -1787,7 +1782,7 @@
               type="text"
               bind:value={resetInput}
               placeholder={$t('settings.resetConfirmWord')}
-              class="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500"
+              class="flex-1 px-3 py-2 text-body rounded-control bg-surface-selected border border-line-strong text-fg focus:outline-none focus:border-danger"
               onkeydown={(e) => {
                 if (e.key === 'Enter' && resetInput === $t('settings.resetConfirmWord'))
                   handleReset();
@@ -1796,7 +1791,7 @@
             <button
               onclick={handleReset}
               disabled={resetting || resetInput !== $t('settings.resetConfirmWord')}
-              class="px-4 py-2 text-sm rounded-lg bg-red-700 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+              class="h-8 px-3 text-body rounded-control bg-danger hover:bg-danger-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-danger transition-colors shrink-0"
             >
               {resetting ? $t('settings.resetting') : $t('settings.confirmResetAction')}
             </button>
@@ -1806,13 +1801,13 @@
                 resetInput = '';
                 resetError = '';
               }}
-              class="px-4 py-2 text-sm rounded-lg bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors shrink-0"
+              class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors shrink-0"
             >
               {$t('common.cancel')}
             </button>
           </div>
           {#if resetError}
-            <p class="text-xs text-red-400 mt-2">{resetError}</p>
+            <p class="text-caption text-danger-fg mt-2">{resetError}</p>
           {/if}
         </div>
       {/if}

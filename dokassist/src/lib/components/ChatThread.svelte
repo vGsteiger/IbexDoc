@@ -142,16 +142,14 @@
 
 <div class="flex flex-col h-full">
   {#if !isModelLoaded}
-    <div
-      class="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700 px-4 py-3 flex items-center gap-3"
-    >
-      <AlertTriangle size={18} class="text-amber-600 dark:text-amber-400" />
-      <p class="text-sm text-amber-700 dark:text-amber-300 flex-1">
+    <div class="bg-warning-subtle border-b border-warning-line px-4 py-3 flex items-center gap-3">
+      <AlertTriangle size={18} class="text-warning-fg" />
+      <p class="text-body text-warning-fg flex-1">
         {$t('chat.noModelDesc')}
       </p>
       <button
         onclick={() => goto('/settings')}
-        class="text-xs text-amber-600 dark:text-amber-400 underline hover:text-amber-700 dark:hover:text-amber-300"
+        class="text-caption text-warning-fg underline hover:text-warning-fg"
       >
         {$t('chat.openSettings')}
       </button>
@@ -181,17 +179,15 @@
       />
     {:else if isStreaming && !streamingContent}
       <div class="flex justify-start mb-3">
-        <div
-          class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-2"
-        >
-          <span class="animate-pulse text-gray-500 text-sm">●</span>
+        <div class="bg-surface-hover border border-line rounded-card rounded-bl-sm px-4 py-2">
+          <span class="animate-pulse text-fg-muted text-body">●</span>
         </div>
       </div>
     {/if}
 
     {#if errorMessage}
       <div
-        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-600 dark:text-red-400"
+        class="bg-danger-subtle border border-danger-line rounded-card px-4 py-3 text-body text-danger-fg"
       >
         {errorMessage}
       </div>
@@ -201,7 +197,7 @@
   </div>
 
   <!-- Input area -->
-  <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+  <div class="border-t border-line p-4">
     <div class="flex gap-2">
       <textarea
         bind:value={inputText}
@@ -209,16 +205,15 @@
         disabled={!isModelLoaded || isStreaming}
         placeholder={isModelLoaded ? $t('chat.typeMessageHint') : $t('settings.modelNotLoaded')}
         rows={2}
-        class="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100
-               placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500
-               disabled:opacity-50 disabled:cursor-not-allowed"
-      ></textarea>
+        class="flex-1 bg-surface-raised border border-line rounded-control px-3 py-2 text-body text-fg
+ resize-none focus:outline-none focus:border-accent
+ disabled:opacity-50 disabled:cursor-not-allowed"></textarea>
       <button
         onclick={handleSubmit}
         disabled={!isModelLoaded || isStreaming || !inputText.trim()}
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium
-               hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-               self-end"
+        class="h-8 px-3 bg-accent text-on-accent rounded-control text-body font-medium
+ hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+ self-end"
       >
         {isStreaming ? '…' : 'Senden'}
       </button>

@@ -65,14 +65,14 @@ describe('CommandPalette — keyboard handling', () => {
     const dashboard = screen.getByRole('button', { name: /go to dashboard/i });
     const patients = screen.getByRole('button', { name: /go to patients/i });
 
-    expect(dashboard).toHaveClass('bg-gray-100');
+    expect(dashboard).toHaveClass('bg-surface-selected');
 
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
-    await waitFor(() => expect(patients).toHaveClass('bg-gray-100'));
-    expect(dashboard).not.toHaveClass('bg-gray-100');
+    await waitFor(() => expect(patients).toHaveClass('bg-surface-selected'));
+    expect(dashboard).not.toHaveClass('bg-surface-selected');
 
     await fireEvent.keyDown(input, { key: 'ArrowUp' });
-    await waitFor(() => expect(dashboard).toHaveClass('bg-gray-100'));
+    await waitFor(() => expect(dashboard).toHaveClass('bg-surface-selected'));
   });
 
   it('runs the selected item on Enter', async () => {
