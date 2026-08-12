@@ -3,6 +3,16 @@
   import { goto } from '$app/navigation';
   import { listPatients, globalSearch, type Patient } from '$lib/api';
   import PatientCard from '$lib/components/PatientCard.svelte';
+  import {
+    Alert,
+    Button,
+    EmptyState,
+    Input,
+    PageHeader,
+    Select,
+    Spinner,
+  } from '$lib/components/ui';
+  import { Plus, Users } from 'lucide-svelte';
   import { t } from '$lib/translations';
 
   let patients = $state<Patient[]>([]);
@@ -99,40 +109,31 @@
 
 <div class="p-8">
   <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-display font-semibold text-fg">{$t('patients.title')}</h1>
-      <button
-        onclick={handleNewPatient}
-        class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
-      >
-        + {$t('patients.newPatient')}
-      </button>
-    </div>
+    <PageHeader title={$t('patients.title')}>
+      {#snippet actions()}
+        <Button variant="primary" onclick={handleNewPatient}>
+          <Plus size={14} />
+          {$t('patients.newPatient')}
+        </Button>
+      {/snippet}
+    </PageHeader>
 
-    <!-- Search and Sort -->
-    <div class="flex gap-4 mb-6">
-      <div class="flex-1">
-        <input
-          type="search"
-          placeholder={$t('patients.search')}
-          bind:value={searchQuery}
-          oninput={(e) => handleSearch(e.currentTarget.value)}
-          class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-        />
-      </div>
-      <select
-        bind:value={sortBy}
-        class="px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-      >
+    <div class="flex gap-2 mb-4">
+      <Input
+        type="search"
+        class="flex-1"
+        placeholder={$t('patients.search')}
+        bind:value={searchQuery}
+        oninput={(e: Event) => handleSearch((e.currentTarget as HTMLInputElement).value)}
+      />
+      <Select bind:value={sortBy} class="w-48">
         <option value="name">{$t('patients.sortByName')}</option>
         <option value="created">{$t('patients.sortByCreated')}</option>
-      </select>
+      </Select>
     </div>
 
-    <!-- Patient Count -->
     {#if !isLoading}
-      <div class="mb-4 text-body text-fg-muted">
+      <div class="mb-4 text-caption text-fg-subtle">
         {sortedPatients.length}
         {sortedPatients.length === 1 ? $t('patients.patient') : $t('patients.patients')}
         {#if searchQuery}
@@ -141,32 +142,27 @@
       </div>
     {/if}
 
-    <!-- Loading State -->
     {#if isLoading}
-      <div class="flex justify-center items-center py-12">
-        <div class="text-fg-muted">{$t('common.loading')}</div>
+      <div class="flex justify-center py-12">
+        <Spinner label={$t('common.loading')} />
       </div>
     {:else if error}
-      <div class="bg-danger-subtle border border-danger-line rounded-card p-4 text-danger-fg">
-        {error}
-      </div>
+      <Alert tone="danger">{error}</Alert>
     {:else if sortedPatients.length === 0}
-      <div class="text-center py-12">
-        <p class="text-fg-muted mb-4">
-          {searchQuery ? $t('patients.noSearchResults') : $t('patients.noPatients')}
-        </p>
-        {#if !searchQuery}
-          <button
-            onclick={handleNewPatient}
-            class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
-          >
-            {$t('patients.createFirst')}
-          </button>
-        {/if}
-      </div>
+      <EmptyState
+        icon={Users}
+        title={searchQuery ? $t('patients.noSearchResults') : $t('patients.noPatients')}
+      >
+        {#snippet action()}
+          {#if !searchQuery}
+            <Button variant="primary" onclick={handleNewPatient}>
+              {$t('patients.createFirst')}
+            </Button>
+          {/if}
+        {/snippet}
+      </EmptyState>
     {:else}
-      <!-- Patient List -->
-      <div class="grid gap-4">
+      <div class="grid gap-2">
         {#each sortedPatients as patient (patient.id)}
           <PatientCard {patient} onclick={() => handlePatientClick(patient.id)} />
         {/each}

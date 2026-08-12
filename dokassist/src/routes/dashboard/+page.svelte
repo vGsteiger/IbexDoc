@@ -5,6 +5,7 @@
   import { t } from '$lib/translations';
   import { language } from '$lib/stores/language';
   import { Calendar, Users, FileText, Plus } from 'lucide-svelte';
+  import { Alert, Badge, Button, Card, PageHeader, Spinner } from '$lib/components/ui';
 
   let data = $state<DashboardData | null>(null);
   let isLoading = $state(true);
@@ -40,50 +41,42 @@
 </script>
 
 <div class="p-8 max-w-7xl mx-auto">
-  <div class="mb-8">
-    <h1 class="text-display font-semibold text-fg">{$t('dashboard.title')}</h1>
-  </div>
+  <PageHeader title={$t('dashboard.title')} />
 
   {#if isLoading}
-    <div class="text-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-      <p class="mt-4 text-fg-muted">{$t('common.loading')}</p>
+    <div class="flex justify-center py-12">
+      <Spinner label={$t('common.loading')} />
     </div>
   {:else if error}
-    <div class="bg-danger-subtle border border-danger-line rounded-card p-6 text-center">
-      <p class="text-danger-fg">{error}</p>
-    </div>
+    <Alert tone="danger">{error}</Alert>
   {:else if data}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <!-- Today's Sessions -->
-      <div class="bg-surface-raised border border-line rounded-card p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-2 bg-accent-subtle rounded-card">
-            <Calendar size={20} class="text-accent-fg " />
-          </div>
-          <h2 class="text-heading font-semibold text-fg">{$t('dashboard.todaysSessions')}</h2>
+      <Card>
+        <!-- Panel icons are neutral: three differently-tinted chips read as
+             decoration, and colour here is reserved for status. -->
+        <div class="mb-3 flex items-center gap-2">
+          <Calendar size={16} class="text-fg-subtle" />
+          <h2 class="text-heading text-fg">{$t('dashboard.todaysSessions')}</h2>
         </div>
 
         {#if data.todays_sessions.length === 0}
           <p class="text-body text-fg-muted">{$t('dashboard.noSessionsToday')}</p>
         {:else}
-          <div class="space-y-3">
+          <div class="space-y-1">
             {#each data.todays_sessions as item}
               <button
                 onclick={() => goto(`/patients/${item.session.patient_id}/sessions`)}
-                class="w-full text-left bg-surface-sunken hover:bg-surface-hover rounded-control p-3 transition-colors"
+                class="w-full rounded-control p-2 text-left transition-colors duration-150 ease-standard hover:bg-surface-hover"
               >
-                <p class="text-body font-medium text-fg truncate">{item.patient_name}</p>
-                <div class="flex items-center gap-2 mt-1">
-                  <span
-                    class="text-caption px-2 py-0.5 rounded-full bg-accent-subtle text-accent-fg"
-                  >
-                    {getSessionTypeLabel(item.session.session_type)}
-                  </span>
+                <p class="truncate text-body font-medium text-fg">{item.patient_name}</p>
+                <div class="mt-1 flex items-center gap-2">
+                  <Badge>{getSessionTypeLabel(item.session.session_type)}</Badge>
                   {#if item.session.duration_minutes}
-                    <span class="text-caption text-fg-muted"
-                      >{item.session.duration_minutes} {$t('dashboard.minutes')}</span
-                    >
+                    <span class="text-caption text-fg-subtle">
+                      {item.session.duration_minutes}
+                      {$t('dashboard.minutes')}
+                    </span>
                   {/if}
                 </div>
               </button>
@@ -91,37 +84,32 @@
           </div>
         {/if}
 
-        <button
-          onclick={() => goto('/calendar')}
-          class="w-full mt-4 h-8 px-3 text-body font-medium text-accent-fg hover:bg-accent-subtle rounded-control transition-colors"
-        >
+        <Button full class="mt-3" onclick={() => goto('/calendar')}>
           {$t('dashboard.viewCalendar')}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       <!-- Recent Patients -->
-      <div class="bg-surface-raised border border-line rounded-card p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-2 bg-success-subtle rounded-card">
-            <Users size={20} class="text-success-fg " />
-          </div>
-          <h2 class="text-heading font-semibold text-fg">{$t('dashboard.recentPatients')}</h2>
+      <Card>
+        <div class="mb-3 flex items-center gap-2">
+          <Users size={16} class="text-fg-subtle" />
+          <h2 class="text-heading text-fg">{$t('dashboard.recentPatients')}</h2>
         </div>
 
         {#if data.recent_patients.length === 0}
           <p class="text-body text-fg-muted">{$t('dashboard.noRecentPatients')}</p>
         {:else}
-          <div class="space-y-3">
+          <div class="space-y-1">
             {#each data.recent_patients as patient}
               <button
                 onclick={() => goto(`/patients/${patient.id}`)}
-                class="w-full text-left bg-surface-sunken hover:bg-surface-hover rounded-control p-3 transition-colors"
+                class="w-full rounded-control p-2 text-left transition-colors duration-150 ease-standard hover:bg-surface-hover"
               >
                 <p class="text-body font-medium text-fg">
                   {patient.first_name}
                   {patient.last_name}
                 </p>
-                <p class="text-caption text-fg-muted mt-1">
+                <p class="mt-0.5 text-caption text-fg-subtle">
                   {formatDate(patient.date_of_birth)}
                 </p>
               </button>
@@ -129,58 +117,46 @@
           </div>
         {/if}
 
-        <div class="flex gap-2 mt-4">
-          <button
-            onclick={() => goto('/patients/new')}
-            class="flex-1 h-8 px-3 text-body font-medium text-on-success bg-success hover:bg-success-hover rounded-control transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus size={16} />
+        <div class="mt-3 flex gap-2">
+          <Button variant="primary" class="flex-1" onclick={() => goto('/patients/new')}>
+            <Plus size={14} />
             {$t('dashboard.newPatient')}
-          </button>
-          <button
-            onclick={() => goto('/patients')}
-            class="flex-1 h-8 px-3 text-body font-medium text-success-fg hover:bg-success-subtle rounded-control transition-colors"
-          >
+          </Button>
+          <Button class="flex-1" onclick={() => goto('/patients')}>
             {$t('dashboard.viewAllPatients')}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       <!-- Sessions with Incomplete Notes -->
-      <div class="bg-surface-raised border border-line rounded-card p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-2 bg-warning-subtle rounded-card">
-            <FileText size={20} class="text-warning-fg " />
-          </div>
-          <h2 class="text-heading font-semibold text-fg">{$t('dashboard.incompleteNotes')}</h2>
+      <Card>
+        <div class="mb-3 flex items-center gap-2">
+          <FileText size={16} class="text-fg-subtle" />
+          <h2 class="text-heading text-fg">{$t('dashboard.incompleteNotes')}</h2>
         </div>
 
         {#if data.sessions_with_incomplete_notes.length === 0}
           <p class="text-body text-fg-muted">{$t('dashboard.noIncompleteNotes')}</p>
         {:else}
-          <div class="space-y-3 max-h-96 overflow-y-auto">
+          <div class="max-h-96 space-y-1 overflow-y-auto">
             {#each data.sessions_with_incomplete_notes as item}
               <button
                 onclick={() =>
                   goto(`/patients/${item.session.patient_id}/sessions/${item.session.id}`)}
-                class="w-full text-left bg-surface-sunken hover:bg-surface-hover rounded-control p-3 transition-colors"
+                class="w-full rounded-control p-2 text-left transition-colors duration-150 ease-standard hover:bg-surface-hover"
               >
-                <p class="text-body font-medium text-fg truncate">{item.patient_name}</p>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="text-caption text-fg-muted">
+                <p class="truncate text-body font-medium text-fg">{item.patient_name}</p>
+                <div class="mt-1 flex items-center gap-2">
+                  <span class="text-caption text-fg-subtle">
                     {formatDate(item.session.session_date)}
                   </span>
-                  <span
-                    class="text-caption px-2 py-0.5 rounded-full bg-warning-subtle text-warning-fg"
-                  >
-                    {getSessionTypeLabel(item.session.session_type)}
-                  </span>
+                  <Badge tone="warning">{getSessionTypeLabel(item.session.session_type)}</Badge>
                 </div>
               </button>
             {/each}
           </div>
         {/if}
-      </div>
+      </Card>
     </div>
   {/if}
 </div>

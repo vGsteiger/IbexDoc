@@ -156,6 +156,31 @@ describe('Badge and Card', () => {
     expect(card).toHaveClass('border-line');
     expect(card?.className).not.toMatch(/shadow-/);
   });
+
+  // List rows are clickable cards, so Card renders a real button rather than
+  // leaving callers to hand-roll one with card classes.
+  it('renders a button when given onclick, and fires it', async () => {
+    let clicks = 0;
+    render(Card, { onclick: () => (clicks += 1) });
+    const card = screen.getByRole('button');
+    expect(card).toHaveClass('rounded-card');
+    await fireEvent.click(card);
+    expect(clicks).toBe(1);
+  });
+
+  it('renders a link when given href', () => {
+    render(Card, { href: '/patients/1' });
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/patients/1');
+  });
+
+  it('gains the hover affordance implicitly when actionable', () => {
+    const { unmount } = render(Card, { onclick: () => {} });
+    expect(screen.getByRole('button')).toHaveClass('hover:bg-surface-hover');
+    unmount();
+
+    const { container } = render(Card);
+    expect(container.querySelector('div')?.className).not.toMatch(/hover:/);
+  });
 });
 
 describe('Spinner', () => {
