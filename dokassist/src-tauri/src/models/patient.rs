@@ -251,9 +251,7 @@ mod tests {
         // We need to extract the connection from the MutexGuard
         // For testing, let's create a new connection directly
         let conn = Connection::open(&db_path).unwrap();
-        let key_hex = hex::encode(key);
-        conn.execute_batch(&format!("PRAGMA key = \"x'{}'\";", key_hex))
-            .unwrap();
+        crate::database::apply_sqlcipher_key(&conn, &key).unwrap();
         (dir, conn)
     }
 
