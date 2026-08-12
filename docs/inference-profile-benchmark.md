@@ -119,6 +119,13 @@ Resident memory is read from `proc_pidinfo`, not `getrusage`. The `getrusage`
 high-water mark used by the older benchmarks never falls, which makes it useless
 for comparing arms; the resident figure drops when an engine is dropped.
 
+Every host probe records `null` rather than `0` when it cannot be read. Zero is
+a legitimate reading for a delta, so a zero fallback would make a failed probe
+indistinguishable from a real measurement — and for swap, which is a *failure*
+signal, that would silently report "no swap growth" on a host where the reading
+never worked. Collation says `fit unverified` in that case instead of
+`equivalent`.
+
 The effective configuration is re-read *after* the probes, not at load time. A
 Flash Attention or KV-type fallback is only chosen when the first context is
 created, so a configuration read at load would report what was requested rather
@@ -140,8 +147,10 @@ good-looking number:
 2. **Swap growth** — recall held, but the run grew system swap. Reported as not
    fitting regardless of how fast it was. Sustained swap is a failure signal,
    not capacity to use.
-3. **Equivalent** — byte-identical answers at temperature 0.
-4. **Recall preserved, wording differs** — the expected outcome for a KV-cache
+3. **Fit unverified** — recall held, but the swap probe could not be read, so
+   the arm has not established that it fits.
+4. **Equivalent** — byte-identical answers at temperature 0.
+5. **Recall preserved, wording differs** — the expected outcome for a KV-cache
    change that costs nothing measurable.
 
 Latency and throughput are reported as ratios against the baseline, so a sweep

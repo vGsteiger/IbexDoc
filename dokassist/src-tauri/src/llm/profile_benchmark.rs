@@ -121,8 +121,12 @@ fn planted_haystack(paragraphs: usize) -> String {
 
 /// Grow the haystack to just under `target_tokens` as measured by `count`.
 ///
-/// It never exceeds the target: an over-long prompt would be rejected by the
-/// context budget and turn a memory finding into a test error.
+/// Staying under the target matters: an over-long prompt would be rejected by
+/// the context budget, turning a memory finding into a test error. There is one
+/// exception, and it wins over the budget — the haystack never drops below one
+/// paragraph per needle, because a haystack that shed a needle to hit a tiny
+/// budget would measure nothing at all. Real budgets are thousands of tokens,
+/// so that floor only binds in tests.
 fn haystack_for_tokens(target_tokens: usize, count: &dyn Fn(&str) -> usize) -> String {
     let sample_paragraphs = 64;
     let per_paragraph = count(&planted_haystack(sample_paragraphs))
@@ -278,18 +282,19 @@ pub(crate) struct ArmRecord {
     pub estimated_total_bytes: Option<u64>,
     pub inference_budget_bytes: Option<u64>,
     /// Resident memory with the weights loaded but no context allocated.
-    pub resident_after_model_load_bytes: u64,
+    /// `None` when the host probe is unavailable, never a zero stand-in.
+    pub resident_after_model_load_bytes: Option<u64>,
     /// Resident memory once the first context — and therefore the KV cache —
     /// exists. The difference from `resident_after_model_load_bytes` is what
     /// the context configuration actually costs.
-    pub resident_after_first_context_bytes: u64,
+    pub resident_after_first_context_bytes: Option<u64>,
     /// Highest resident memory seen across the probe set.
-    pub peak_resident_bytes: u64,
+    pub peak_resident_bytes: Option<u64>,
     /// System-wide swap growth over the run. Sustained growth is a failure
     /// signal, not headroom.
-    pub swap_used_delta_bytes: i64,
+    pub swap_used_delta_bytes: Option<i64>,
     /// Page-ins charged to this process over the run.
-    pub page_ins_delta: u64,
+    pub page_ins_delta: Option<u64>,
     pub probes: Vec<ProbeRecord>,
 }
 
@@ -312,10 +317,12 @@ pub(crate) struct ArmComparison {
     pub ttft_ratio: f64,
     pub total_latency_ratio: f64,
     pub tps_ratio: f64,
-    pub peak_resident_bytes: u64,
-    pub peak_resident_delta_bytes: i64,
-    pub swap_used_delta_bytes: i64,
-    pub page_ins_delta: u64,
+    pub peak_resident_bytes: Option<u64>,
+    /// `None` when either side's peak could not be read — an unmeasured delta,
+    /// not a zero one.
+    pub peak_resident_delta_bytes: Option<i64>,
+    pub swap_used_delta_bytes: Option<i64>,
+    pub page_ins_delta: Option<u64>,
     pub verdict: String,
 }
 
@@ -376,7 +383,6 @@ pub(crate) fn collate(records: &[ArmRecord]) -> Result<Vec<ArmComparison>, Strin
                 .count();
             let recalled = record.probes.iter().filter(|probe| probe.recalled).count();
 
-            let swapped = record.swap_used_delta_bytes > 0;
             let verdict = if !lost_depths.is_empty() {
                 format!(
                     "quality regression: needle(s) at depth {} lost against the baseline",
@@ -386,8 +392,13 @@ pub(crate) fn collate(records: &[ArmRecord]) -> Result<Vec<ArmComparison>, Strin
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
-            } else if swapped {
+            } else if record.swap_used_delta_bytes.is_some_and(|delta| delta > 0) {
                 "recall preserved, but the run grew system swap; treat as not fitting".to_string()
+            } else if record.swap_used_delta_bytes.is_none() {
+                // Not the same as "no swap": an unread failure signal cannot be
+                // reported as a clean fit.
+                "recall preserved, but swap could not be read on this host; fit unverified"
+                    .to_string()
             } else if identical_answers == paired.len() && !paired.is_empty() {
                 "equivalent: identical answers at temperature 0".to_string()
             } else {
@@ -416,8 +427,10 @@ pub(crate) fn collate(records: &[ArmRecord]) -> Result<Vec<ArmComparison>, Strin
                     mean(baseline.probes.iter().map(|probe| probe.tps)),
                 ),
                 peak_resident_bytes: record.peak_resident_bytes,
-                peak_resident_delta_bytes: record.peak_resident_bytes as i64
-                    - baseline.peak_resident_bytes as i64,
+                peak_resident_delta_bytes: record
+                    .peak_resident_bytes
+                    .zip(baseline.peak_resident_bytes)
+                    .map(|(arm, base)| arm as i64 - base as i64),
                 swap_used_delta_bytes: record.swap_used_delta_bytes,
                 page_ins_delta: record.page_ins_delta,
                 verdict,
@@ -427,6 +440,12 @@ pub(crate) fn collate(records: &[ArmRecord]) -> Result<Vec<ArmComparison>, Strin
 }
 
 // ── Host memory probes ──────────────────────────────────────────────────────
+//
+// Every probe returns `Option`, never a zero fallback. Zero is a plausible
+// reading for a delta, so a probe that failed and a probe that measured nothing
+// would be indistinguishable — and for swap, which is a failure signal, that
+// would silently report "no swap growth" on a host where the reading never
+// worked.
 
 #[cfg(target_os = "macos")]
 fn task_info() -> Option<libc::proc_taskinfo> {
@@ -448,18 +467,18 @@ fn task_info() -> Option<libc::proc_taskinfo> {
 /// again when an engine is dropped, which is what makes per-arm comparison
 /// possible at all.
 #[cfg(target_os = "macos")]
-fn resident_bytes() -> u64 {
-    task_info().map_or(0, |info| info.pti_resident_size)
+fn resident_bytes() -> Option<u64> {
+    task_info().map(|info| info.pti_resident_size)
 }
 
 #[cfg(target_os = "macos")]
-fn page_ins() -> u64 {
-    task_info().map_or(0, |info| info.pti_pageins.max(0) as u64)
+fn page_ins() -> Option<u64> {
+    task_info().map(|info| info.pti_pageins.max(0) as u64)
 }
 
 /// System-wide swap in use, from `vm.swapusage`.
 #[cfg(target_os = "macos")]
-fn swap_used_bytes() -> u64 {
+fn swap_used_bytes() -> Option<u64> {
     let mut usage = std::mem::MaybeUninit::<libc::xsw_usage>::zeroed();
     let mut len = std::mem::size_of::<libc::xsw_usage>();
     let name = std::ffi::CString::new("vm.swapusage").expect("static sysctl name");
@@ -472,24 +491,20 @@ fn swap_used_bytes() -> u64 {
             0,
         )
     } == 0;
-    if ok {
-        unsafe { usage.assume_init() }.xsu_used
-    } else {
-        0
-    }
+    ok.then(|| unsafe { usage.assume_init() }.xsu_used)
 }
 
 #[cfg(not(target_os = "macos"))]
-fn resident_bytes() -> u64 {
-    0
+fn resident_bytes() -> Option<u64> {
+    None
 }
 #[cfg(not(target_os = "macos"))]
-fn page_ins() -> u64 {
-    0
+fn page_ins() -> Option<u64> {
+    None
 }
 #[cfg(not(target_os = "macos"))]
-fn swap_used_bytes() -> u64 {
-    0
+fn swap_used_bytes() -> Option<u64> {
+    None
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -528,11 +543,11 @@ mod tests {
             fallback_code: None,
             estimated_total_bytes: None,
             inference_budget_bytes: None,
-            resident_after_model_load_bytes: 6 * GIB,
-            resident_after_first_context_bytes: 8 * GIB,
-            peak_resident_bytes: 9 * GIB,
-            swap_used_delta_bytes: 0,
-            page_ins_delta: 0,
+            resident_after_model_load_bytes: Some(6 * GIB),
+            resident_after_first_context_bytes: Some(8 * GIB),
+            peak_resident_bytes: Some(9 * GIB),
+            swap_used_delta_bytes: Some(0),
+            page_ins_delta: Some(0),
             probes,
         }
     }
@@ -703,7 +718,7 @@ mod tests {
     fn a_faster_arm_that_swapped_is_not_reported_as_a_win() {
         let baseline = record(BASELINE_ARM, vec![probe(50, true, "a", 200.0)]);
         let mut swapping = record("q4-32k", vec![probe(50, true, "a", 100.0)]);
-        swapping.swap_used_delta_bytes = 512 * 1024 * 1024;
+        swapping.swap_used_delta_bytes = Some(512 * 1024 * 1024);
         let table = collate(&[baseline, swapping]).unwrap();
 
         assert!((table[1].total_latency_ratio - 0.5).abs() < 1e-9);
@@ -711,6 +726,28 @@ mod tests {
             table[1].verdict.contains("swap"),
             "swap growth must survive into the verdict: {}",
             table[1].verdict
+        );
+    }
+
+    #[test]
+    fn an_unread_swap_probe_is_not_reported_as_no_swap() {
+        let baseline = record(BASELINE_ARM, vec![probe(50, true, "a", 100.0)]);
+        let mut unmeasured = record("q4-32k", vec![probe(50, true, "a", 100.0)]);
+        // A host where `vm.swapusage` could not be read. Identical answers would
+        // otherwise earn an "equivalent" verdict it has not established.
+        unmeasured.swap_used_delta_bytes = None;
+        unmeasured.peak_resident_bytes = None;
+        let table = collate(&[baseline, unmeasured]).unwrap();
+
+        assert!(
+            table[1].verdict.contains("could not be read"),
+            "an unread failure signal must not read as a clean fit: {}",
+            table[1].verdict
+        );
+        assert!(!table[1].verdict.contains("equivalent"));
+        assert_eq!(
+            table[1].peak_resident_delta_bytes, None,
+            "an unmeasured delta is None, not zero"
         );
     }
 
@@ -816,7 +853,9 @@ mod tests {
             / 100;
         let haystack = haystack_for_tokens(budget, &|text| engine.count_tokens(text));
 
-        let mut resident_after_first_context = 0;
+        let mut resident_after_first_context: Option<u64> = None;
+        // `Option` orders `None` below every `Some`, so this max is the highest
+        // successful reading and stays `None` only if every reading failed.
         let mut peak_resident = resident_after_model_load;
         let mut probes = Vec::new();
         for needle in NEEDLES {
@@ -838,8 +877,10 @@ mod tests {
                 .last_generation_stats()
                 .expect("a completed generation records stats");
             let resident = resident_bytes();
-            if resident_after_first_context == 0 {
-                resident_after_first_context = resident;
+            // Only a successful reading counts, so a transient probe failure on
+            // the first pass is retried on the next rather than locked in.
+            if resident.is_some() {
+                resident_after_first_context = resident_after_first_context.or(resident);
             }
             peak_resident = peak_resident.max(resident);
             probes.push(ProbeRecord {
@@ -880,8 +921,12 @@ mod tests {
             resident_after_model_load_bytes: resident_after_model_load,
             resident_after_first_context_bytes: resident_after_first_context,
             peak_resident_bytes: peak_resident,
-            swap_used_delta_bytes: swap_used_bytes() as i64 - swap_before as i64,
-            page_ins_delta: page_ins().saturating_sub(page_ins_before),
+            swap_used_delta_bytes: swap_before
+                .zip(swap_used_bytes())
+                .map(|(before, after)| after as i64 - before as i64),
+            page_ins_delta: page_ins_before
+                .zip(page_ins())
+                .map(|(before, after)| after.saturating_sub(before)),
             probes,
         };
 
