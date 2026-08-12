@@ -24,6 +24,32 @@ describe('AhvInput rendering', () => {
   });
 });
 
+describe('AhvInput label association', () => {
+  // A <label for=…> in a parent form can only associate if the id reaches the
+  // inner input; without this the label was inert for pointer and screen-reader
+  // users alike.
+  it('forwards an id to the inner input', () => {
+    render(AhvInput, { id: 'ahv_number' });
+    expect(screen.getByRole('textbox')).toHaveAttribute('id', 'ahv_number');
+  });
+
+  it('associates with an external label carrying a matching for', () => {
+    document.body.insertAdjacentHTML('afterbegin', '<label for="ahv_number">AHV Number</label>');
+    render(AhvInput, { id: 'ahv_number' });
+    expect(screen.getByLabelText('AHV Number')).toBe(screen.getByRole('textbox'));
+  });
+
+  it('omits the id attribute when none is given', () => {
+    render(AhvInput);
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('id');
+  });
+
+  it('marks the field invalid for assistive tech when an error is passed', () => {
+    render(AhvInput, { error: 'AHV number is required' });
+    expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
 describe('AhvInput validation', () => {
   it('shows a progress message while fewer than 13 digits are entered', async () => {
     render(AhvInput);

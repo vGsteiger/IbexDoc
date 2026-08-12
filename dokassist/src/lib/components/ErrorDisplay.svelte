@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppError } from '$lib/api';
   import { getUserFriendlyMessage } from '$lib/api';
+  import { Alert } from '$lib/components/ui';
 
   interface Props {
     error: AppError | null;
@@ -26,60 +27,45 @@
 </script>
 
 {#if error}
-  <div class="bg-danger-subtle border border-danger-line rounded-card p-4">
-    <div class="flex items-start justify-between mb-2">
-      <div class="flex-1">
-        <p class="text-danger-fg text-body font-medium mb-1">
-          {getUserFriendlyMessage(error)}
-        </p>
-        <div class="flex items-center gap-2 text-caption text-fg-muted">
-          <span class="font-mono">{error.ref}</span>
-          <button
-            onclick={copyErrorRef}
-            class="text-accent-fg hover:text-accent-fg underline"
-            title="Copy error reference"
-          >
-            Copy
-          </button>
-        </div>
+  <Alert tone="danger" title={getUserFriendlyMessage(error)}>
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex items-center gap-2 text-caption">
+        <span class="font-mono">{error.ref}</span>
+        <button onclick={copyErrorRef} class="underline hover:text-fg" title="Copy error reference">
+          Copy
+        </button>
       </div>
       {#if showDetails}
-        <button
-          onclick={() => (expanded = !expanded)}
-          class="text-fg-muted hover:text-fg text-caption ml-4"
-        >
+        <button onclick={() => (expanded = !expanded)} class="shrink-0 text-caption hover:text-fg">
           {expanded ? 'Hide Details' : 'Show Details'}
         </button>
       {/if}
     </div>
 
     {#if showDetails && expanded}
-      <div class="mt-3 pt-3 border-t border-danger-line">
-        <div class="space-y-2 text-caption">
-          <div>
-            <span class="text-fg-muted">Error Code:</span>
-            <span class="ml-2 font-mono text-fg-muted">{error.code}</span>
+      <div class="mt-3 border-t border-danger-line pt-3">
+        <dl class="space-y-1 text-caption">
+          <div class="flex gap-2">
+            <dt>Error Code:</dt>
+            <dd class="font-mono">{error.code}</dd>
           </div>
-          <div>
-            <span class="text-fg-muted">Technical Message:</span>
-            <span class="ml-2 text-fg-muted">{error.message}</span>
+          <div class="flex gap-2">
+            <dt>Technical Message:</dt>
+            <dd>{error.message}</dd>
           </div>
-          <div>
-            <span class="text-fg-muted">Reference ID:</span>
-            <span class="ml-2 font-mono text-fg-muted">{error.ref}</span>
+          <div class="flex gap-2">
+            <dt>Reference ID:</dt>
+            <dd class="font-mono">{error.ref}</dd>
           </div>
-        </div>
-        <button
-          onclick={copyFullError}
-          class="mt-3 text-caption text-accent-fg hover:text-accent-fg underline"
-        >
+        </dl>
+        <button onclick={copyFullError} class="mt-3 text-caption underline hover:text-fg">
           Copy Full Error Details
         </button>
       </div>
     {/if}
 
-    <p class="text-caption text-fg-muted mt-2">
+    <p class="mt-2 text-caption">
       Share the error reference with support if you need help resolving this issue.
     </p>
-  </div>
+  </Alert>
 {/if}

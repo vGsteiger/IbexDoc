@@ -1,12 +1,15 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { Input } from '$lib/components/ui';
 
   interface Props {
     value?: string;
     error?: string;
+    /** Forwarded to the inner input so a <label for=…> can associate with it. */
+    id?: string;
   }
 
-  let { value = $bindable(''), error = '' }: Props = $props();
+  let { value = $bindable(''), error = '', id = undefined }: Props = $props();
 
   const dispatch = createEventDispatcher<{ input: string; blur: void }>();
 
@@ -104,23 +107,18 @@
 </script>
 
 <div class="w-full">
-  <input
-    type="text"
+  <Input
+    {id}
     bind:value={displayValue}
     oninput={handleInput}
     onblur={handleBlur}
     placeholder="756.____.____.__ "
-    class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {!isValid &&
-    displayValue
-      ? 'border-danger-line'
-      : error
-        ? 'border-danger-line'
-        : 'border-line'}"
+    invalid={Boolean((!isValid && displayValue) || error)}
     maxlength="16"
   />
   {#if validationError && displayValue}
-    <p class="mt-1 text-body text-danger-fg">{validationError}</p>
+    <p class="mt-1 text-caption text-danger-fg">{validationError}</p>
   {:else if error}
-    <p class="mt-1 text-body text-danger-fg">{error}</p>
+    <p class="mt-1 text-caption text-danger-fg">{error}</p>
   {/if}
 </div>

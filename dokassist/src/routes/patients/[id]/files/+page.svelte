@@ -5,8 +5,9 @@
   import FileUploader from '$lib/components/FileUploader.svelte';
   import FileCard from '$lib/components/FileCard.svelte';
   import FileViewer from '$lib/components/FileViewer.svelte';
-  import { Hourglass, FolderOpen } from 'lucide-svelte';
+  import { FolderOpen } from 'lucide-svelte';
   import { t } from '$lib/translations';
+  import { Alert, EmptyState, PageHeader, Spinner } from '$lib/components/ui';
 
   let patientId = $derived($page.params.id!);
   let files = $state<FileRecord[]>([]);
@@ -89,37 +90,28 @@
 </script>
 
 <div class="p-8">
-  <h2 class="text-title font-semibold text-fg mb-6">{$t('files.title')}</h2>
+  <PageHeader title={$t('files.title')} />
 
-  <div class="mb-8">
+  <div class="mb-6">
     <FileUploader {patientId} onUpload={handleUpload} />
   </div>
 
   {#if errorMessage}
-    <div class="bg-danger-subtle border border-danger-line rounded-card p-4 mb-6">
-      <p class="text-body text-danger-fg">{errorMessage}</p>
-    </div>
+    <Alert tone="danger" class="mb-4">{errorMessage}</Alert>
   {/if}
 
   {#if isLoading}
-    <div class="flex items-center justify-center py-12">
-      <div class="text-center">
-        <div class="mb-4 flex justify-center text-fg-muted">
-          <Hourglass size={48} />
-        </div>
-        <p class="text-fg-muted">{$t('files.loading')}</p>
-      </div>
+    <div class="flex justify-center py-12">
+      <Spinner label={$t('files.loading')} />
     </div>
   {:else if files.length === 0}
-    <div class="text-center py-12 bg-surface-sunken rounded-card border border-line-subtle">
-      <div class="mb-4 flex justify-center text-fg-muted">
-        <FolderOpen size={48} />
-      </div>
-      <p class="text-fg-muted">{$t('files.noFilesUploaded')}</p>
-      <p class="text-body text-fg-subtle mt-2">{$t('files.uploadHint')}</p>
-    </div>
+    <EmptyState
+      icon={FolderOpen}
+      title={$t('files.noFilesUploaded')}
+      description={$t('files.uploadHint')}
+    />
   {:else}
-    <div class="space-y-4">
+    <div class="space-y-2">
       {#each files as file (file.id)}
         <FileCard {file} onView={handleView} onDownload={handleDownload} onDelete={handleDelete} />
       {/each}

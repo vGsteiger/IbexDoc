@@ -2,6 +2,7 @@
   import { createEventDispatcher, untrack } from 'svelte';
   import type { Patient, CreatePatient, UpdatePatient } from '$lib/api';
   import AhvInput from './AhvInput.svelte';
+  import { Button, Field, Input, Select, Textarea } from '$lib/components/ui';
   import { t } from '$lib/translations';
 
   interface Props {
@@ -128,202 +129,87 @@
     e.preventDefault();
     handleSubmit();
   }}
-  class="space-y-6"
+  class="space-y-4"
 >
-  <!-- AHV Number -->
-  <div>
-    <label for="ahv_number" class="block text-body font-medium text-fg-muted mb-2">
-      {$t('patients.ahvNumber')} <span class="text-danger-fg">*</span>
-    </label>
-    <AhvInput bind:value={formData.ahv_number} error={errors.ahv_number} />
+  <Field label={$t('patients.ahvNumber')} for="ahv_number" required>
+    <AhvInput id="ahv_number" bind:value={formData.ahv_number} error={errors.ahv_number} />
+  </Field>
+
+  <div class="grid grid-cols-2 gap-3">
+    <Field label={$t('patients.firstName')} for="first_name" required error={errors.first_name}>
+      <Input id="first_name" bind:value={formData.first_name} invalid={!!errors.first_name} />
+    </Field>
+
+    <Field label={$t('patients.lastName')} for="last_name" required error={errors.last_name}>
+      <Input id="last_name" bind:value={formData.last_name} invalid={!!errors.last_name} />
+    </Field>
   </div>
 
-  <!-- Name Fields -->
-  <div class="grid grid-cols-2 gap-4">
-    <div>
-      <label for="first_name" class="block text-body font-medium text-fg-muted mb-2">
-        {$t('patients.firstName')} <span class="text-danger-fg">*</span>
-      </label>
-      <input
-        type="text"
-        id="first_name"
-        bind:value={formData.first_name}
-        class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {errors.first_name
-          ? 'border-danger-line'
-          : 'border-line'}"
-      />
-      {#if errors.first_name}
-        <p class="mt-1 text-body text-danger-fg">{errors.first_name}</p>
-      {/if}
-    </div>
-
-    <div>
-      <label for="last_name" class="block text-body font-medium text-fg-muted mb-2">
-        {$t('patients.lastName')} <span class="text-danger-fg">*</span>
-      </label>
-      <input
-        type="text"
-        id="last_name"
-        bind:value={formData.last_name}
-        class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {errors.last_name
-          ? 'border-danger-line'
-          : 'border-line'}"
-      />
-      {#if errors.last_name}
-        <p class="mt-1 text-body text-danger-fg">{errors.last_name}</p>
-      {/if}
-    </div>
-  </div>
-
-  <!-- Date of Birth and Gender -->
-  <div class="grid grid-cols-2 gap-4">
-    <div>
-      <label for="date_of_birth" class="block text-body font-medium text-fg-muted mb-2">
-        {$t('patients.dateOfBirth')} <span class="text-danger-fg">*</span>
-      </label>
-      <input
-        type="date"
+  <div class="grid grid-cols-2 gap-3">
+    <Field
+      label={$t('patients.dateOfBirth')}
+      for="date_of_birth"
+      required
+      error={errors.date_of_birth}
+    >
+      <Input
         id="date_of_birth"
+        type="date"
         bind:value={formData.date_of_birth}
-        class="w-full px-4 py-2 bg-surface-raised border rounded-control text-fg focus:outline-none focus:border-accent {errors.date_of_birth
-          ? 'border-danger-line'
-          : 'border-line'}"
+        invalid={!!errors.date_of_birth}
       />
-      {#if errors.date_of_birth}
-        <p class="mt-1 text-body text-danger-fg">{errors.date_of_birth}</p>
-      {/if}
-    </div>
+    </Field>
 
-    <div>
-      <label for="gender" class="block text-body font-medium text-fg-muted mb-2"
-        >{$t('patients.gender')}</label
-      >
-      <select
-        id="gender"
-        bind:value={formData.gender}
-        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-      >
+    <Field label={$t('patients.gender')} for="gender">
+      <Select id="gender" bind:value={formData.gender}>
         <option value="">{$t('patients.genderSelect')}</option>
         <option value="male">{$t('patients.male')}</option>
         <option value="female">{$t('patients.female')}</option>
         <option value="other">{$t('patients.other')}</option>
-      </select>
-    </div>
+      </Select>
+    </Field>
   </div>
 
-  <!-- Contact Information -->
-  <div class="grid grid-cols-2 gap-4">
-    <div>
-      <label for="phone" class="block text-body font-medium text-fg-muted mb-2"
-        >{$t('patients.phone')}</label
-      >
-      <input
-        type="tel"
-        id="phone"
-        bind:value={formData.phone}
-        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-      />
-    </div>
+  <div class="grid grid-cols-2 gap-3">
+    <Field label={$t('patients.phone')} for="phone">
+      <Input id="phone" type="tel" bind:value={formData.phone} />
+    </Field>
 
-    <div>
-      <label for="email" class="block text-body font-medium text-fg-muted mb-2"
-        >{$t('patients.email')}</label
-      >
-      <input
-        type="email"
-        id="email"
-        bind:value={formData.email}
-        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-      />
-    </div>
+    <Field label={$t('patients.email')} for="email">
+      <Input id="email" type="email" bind:value={formData.email} />
+    </Field>
   </div>
 
-  <!-- Address -->
-  <div>
-    <label for="address" class="block text-body font-medium text-fg-muted mb-2"
-      >{$t('patients.address')}</label
-    >
-    <textarea
-      id="address"
-      bind:value={formData.address}
-      rows="2"
-      class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-    ></textarea>
+  <Field label={$t('patients.address')} for="address">
+    <Textarea id="address" rows={2} bind:value={formData.address} />
+  </Field>
+
+  <Field label={$t('patients.insurance')} for="insurance">
+    <Input id="insurance" bind:value={formData.insurance} />
+  </Field>
+
+  <div class="grid grid-cols-2 gap-3">
+    <Field label={$t('patients.gpName')} for="gp_name">
+      <Input id="gp_name" bind:value={formData.gp_name} />
+    </Field>
+
+    <Field label={$t('patients.gpAddress')} for="gp_address">
+      <Input id="gp_address" bind:value={formData.gp_address} />
+    </Field>
   </div>
 
-  <!-- Insurance -->
-  <div>
-    <label for="insurance" class="block text-body font-medium text-fg-muted mb-2"
-      >{$t('patients.insurance')}</label
-    >
-    <input
-      type="text"
-      id="insurance"
-      bind:value={formData.insurance}
-      class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-    />
-  </div>
+  <Field label={$t('patients.notes')} for="notes">
+    <Textarea id="notes" rows={4} bind:value={formData.notes} />
+  </Field>
 
-  <!-- GP Information -->
-  <div class="grid grid-cols-2 gap-4">
-    <div>
-      <label for="gp_name" class="block text-body font-medium text-fg-muted mb-2"
-        >{$t('patients.gpName')}</label
-      >
-      <input
-        type="text"
-        id="gp_name"
-        bind:value={formData.gp_name}
-        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-      />
-    </div>
-
-    <div>
-      <label for="gp_address" class="block text-body font-medium text-fg-muted mb-2">
-        {$t('patients.gpAddress')}
-      </label>
-      <input
-        type="text"
-        id="gp_address"
-        bind:value={formData.gp_address}
-        class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-      />
-    </div>
-  </div>
-
-  <!-- Notes -->
-  <div>
-    <label for="notes" class="block text-body font-medium text-fg-muted mb-2"
-      >{$t('patients.notes')}</label
-    >
-    <textarea
-      id="notes"
-      bind:value={formData.notes}
-      rows="4"
-      class="w-full px-4 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:border-accent"
-    ></textarea>
-  </div>
-
-  <!-- Actions -->
-  <div class="flex gap-4 justify-end">
-    <button
-      type="button"
-      onclick={handleCancel}
-      disabled={isSubmitting}
-      class="h-8 px-3 border border-line rounded-control text-fg-muted hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {$t('common.cancel')}
-    </button>
-    <button
-      type="submit"
-      disabled={isSubmitting}
-      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    >
+  <div class="flex justify-end gap-2 pt-2">
+    <Button onclick={handleCancel} disabled={isSubmitting}>{$t('common.cancel')}</Button>
+    <Button type="submit" variant="primary" loading={isSubmitting}>
       {isSubmitting
         ? $t('patients.saving')
         : patient
           ? $t('patients.updatePatient')
           : $t('patients.createPatient')}
-    </button>
+    </Button>
   </div>
 </form>

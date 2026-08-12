@@ -4,6 +4,8 @@
   import { goto } from '$app/navigation';
   import { listSessionsForPatient, type Session } from '$lib/api';
   import SessionCard from '$lib/components/SessionCard.svelte';
+  import { Alert, Button, EmptyState, PageHeader, Spinner } from '$lib/components/ui';
+  import { CalendarClock, Plus } from 'lucide-svelte';
 
   const patientId = $derived($page.params.id!);
 
@@ -39,36 +41,29 @@
 </script>
 
 <div class="p-8">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-display font-semibold text-fg">Sitzungen</h1>
-    <button
-      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
-      onclick={handleNewSession}
-    >
-      + Neue Sitzung
-    </button>
-  </div>
+  <PageHeader title="Sitzungen">
+    {#snippet actions()}
+      <Button variant="primary" onclick={handleNewSession}>
+        <Plus size={14} />
+        Neue Sitzung
+      </Button>
+    {/snippet}
+  </PageHeader>
 
   {#if loading}
-    <div class="flex justify-center items-center py-12">
-      <div class="text-fg-muted">Lädt...</div>
+    <div class="flex justify-center py-12">
+      <Spinner label="Lädt..." />
     </div>
   {:else if error}
-    <div class="bg-danger-subtle border border-danger-line text-danger-fg p-4 rounded-card">
-      {error}
-    </div>
+    <Alert tone="danger">{error}</Alert>
   {:else if sessions.length === 0}
-    <div class="text-center py-12">
-      <p class="text-fg-muted mb-4">Noch keine Sitzungen vorhanden</p>
-      <button
-        class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
-        onclick={handleNewSession}
-      >
-        Erste Sitzung erfassen
-      </button>
-    </div>
+    <EmptyState icon={CalendarClock} title="Noch keine Sitzungen vorhanden">
+      {#snippet action()}
+        <Button variant="primary" onclick={handleNewSession}>Erste Sitzung erfassen</Button>
+      {/snippet}
+    </EmptyState>
   {:else}
-    <div class="grid gap-4">
+    <div class="grid gap-2">
       {#each sessions as session (session.id)}
         <SessionCard {session} onclick={() => handleSessionClick(session.id)} />
       {/each}
