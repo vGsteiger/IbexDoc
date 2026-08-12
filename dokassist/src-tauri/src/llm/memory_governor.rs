@@ -107,21 +107,43 @@ impl MemoryGovernor {
                 native_context,
                 recurrent,
             },
-            // Loaded unified-memory weights regularly exceed the file footprint.
-            weight_bytes: file_bytes
-                .saturating_mul(110)
-                .saturating_div(100)
-                .saturating_add(128 * MIB),
+            weight_bytes: planned_weight_bytes(file_bytes),
             total_ram_bytes,
         })
+    }
+
+    /// Build a planner from known architecture dimensions and a GGUF file size
+    /// rather than from the file itself, so a reference machine can be planned
+    /// without the model on disk.
+    #[cfg(test)]
+    pub(crate) fn from_parts(
+        architecture: GgufArchitecture,
+        gguf_file_bytes: u64,
+        total_ram_bytes: u64,
+    ) -> Self {
+        Self {
+            architecture,
+            weight_bytes: planned_weight_bytes(gguf_file_bytes),
+            total_ram_bytes,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn architecture(&self) -> &GgufArchitecture {
+        &self.architecture
+    }
+
+    /// Memory left for inference after the system reserve.
+    pub fn inference_budget_bytes(&self) -> u64 {
+        self.total_ram_bytes
+            .saturating_sub(system_reserve(self.total_ram_bytes))
     }
 
     pub fn plan(
         &self,
         requested: Option<&InferenceProfile>,
     ) -> (InferenceProfile, MemoryGovernorDiagnostics) {
-        let reserve = system_reserve(self.total_ram_bytes);
-        let budget = self.total_ram_bytes.saturating_sub(reserve);
+        let budget = self.inference_budget_bytes();
         let candidates = match requested {
             Some(profile) => vec![profile.clone()],
             None => vec![
@@ -229,6 +251,14 @@ fn profile(name: &str, n_ctx: usize, kv_cache: KvCacheQuantization) -> Inference
         completion_headroom: HEADROOM.min(n_ctx / 4).max(1),
         flash_attention: FlashAttentionMode::Enabled,
     }
+}
+
+/// Loaded unified-memory weights regularly exceed the file footprint.
+fn planned_weight_bytes(gguf_file_bytes: u64) -> u64 {
+    gguf_file_bytes
+        .saturating_mul(110)
+        .saturating_div(100)
+        .saturating_add(128 * MIB)
 }
 
 fn system_reserve(total: u64) -> u64 {

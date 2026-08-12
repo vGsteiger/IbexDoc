@@ -1063,7 +1063,7 @@ fn format_gib(bytes: u64) -> String {
     format!("{:.1} GiB", bytes as f64 / (1024_f64.powi(3)))
 }
 
-fn runtime_context_for_ram(ram: u64) -> usize {
+pub(crate) fn runtime_context_for_ram(ram: u64) -> usize {
     const GB: u64 = 1024 * 1024 * 1024;
     if ram >= 48 * GB {
         LARGE_CONTEXT_SIZE

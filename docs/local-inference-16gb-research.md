@@ -19,6 +19,12 @@ declared budget is refused before model allocation. Loading stays serialized
 and drains the prior engine before a swap, preventing overlapping model and KV
 allocations.
 
+Whether a named profile is worth making the default is decided by the
+inference-profile sweep, not by the planner alone. See
+[`inference-profile-benchmark.md`](inference-profile-benchmark.md), which
+records the reference-machine plan for Qwen3-8B on 16 GiB: 32K fits only with a
+quantized KV cache, and the KV cache is the component that limits it.
+
 ## Calibration protocol
 
 Run the ignored `benchmark_cold_and_warm_contexts` test with one GGUF from at
