@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
 use zeroize::Zeroize;
 
-pub const LATEST_SCHEMA_VERSION: i32 = 14;
+pub const LATEST_SCHEMA_VERSION: i32 = 15;
 
 trait CheckpointStore: Send + Sync {
     fn read(&self) -> Result<Option<ChainCheckpoint>, AppError>;
@@ -376,6 +376,13 @@ fn run_migrations(conn: &Connection, audit_key: &[u8; MAC_SIZE]) -> Result<bool,
     if migrated_audit_chain {
         log::info!("Running migration 014: Audit HMAC chain");
         audit::migrate_to_hmac_chain(conn, audit_key)?;
+    }
+
+    // Migration 15: Provenance-bearing evidence index for patient-history RAG
+    if version < 15 {
+        log::info!("Running migration 015: Evidence provenance");
+        conn.execute_batch(include_str!("migrations/015_evidence_provenance.sql"))?;
+        conn.execute("PRAGMA user_version = 15;", [])?;
     }
 
     log::info!("Database migrations complete");

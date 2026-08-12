@@ -64,6 +64,7 @@ RamDoc is designed with a defence-in-depth approach:
 | `recovery.rs` | BIP-39 mnemonic generation, verification, and Argon2id key derivation |
 | `state.rs` | Auth state machine: `FirstRun → Locked → Unlocked → RecoveryRequired` |
 | `llm/` | GGUF model download (SHA-256 verified), llama.cpp engine, prompt sanitisation, streaming |
+| `llm/evidence/` | Provenance-bearing evidence assembly for patient-history RAG ([docs](docs/evidence-assembly.md)) |
 | `commands/` | Tauri IPC command handlers (auth, patients, sessions, diagnoses, medications, files, reports, search) |
 
 **Frontend** — Svelte 5 + SvelteKit 2 + Tailwind CSS 4
@@ -79,6 +80,7 @@ RamDoc is designed with a defence-in-depth approach:
 - `001_initial.sql` — patients, sessions, diagnoses, medications, files, reports, FTS5
 - `002_audit_append_only.sql` — audit_log table + deletion-blocking trigger
 - `014_audit_hmac_chain.sql` — canonical per-row HMAC chain + external Keychain checkpoint
+- `015_evidence_provenance.sql` — patient-scoped evidence units, embeddings, FTS and manifests
 
 ## Development
 

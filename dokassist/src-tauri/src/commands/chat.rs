@@ -70,7 +70,15 @@ pub async fn run_agent_turn(
         } else {
             None
         };
-        let patient_revision = patient_record.as_ref().map(|p| p.updated_at.clone());
+        // The agent's tools read sessions, medications and documents too, so the
+        // cache key has to cover the whole record — `patients.updated_at` alone
+        // would keep a context alive across an edited session note.
+        let patient_revision = match &scope {
+            AgentScope::Patient { patient_id } => Some(
+                crate::llm::evidence::provenance::patient_revision(&conn, patient_id)?,
+            ),
+            AgentScope::Global => None,
+        };
         let patient_context = patient_record
             .as_ref()
             .and_then(|p| serde_json::to_string(p).ok());
