@@ -191,6 +191,31 @@ pub fn init_db_with_audit_checkpoint(
     )
 }
 
+/// Set the SQLCipher raw encryption key on a connection.
+///
+/// Must be called before any other operation on the connection.
+///
+/// MED-2: `hex::encode()` always produces exactly 64 lowercase hex characters
+/// for a 32-byte key, so the `format!()` below is safe against injection. The
+/// check is enforced in release builds too, so a future refactor that changes
+/// the key source cannot silently pass an unescaped value into the pragma.
+pub(crate) fn apply_sqlcipher_key(conn: &Connection, key: &[u8; 32]) -> Result<(), AppError> {
+    let mut key_hex = hex::encode(key);
+    if key_hex.len() != 64 || !key_hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        key_hex.zeroize();
+        return Err(AppError::Crypto(
+            "SQLCipher key must be exactly 64 hex characters".to_string(),
+        ));
+    }
+
+    let result = conn.execute_batch(&format!("PRAGMA key = \"x'{}'\";", key_hex));
+
+    // Zeroize the key hex string
+    key_hex.zeroize();
+
+    result.map_err(AppError::from)
+}
+
 fn init_db_internal(
     db_path: &Path,
     key: &[u8; 32],
@@ -207,20 +232,7 @@ fn init_db_internal(
     )?;
 
     // Set the encryption key (SQLCipher uses raw key mode)
-    // The key must be set before any other operations.
-    //
-    // MED-2: hex::encode() always produces exactly 64 lowercase hex characters
-    // for a 32-byte key, so the format!() below is safe against injection.
-    // This assertion guards against future refactors that might change the key source.
-    let mut key_hex = hex::encode(key);
-    debug_assert!(
-        key_hex.len() == 64 && key_hex.chars().all(|c| c.is_ascii_hexdigit()),
-        "SQLCipher key must be exactly 64 lowercase hex characters"
-    );
-    conn.execute_batch(&format!("PRAGMA key = \"x'{}'\";", key_hex))?;
-
-    // Zeroize the key hex string
-    key_hex.zeroize();
+    apply_sqlcipher_key(&conn, key)?;
 
     // Verify the key is correct by attempting a simple operation
     // This will fail if the key is wrong or the database is corrupted
