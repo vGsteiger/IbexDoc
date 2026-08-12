@@ -93,6 +93,7 @@
 
       // Invoke the command; the result carries the evidence behind the answer.
       const result = await queryPatientHistory(patientId, question);
+      response = result.answer;
       manifest = result.manifest;
       audit = result.audit;
     } catch (e) {
@@ -269,7 +270,7 @@
                     <span class="text-amber-700 dark:text-amber-400"> (source changed)</span>
                   {/if}
                   <div class="text-xs text-gray-500 dark:text-gray-400">
-                    Selected because: {entry?.selection_reasons.join('; ')}
+                    Selected because: {entry?.selection_reasons?.join('; ') ?? '—'}
                   </div>
                 </li>
               {/each}

@@ -575,10 +575,13 @@ fn match_decimal_end(chars: &[char], digits_end: usize) -> usize {
 }
 
 fn is_year(digits: &[char]) -> bool {
-    if digits.len() != 4 {
+    if digits.len() != 4 || !digits.iter().all(|c| c.is_ascii_digit()) {
         return false;
     }
-    matches!(digits[0], '1' | '2') && matches!(digits[1], '0' | '9')
+    let year = digits
+        .iter()
+        .fold(0u32, |acc, c| acc * 10 + c.to_digit(10).unwrap());
+    (1800..=2199).contains(&year)
 }
 
 /// `1-0-1`, `1-0-1-0`: at least two `-<digits>` groups so plain ranges such as
