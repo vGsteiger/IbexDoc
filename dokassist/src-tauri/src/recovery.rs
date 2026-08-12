@@ -3,6 +3,7 @@ use bip39::{Language, Mnemonic};
 use rand::RngExt;
 use ring::hmac;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 use zeroize::Zeroize;
 
@@ -43,6 +44,10 @@ fn derive_keys_from_entropy(entropy: &[u8; 32]) -> Result<([u8; 32], [u8; 32]), 
 /// Returns `(mnemonic_words, db_key, fs_key)` and writes a versioned vault marker
 /// to `vault_path`. The marker's existence signals "app initialized" to `state.rs`;
 /// its HMAC lets recovery reject a different, but otherwise valid, mnemonic.
+///
+/// Fails with [`AppError::AlreadyInitialized`] if `vault_path` exists. The caller
+/// must delete a stale marker deliberately, and only after establishing that no
+/// database is encrypted under the keys it stands for.
 pub fn create_recovery(vault_path: &Path) -> Result<RecoveryKeys, AppError> {
     // Generate 256 bits of entropy for a 24-word mnemonic
     let mut entropy = [0u8; 32];
@@ -66,7 +71,21 @@ pub fn create_recovery(vault_path: &Path) -> Result<RecoveryKeys, AppError> {
     vault_bytes.push(VAULT_VERSION);
     vault_bytes.extend_from_slice(authenticator.as_ref());
 
-    fs::write(vault_path, vault_bytes).map_err(|e| {
+    // Created exclusively: overwriting an existing vault would orphan the key
+    // that encrypts the database on disk, leaving both the Keychain items and
+    // the recovery phrase unable to open it.
+    let mut vault_file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(vault_path)
+        .map_err(|e| match e.kind() {
+            std::io::ErrorKind::AlreadyExists => AppError::AlreadyInitialized,
+            kind => AppError::Filesystem(std::io::Error::new(
+                kind,
+                format!("Failed to create recovery vault: {}", e),
+            )),
+        })?;
+    vault_file.write_all(&vault_bytes).map_err(|e| {
         AppError::Filesystem(std::io::Error::new(
             e.kind(),
             format!("Failed to write recovery vault: {}", e),
@@ -173,6 +192,29 @@ mod tests {
         // Derivation is deterministic: same words → same keys
         assert_eq!(db_key, recovered_db_key);
         assert_eq!(fs_key, recovered_fs_key);
+    }
+
+    /// A second `create_recovery` against a live vault would bind the phrase and
+    /// the Keychain to keys that cannot open the already-encrypted database.
+    #[test]
+    fn test_create_refuses_to_overwrite_existing_vault() {
+        let temp_dir = TempDir::new().unwrap();
+        let vault_path = temp_dir.path().join("recovery.vault");
+
+        let (words, db_key, fs_key) = create_recovery(&vault_path).unwrap();
+        let original = std::fs::read(&vault_path).unwrap();
+
+        assert!(matches!(
+            create_recovery(&vault_path),
+            Err(AppError::AlreadyInitialized)
+        ));
+
+        // The first phrase must still resolve to the first pair of keys.
+        assert_eq!(std::fs::read(&vault_path).unwrap(), original);
+        assert_eq!(
+            recover_from_mnemonic(&words, &vault_path).unwrap(),
+            (db_key, fs_key)
+        );
     }
 
     #[test]

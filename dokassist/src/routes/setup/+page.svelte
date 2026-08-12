@@ -23,7 +23,19 @@
       words = mnemonic;
     } catch (err) {
       const { code, message } = parseError(err);
-      error = code === 'KEYCHAIN_ERROR' ? $t('auth.setupKeychainError') : message;
+      // The vault already exists — its phrase was shown to whichever page load
+      // created it. Setup has nothing left to do; send the user to unlock.
+      if (code === 'ALREADY_INITIALIZED') {
+        await goto('/', { replaceState: true });
+        return;
+      }
+      if (code === 'SETUP_IN_PROGRESS') {
+        error = $t('auth.setupInProgress');
+      } else if (code === 'KEYCHAIN_ERROR') {
+        error = $t('auth.setupKeychainError');
+      } else {
+        error = message;
+      }
     } finally {
       isLoading = false;
     }

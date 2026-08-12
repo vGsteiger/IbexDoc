@@ -175,6 +175,7 @@
     "setupGenerating": "Verschlüsselungsschlüssel werden vorbereitet…",
     "setupFailed": "Die Einrichtung konnte nicht abgeschlossen werden",
     "setupKeychainError": "RamDoc konnte Schlüssel nicht im Schlüsselbund speichern. Entsperren Sie Ihren Mac und prüfen Sie bei anhaltendem Problem Datenschutz & Sicherheit.",
+    "setupInProgress": "Die Einrichtung läuft bereits aus einem früheren Seitenaufruf. Warten Sie einen Moment und versuchen Sie es erneut. Falls dieser Durchlauf erfolgreich ist, wurde seine Wiederherstellungsphrase einer nicht mehr vorhandenen Seite angezeigt — beginnen Sie neu, um eine Phrase zu erhalten, die Sie notieren können.",
     "setupIntro": "Bewahren Sie diese Wiederherstellungsphrase sicher auf. Sie ist die einzige Möglichkeit, den Zugang wiederherzustellen, wenn der Schlüsselbund dieses Macs zurückgesetzt wird.",
     "confirmWordsError": "Ein oder mehrere Wörter sind nicht korrekt. Bitte versuchen Sie es erneut.",
     "confirmWordsPrompt": "Geben Sie diese Wörter ein, um Ihre Kopie zu bestätigen:",

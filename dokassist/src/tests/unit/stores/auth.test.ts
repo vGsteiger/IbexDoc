@@ -28,6 +28,11 @@ describe('authStatus store', () => {
     expect(get(authStatus)).toBe('first_run');
   });
 
+  it('can be set to initializing', () => {
+    authStatus.set('initializing');
+    expect(get(authStatus)).toBe('initializing');
+  });
+
   it('can be set to recovery_required', () => {
     authStatus.set('recovery_required');
     expect(get(authStatus)).toBe('recovery_required');

@@ -12,7 +12,9 @@
       const status = await checkAuth();
       authStatus.set(status);
 
-      if (status === 'first_run') {
+      if (status === 'first_run' || status === 'initializing') {
+        // A setup run started by an earlier page load may still be generating
+        // keys; /setup reports that rather than starting a second one.
         goto('/setup');
       } else if (status === 'locked') {
         goto('/unlock');
