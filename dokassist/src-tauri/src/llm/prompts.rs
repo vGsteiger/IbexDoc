@@ -374,3 +374,40 @@ pub fn patient_history_query_prompt(patient_context: &str, question: &str) -> St
     let delimited = build_delimited_prompt(&instructions, &safe_context);
     format!("{delimited}\nAntwort:")
 }
+
+/// Prompt for answering a patient-history question from an assembled evidence
+/// block (see `llm::evidence`).
+///
+/// Unlike [`patient_history_query_prompt`], every evidence line carries a
+/// citation marker, so the model is required to cite instead of merely
+/// mentioning dates. Those markers are what
+/// `llm::evidence::audit_answer` traces back to source revisions.
+///
+/// # Security
+/// `evidence` is produced by the assembler, which sanitises each unit's text
+/// with `sanitize_for_prompt()` as it renders it — re-sanitising the whole block
+/// here would hit the per-field length cap and truncate the evidence. `question`
+/// is sanitized before insertion.
+pub fn evidence_query_prompt(evidence: &str, question: &str) -> String {
+    use super::sanitize::{build_delimited_prompt, sanitize_for_prompt};
+
+    let safe_question = sanitize_for_prompt(question);
+
+    let instructions = format!(
+        "Beantworten Sie die folgende Frage ausschliesslich anhand der unten aufgeführten \
+        Evidenzauszüge.\n\n\
+        Wichtige Regeln:\n\
+        - Jeder Auszug beginnt mit einer Quellenangabe in der Form [E1 | Datum | Quelle | Revision]\n\
+        - Belegen Sie jede Aussage mit der passenden Kennung in eckigen Klammern, z. B. [E3]\n\
+        - Verwenden Sie ausschliesslich Informationen aus den Auszügen; ergänzen Sie nichts\n\
+        - Übernehmen Sie Dosierungen, Daten, Negationen und Unsicherheitsangaben wörtlich\n\
+        - Fehlt die Information, antworten Sie: \
+        \"Diese Information ist in den vorliegenden Auszügen nicht dokumentiert.\"\n\
+        - Der Abschnitt \"NICHT ENTHALTEN, ABER VORHANDEN\" listet nur Fundstellen ohne Inhalt; \
+        leiten Sie daraus keine Aussagen ab, sondern verweisen Sie darauf\n\n\
+        Frage: {safe_question}"
+    );
+
+    let delimited = build_delimited_prompt(&instructions, evidence);
+    format!("{delimited}\nAntwort mit Quellenangaben:")
+}

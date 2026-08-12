@@ -1,8 +1,14 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-  import { queryPatientHistory, parseError, formatError } from '$lib/api';
-  import { Loader2, Send, ChevronDown, ChevronUp } from 'lucide-svelte';
+  import {
+    queryPatientHistory,
+    parseError,
+    formatError,
+    type AnswerAudit,
+    type EvidenceManifest,
+  } from '$lib/api';
+  import { Loader2, Send, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-svelte';
 
   interface Props {
     patientId: string;
@@ -15,9 +21,29 @@
   let isQuerying = $state(false);
   let error = $state('');
   let isExpanded = $state(true);
+  let manifest = $state<EvidenceManifest | null>(null);
+  let audit = $state<AnswerAudit | null>(null);
+  let showEvidence = $state(false);
 
   let unlistenChunk: UnlistenFn | null = null;
   let unlistenDone: UnlistenFn | null = null;
+
+  /// Entries the answer actually cited, in citation order.
+  let citedEntries = $derived(
+    manifest && audit
+      ? audit.citations
+          .filter((check) => check.in_manifest)
+          .map((check) => ({
+            check,
+            entry: manifest?.entries.find((entry) => entry.citation === check.citation),
+          }))
+          .filter((pair) => pair.entry !== undefined)
+      : []
+  );
+
+  let citationWarnings = $derived(
+    audit ? [...audit.unsupported_citations, ...audit.stale_citations] : []
+  );
 
   // Suggested queries
   const suggestedQueries = [
@@ -35,6 +61,8 @@
       isQuerying = true;
       error = '';
       response = '';
+      manifest = null;
+      audit = null;
 
       // Setup event listeners before invoking
       if (unlistenChunk) {
@@ -63,8 +91,11 @@
         }
       });
 
-      // Invoke the command
-      await queryPatientHistory(patientId, question);
+      // Invoke the command; the result carries the evidence behind the answer.
+      const result = await queryPatientHistory(patientId, question);
+      response = result.answer;
+      manifest = result.manifest;
+      audit = result.audit;
     } catch (e) {
       const appError = parseError(e);
       error = formatError(appError);
@@ -125,7 +156,7 @@
       <div class="space-y-2">
         <p class="text-sm text-gray-600 dark:text-gray-400">Suggested queries:</p>
         <div class="flex flex-wrap gap-2">
-          {#each suggestedQueries as suggested}
+          {#each suggestedQueries as suggested (suggested)}
             <button
               onclick={() => handleSuggestedQuery(suggested)}
               disabled={isQuerying}
@@ -192,6 +223,69 @@
               <div class="text-gray-500 dark:text-gray-400 italic">Waiting for response...</div>
             {/if}
           </div>
+        </div>
+      {/if}
+
+      <!-- Evidence behind the answer -->
+      {#if manifest && !isQuerying}
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <button
+            onclick={() => (showEvidence = !showEvidence)}
+            class="flex items-center justify-between w-full text-left"
+          >
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Evidence ({manifest.entries.length} excerpts, {manifest.prompt_tokens} of {manifest.token_budget}
+              tokens)
+            </span>
+            {#if showEvidence}
+              <ChevronUp class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            {:else}
+              <ChevronDown class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            {/if}
+          </button>
+
+          {#if citationWarnings.length > 0}
+            <div
+              class="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-md p-2"
+            >
+              <AlertTriangle class="w-4 h-4 mt-0.5 shrink-0" />
+              <span>
+                Citations without a current source: {citationWarnings.join(', ')}. Re-run the query
+                after record changes.
+              </span>
+            </div>
+          {/if}
+
+          {#if showEvidence}
+            <ul class="space-y-2 text-sm">
+              {#each citedEntries as { check, entry } (check.citation)}
+                <li class="text-gray-700 dark:text-gray-300">
+                  <span class="font-mono text-xs">[{check.citation}]</span>
+                  {entry?.label}
+                  <span class="text-gray-500 dark:text-gray-400">
+                    — {entry?.occurred_at}, characters {entry?.char_start}–{entry?.char_end},
+                    revision {entry?.revision}
+                  </span>
+                  {#if !check.traceable}
+                    <span class="text-amber-700 dark:text-amber-400"> (source changed)</span>
+                  {/if}
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    Selected because: {entry?.selection_reasons?.join('; ') ?? '—'}
+                  </div>
+                </li>
+              {/each}
+              {#if citedEntries.length === 0}
+                <li class="text-gray-500 dark:text-gray-400 italic">
+                  The answer cited no excerpts.
+                </li>
+              {/if}
+            </ul>
+            {#if manifest.omitted.length > 0}
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {manifest.omitted.length} further excerpt(s) were not included (budget or archive pointers).
+              </p>
+            {/if}
+          {/if}
         </div>
       {/if}
     </div>

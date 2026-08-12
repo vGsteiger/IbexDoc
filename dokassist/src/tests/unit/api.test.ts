@@ -129,6 +129,10 @@ import {
   updateSettings,
   completeOnboarding,
   queryPatientHistory,
+  previewPatientEvidence,
+  indexPatientEvidence,
+  getPatientEvidenceManifest,
+  resolveEvidenceUnits,
   compareMedications,
   type Letter,
   type ModelChoice,
@@ -2289,9 +2293,99 @@ describe('completeOnboarding', () => {
 // Patient History RAG Query
 // ---------------------------------------------------------------------------
 
+const evidenceManifest = {
+  manifest_id: 'm1',
+  patient_id: 'p1',
+  patient_revision: 'p1:abc',
+  question_sha256: 'deadbeef',
+  created_at: '2026-03-04T10:00:00Z',
+  token_budget: 11520,
+  token_counter: 'model-tokenizer',
+  prompt_tokens: 8123,
+  tier_tokens: { structured: 2000, hot: 5000, cold: 1000, pointers: 100, overhead: 23 },
+  entries: [
+    {
+      citation: 'E1',
+      unit_id: 'u1',
+      patient_id: 'p1',
+      record_kind: 'session' as const,
+      record_id: 's1',
+      section: 'notes',
+      revision: 'r1:abc',
+      tier: 'hot' as const,
+      label: 'Sitzung 2026-03-04 (Verlaufsgespräch)',
+      occurred_at: '2026-03-04',
+      char_start: 0,
+      char_end: 120,
+      text_sha256: 'abcd1234',
+      tokens: 60,
+      prompt_token_start: 100,
+      prompt_token_end: 160,
+      protected_spans: [{ kind: 'dose' as const, start: 10, end: 16 }],
+      selection: {
+        lexical_rank: 1,
+        lexical_bm25: -1.8,
+        semantic_rank: null,
+        semantic_similarity: null,
+        fused_score: 0.016,
+        recency_boost: 0.02,
+        matched_terms: ['medikation'],
+        document_neighbor_of: [],
+        temporal_neighbor_of: [],
+        structured_truth: false,
+      },
+      selection_reasons: ['lexical rank 1 (bm25 -1.800)'],
+    },
+  ],
+  omitted: [],
+  protected_spans_retained: [{ kind: 'dose' as const, count: 1 }],
+  retrieval: {
+    index_units: 42,
+    question_terms: ['medikation'],
+    lexical_hits: 3,
+    semantic_hits: 0,
+    semantic_available: false,
+    document_neighbors_added: 1,
+    temporal_neighbors_added: 2,
+    temporal_question: true,
+    candidates: 6,
+  },
+  index: {
+    sources_scanned: 20,
+    sources_reindexed: 0,
+    sources_removed: 0,
+    units_inserted: 0,
+    units_removed: 0,
+    stale_chunks_removed: 0,
+    units_total: 42,
+    units_missing_embeddings: 0,
+  },
+};
+
 describe('queryPatientHistory', () => {
   it('calls query_patient_history with patientId and question', async () => {
-    const response = 'Die Medikation wurde am 2025-03-15 geändert.';
+    const response = {
+      answer: 'Die Medikation wurde am 2025-03-15 geändert [E1].',
+      manifest: evidenceManifest,
+      audit: {
+        manifest_id: 'm1',
+        citations: [
+          {
+            citation: 'E1',
+            in_manifest: true,
+            unit_id: 'u1',
+            label: 'Sitzung 2026-03-04 (Verlaufsgespräch)',
+            occurred_at: '2026-03-04',
+            traceable: true,
+            resolution: null,
+          },
+        ],
+        unsupported_citations: [],
+        stale_citations: [],
+        cited_entries: 1,
+        uncited_entries: 0,
+      },
+    };
     mockInvoke.mockResolvedValueOnce(response);
     const result = await queryPatientHistory('p1', 'Wann wurde die Medikation geändert?');
     expect(mockInvoke).toHaveBeenCalledWith('query_patient_history', {
@@ -2299,12 +2393,24 @@ describe('queryPatientHistory', () => {
       question: 'Wann wurde die Medikation geändert?',
       systemPrompt: undefined,
     });
-    expect(result).toBe(response);
+    expect(result.answer).toBe(response.answer);
+    expect(result.manifest.entries[0].citation).toBe('E1');
+    expect(result.audit.unsupported_citations).toEqual([]);
   });
 
   it('calls query_patient_history with optional systemPrompt', async () => {
-    const response = 'Antwort mit custom Prompt';
-    mockInvoke.mockResolvedValueOnce(response);
+    mockInvoke.mockResolvedValueOnce({
+      answer: 'Antwort mit custom Prompt',
+      manifest: evidenceManifest,
+      audit: {
+        manifest_id: 'm1',
+        citations: [],
+        unsupported_citations: [],
+        stale_citations: [],
+        cited_entries: 0,
+        uncited_entries: 1,
+      },
+    });
     await queryPatientHistory('p1', 'Test Frage', 'Custom system prompt');
     expect(mockInvoke).toHaveBeenCalledWith('query_patient_history', {
       patientId: 'p1',
@@ -2322,5 +2428,79 @@ describe('queryPatientHistory', () => {
     await expect(queryPatientHistory('p1', 'Question')).rejects.toMatchObject({
       code: 'AUTH_REQUIRED',
     });
+  });
+});
+
+describe('evidence assembly commands', () => {
+  it('previews assembled evidence with an optional token budget', async () => {
+    mockInvoke.mockResolvedValueOnce({
+      evidence: '===== EVIDENZ =====',
+      manifest: evidenceManifest,
+    });
+    const preview = await previewPatientEvidence('p1', 'Aktuelle Dosis?', 4000);
+    expect(mockInvoke).toHaveBeenCalledWith('preview_patient_evidence', {
+      patientId: 'p1',
+      question: 'Aktuelle Dosis?',
+      tokenBudget: 4000,
+    });
+    expect(preview.manifest.prompt_tokens).toBe(8123);
+
+    mockInvoke.mockResolvedValueOnce({ evidence: '', manifest: evidenceManifest });
+    await previewPatientEvidence('p1', 'Aktuelle Dosis?');
+    expect(mockInvoke).toHaveBeenLastCalledWith('preview_patient_evidence', {
+      patientId: 'p1',
+      question: 'Aktuelle Dosis?',
+      tokenBudget: undefined,
+    });
+  });
+
+  it('refreshes the evidence index', async () => {
+    mockInvoke.mockResolvedValueOnce(evidenceManifest.index);
+    const stats = await indexPatientEvidence('p1');
+    expect(mockInvoke).toHaveBeenCalledWith('index_patient_evidence', { patientId: 'p1' });
+    expect(stats.units_total).toBe(42);
+  });
+
+  it('reads the latest manifest and tolerates none', async () => {
+    mockInvoke.mockResolvedValueOnce(evidenceManifest);
+    await expect(getPatientEvidenceManifest('p1')).resolves.toMatchObject({ manifest_id: 'm1' });
+    mockInvoke.mockResolvedValueOnce(null);
+    await expect(getPatientEvidenceManifest('p1')).resolves.toBeNull();
+  });
+
+  it('resolves cited units against the current record', async () => {
+    mockInvoke.mockResolvedValueOnce([
+      {
+        unit_id: 'u1',
+        record_kind: 'session',
+        record_id: 's1',
+        section: 'notes',
+        label: 'Sitzung 2026-03-04 (Verlaufsgespräch)',
+        occurred_at: '2026-03-04',
+        revision: 'r1:abc',
+        char_start: 0,
+        char_end: 120,
+        text: 'Sertralin auf 100 mg erhöht.',
+        traceable: true,
+        resolution: {
+          source_present: true,
+          revision_current: true,
+          text_matches: true,
+          current_revision: 'r1:abc',
+          current_text: 'Sertralin auf 100 mg erhöht.',
+        },
+      },
+    ]);
+    const units = await resolveEvidenceUnits('p1', ['u1']);
+    expect(mockInvoke).toHaveBeenCalledWith('resolve_evidence_units', {
+      patientId: 'p1',
+      unitIds: ['u1'],
+    });
+    expect(units[0].traceable).toBe(true);
+  });
+
+  it('propagates invoke errors', async () => {
+    mockInvoke.mockRejectedValueOnce({ code: 'AUTH_REQUIRED', message: 'Auth', ref: 'A-1' });
+    await expect(indexPatientEvidence('p1')).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   });
 });

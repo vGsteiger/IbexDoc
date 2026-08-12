@@ -361,54 +361,21 @@ pub fn generate_letter_streaming_with_prompt(
     })
 }
 
-/// Generate a response to a patient history query using RAG with streaming.
-pub fn generate_patient_history_response_streaming(
+/// Answer a patient-history question from an assembled evidence block.
+///
+/// No summarisation pass is needed or wanted here: `llm::evidence` already fit
+/// the evidence into the model's budget, and condensing it would be exactly the
+/// lossy step the evidence layer exists to avoid. Emits
+/// `"patient-history-chunk"` Tauri events for each token.
+pub fn generate_evidence_answer_streaming(
     app: &tauri::AppHandle,
     engine: &LlmEngine,
-    patient_context: &str,
-    question: &str,
-) -> Result<String, AppError> {
-    generate_patient_history_response_streaming_with_prompt(
-        app,
-        engine,
-        patient_context,
-        question,
-        prompts::SYSTEM_PROMPT_DE,
-    )
-}
-
-/// Generate a response to a patient history query using a caller-supplied system prompt.
-/// Emits `"patient-history-chunk"` Tauri events for each token as it is produced.
-/// If the patient context is too long, emits `"patient-history-summarizing"` and condenses it first.
-/// Returns the full completed response string.
-pub fn generate_patient_history_response_streaming_with_prompt(
-    app: &tauri::AppHandle,
-    engine: &LlmEngine,
-    patient_context: &str,
+    evidence: &str,
     question: &str,
     system_prompt: &str,
 ) -> Result<String, AppError> {
-    // Use `question` as the second input; it is typically short so summarization
-    // will only trigger when the patient_context itself is very large.
-    let summary_opt = if needs_summarization(engine, system_prompt, patient_context, question)? {
-        let _ = app.emit("patient-history-summarizing", ());
-        Some(run_summarization(
-            engine,
-            system_prompt,
-            patient_context,
-            question,
-        )?)
-    } else {
-        None
-    };
-    let eff_ctx = match &summary_opt {
-        Some(s) => s.as_str(),
-        None => patient_context,
-    };
-
-    let user_message = prompts::patient_history_query_prompt(eff_ctx, question);
-
-    generate_with_think_budget(engine, system_prompt, &user_message, 4096, 0.7, &|token| {
+    let user_message = prompts::evidence_query_prompt(evidence, question);
+    generate_with_think_budget(engine, system_prompt, &user_message, 4096, 0.3, &|token| {
         let _ = app.emit("patient-history-chunk", token);
     })
 }

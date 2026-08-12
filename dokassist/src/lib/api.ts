@@ -1051,15 +1051,225 @@ export async function generateSessionSummary(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Provenance-bearing evidence assembly (patient-history RAG)
+// ---------------------------------------------------------------------------
+
+export type EvidenceRecordKind =
+  | 'patient'
+  | 'session'
+  | 'file'
+  | 'diagnosis'
+  | 'medication'
+  | 'outcome_score'
+  | 'treatment_plan'
+  | 'treatment_goal'
+  | 'treatment_intervention';
+
+export type EvidenceTier = 'structured' | 'hot' | 'cold';
+
+export type ProtectedSpanKind =
+  'medication' | 'dose' | 'date' | 'negation' | 'uncertainty' | 'risk' | 'provenance';
+
+export interface ProtectedSpan {
+  kind: ProtectedSpanKind;
+  start: number;
+  end: number;
+}
+
+/** Why one evidence unit was retrieved. */
+export interface EvidenceSelection {
+  lexical_rank: number | null;
+  lexical_bm25: number | null;
+  semantic_rank: number | null;
+  semantic_similarity: number | null;
+  fused_score: number;
+  recency_boost: number;
+  matched_terms: string[];
+  document_neighbor_of: string[];
+  temporal_neighbor_of: string[];
+  structured_truth: boolean;
+}
+
+/** One included evidence unit, with exact provenance into the source record. */
+export interface EvidenceManifestEntry {
+  citation: string;
+  unit_id: string;
+  patient_id: string;
+  record_kind: EvidenceRecordKind;
+  record_id: string;
+  section: string;
+  revision: string;
+  tier: EvidenceTier;
+  label: string;
+  occurred_at: string;
+  char_start: number;
+  char_end: number;
+  text_sha256: string;
+  tokens: number;
+  prompt_token_start: number;
+  prompt_token_end: number;
+  protected_spans: ProtectedSpan[];
+  selection: EvidenceSelection;
+  selection_reasons: string[];
+}
+
+export interface OmittedEvidenceEntry {
+  unit_id: string;
+  record_kind: EvidenceRecordKind;
+  record_id: string;
+  section: string;
+  tier: EvidenceTier;
+  occurred_at: string;
+  tokens: number;
+  reason: string;
+}
+
+export interface EvidenceRetrievalDiagnostics {
+  index_units: number;
+  question_terms: string[];
+  lexical_hits: number;
+  semantic_hits: number;
+  semantic_available: boolean;
+  document_neighbors_added: number;
+  temporal_neighbors_added: number;
+  temporal_question: boolean;
+  candidates: number;
+}
+
+export interface EvidenceIndexStats {
+  sources_scanned: number;
+  sources_reindexed: number;
+  sources_removed: number;
+  units_inserted: number;
+  units_removed: number;
+  stale_chunks_removed: number;
+  units_total: number;
+  units_missing_embeddings: number;
+}
+
+/** Metadata for one assembled evidence prompt. Never contains record text. */
+export interface EvidenceManifest {
+  manifest_id: string;
+  patient_id: string;
+  patient_revision: string;
+  question_sha256: string;
+  created_at: string;
+  token_budget: number;
+  token_counter: string;
+  prompt_tokens: number;
+  tier_tokens: {
+    structured: number;
+    hot: number;
+    cold: number;
+    pointers: number;
+    overhead: number;
+  };
+  entries: EvidenceManifestEntry[];
+  omitted: OmittedEvidenceEntry[];
+  protected_spans_retained: { kind: ProtectedSpanKind; count: number }[];
+  retrieval: EvidenceRetrievalDiagnostics;
+  index: EvidenceIndexStats;
+}
+
+export interface EvidenceSpanResolution {
+  source_present: boolean;
+  revision_current: boolean;
+  text_matches: boolean;
+  current_revision: string | null;
+  current_text: string | null;
+}
+
+export interface CitationCheck {
+  citation: string;
+  in_manifest: boolean;
+  unit_id: string | null;
+  label: string | null;
+  occurred_at: string | null;
+  traceable: boolean;
+  resolution: EvidenceSpanResolution | null;
+}
+
+/** Whether an answer's citations are backed by current source revisions. */
+export interface AnswerAudit {
+  manifest_id: string;
+  citations: CitationCheck[];
+  unsupported_citations: string[];
+  stale_citations: string[];
+  cited_entries: number;
+  uncited_entries: number;
+}
+
+export interface PatientHistoryAnswer {
+  answer: string;
+  manifest: EvidenceManifest;
+  audit: AnswerAudit;
+}
+
+export interface EvidencePreview {
+  evidence: string;
+  manifest: EvidenceManifest;
+}
+
+export interface ResolvedEvidenceUnit {
+  unit_id: string;
+  record_kind: EvidenceRecordKind;
+  record_id: string;
+  section: string;
+  label: string;
+  occurred_at: string;
+  revision: string;
+  char_start: number;
+  char_end: number;
+  text: string;
+  traceable: boolean;
+  resolution: EvidenceSpanResolution;
+}
+
 export async function queryPatientHistory(
   patientId: string,
   question: string,
-  systemPrompt?: string,
-): Promise<string> {
-  return await invoke<string>('query_patient_history', {
+  systemPrompt?: string
+): Promise<PatientHistoryAnswer> {
+  return await invoke<PatientHistoryAnswer>('query_patient_history', {
     patientId,
     question,
     systemPrompt,
+  });
+}
+
+/** Assemble the evidence for a question without running inference. */
+export async function previewPatientEvidence(
+  patientId: string,
+  question: string,
+  tokenBudget?: number
+): Promise<EvidencePreview> {
+  return await invoke<EvidencePreview>('preview_patient_evidence', {
+    patientId,
+    question,
+    tokenBudget,
+  });
+}
+
+/** Refresh the evidence index and embed units that lack a vector. */
+export async function indexPatientEvidence(patientId: string): Promise<EvidenceIndexStats> {
+  return await invoke<EvidenceIndexStats>('index_patient_evidence', { patientId });
+}
+
+export async function getPatientEvidenceManifest(
+  patientId: string
+): Promise<EvidenceManifest | null> {
+  return await invoke<EvidenceManifest | null>('get_patient_evidence_manifest', { patientId });
+}
+
+/** Re-resolve cited evidence units against the current record. */
+export async function resolveEvidenceUnits(
+  patientId: string,
+  unitIds: string[]
+): Promise<ResolvedEvidenceUnit[]> {
+  return await invoke<ResolvedEvidenceUnit[]>('resolve_evidence_units', {
+    patientId,
+    unitIds,
   });
 }
 
