@@ -8,6 +8,8 @@ pub mod evidence;
 mod extract;
 pub mod inference;
 pub mod memory_governor;
+#[cfg(test)]
+mod profile_benchmark;
 mod prompts;
 mod report;
 pub mod sanitize;
