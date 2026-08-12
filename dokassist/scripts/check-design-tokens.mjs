@@ -15,10 +15,26 @@ const SRC = join(ROOT, 'src');
 
 const HUES =
   'gray|slate|zinc|neutral|stone|blue|indigo|sky|cyan|purple|violet|fuchsia|pink|red|rose|green|emerald|teal|lime|amber|yellow|orange';
-const PROPS = 'bg|text|border|ring|divide|placeholder|from|via|to|outline|decoration|caret|fill|stroke';
+const PROPS =
+  'bg|text|border|ring|divide|placeholder|from|via|to|outline|decoration|caret|fill|stroke';
 
-const RAW_PALETTE = new RegExp(`(?:^|[\\s"'\`{}:])(?:[a-z-]+:)*(?:${PROPS})-(?:${HUES})-\\d{2,3}(?:/\\d{1,3})?(?![\\w-])`, 'g');
-const DARK_VARIANT = new RegExp(`(?:^|[\\s"'\`{}])dark:(?!prose-invert)(?:[a-z-]+:)*(?:${PROPS})-`, 'g');
+// Deliberately property-agnostic: match ANY utility ending in -<hue>-<shade>,
+// whatever prefixes it. Enumerating properties previously let compound ones
+// through — `ring-offset-gray-900` is not `ring-<hue>`, so two real violations
+// survived the first sweep.
+const RAW_PALETTE = new RegExp(
+  `(?:^|[\\s"'\`{}])[\\w:./-]*?-(?:${HUES})-(?:50|[1-9]00|950)(?:/\\d{1,3})?(?![\\w-])`,
+  'g'
+);
+// Raw white/black are equally theme-hardcoded. Scrims are the one honest use,
+// so an opacity modifier is required — bare bg-black is almost always a bug
+// (Tailwind v4 dropped bg-opacity-*, which silently turns a scrim opaque).
+const RAW_NEUTRAL = new RegExp(`(?:^|[\\s"'\`{}])[\\w:./-]*?-(?:white|black)(?![\\w/-])`, 'g');
+const DEAD_OPACITY = /(?:^|[\s"'`{}])(?:bg|text|border|ring|divide)-opacity-\d+(?![\w-])/g;
+const DARK_VARIANT = new RegExp(
+  `(?:^|[\\s"'\`{}])dark:(?!prose-invert)(?:[a-z-]+:)*(?:${PROPS})-`,
+  'g'
+);
 
 // Narrow, deliberate exceptions, matched against the whole source line.
 // Anything added here needs a stated reason.
@@ -50,6 +66,8 @@ for (const file of walk(SRC)) {
     if (line.trimStart().startsWith('*') || line.trimStart().startsWith('//')) return;
     for (const [label, re] of [
       ['raw palette utility', RAW_PALETTE],
+      ['raw white/black', RAW_NEUTRAL],
+      ['removed in Tailwind v4', DEAD_OPACITY],
       ['dark: colour variant', DARK_VARIANT],
     ]) {
       for (const m of line.matchAll(re)) {

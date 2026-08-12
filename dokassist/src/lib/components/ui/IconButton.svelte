@@ -38,7 +38,17 @@
 </script>
 
 {#if href}
-  <a {href} class={classes} aria-label={label} title={label} {...rest}>{@render children?.()}</a>
+  <!-- Anchors are never :disabled, so the disabled: variants in `classes` do
+       nothing here; the guard is applied directly instead. -->
+  <a
+    {href}
+    class="{classes}{disabled ? ' pointer-events-none opacity-50' : ''}"
+    aria-label={label}
+    title={label}
+    aria-disabled={disabled || undefined}
+    tabindex={disabled ? -1 : undefined}
+    {...rest}>{@render children?.()}</a
+  >
 {:else}
   <button type="button" class={classes} aria-label={label} title={label} {disabled} {...rest}>
     {@render children?.()}

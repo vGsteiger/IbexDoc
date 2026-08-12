@@ -171,6 +171,13 @@ From `$lib/components/ui`:
 `Button` variants: `primary` (one per view), `secondary` (the default),
 `ghost`, `subtle`, `danger`.
 
+`Button` and `IconButton` render an `<a>` when given `href`. An anchor is never
+`:disabled`, so Tailwind's `disabled:` variants do not apply to that branch —
+both components instead attach `pointer-events-none opacity-50` directly, plus
+`aria-disabled` and `tabindex="-1"`. The `href` is deliberately kept so the
+element keeps its link role for assistive tech. If you hand-roll a disabled
+link anywhere, do the same.
+
 Note: `Select` renders a native `<select>`; pass an initial `value` that matches
 one of the options, or it will show blank rather than defaulting to the first.
 

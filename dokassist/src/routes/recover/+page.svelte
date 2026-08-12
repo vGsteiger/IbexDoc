@@ -90,10 +90,10 @@
       <button
         onclick={handleRecover}
         disabled={isRecovering}
-        class="px-6 py-3 bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:bg-surface-selected disabled:cursor-not-allowed text-on-accent font-medium rounded-card transition-colors flex items-center gap-2"
+        class="px-6 py-3 bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-2 focus:ring-offset-surface-raised disabled:bg-surface-selected disabled:cursor-not-allowed text-on-accent font-medium rounded-card transition-colors flex items-center gap-2"
       >
         {#if isRecovering}
-          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-on-accent"></div>
           <span>{$t('auth.recoveryInProgress')}</span>
         {:else}
           <span>{$t('auth.recoverAccount')}</span>

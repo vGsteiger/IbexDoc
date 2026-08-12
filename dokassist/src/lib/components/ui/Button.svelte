@@ -44,6 +44,11 @@
     md: 'h-8 gap-2 px-3 text-body',
   };
 
+  // Anchors are never :disabled, so the disabled: variants below do nothing on
+  // the href branch — an inert link would still navigate on click. That branch
+  // gets the guard applied unconditionally instead.
+  let inert = $derived(disabled || loading);
+
   let classes = $derived(
     [
       'inline-flex items-center justify-center rounded-control border font-medium leading-none',
@@ -62,9 +67,9 @@
 {#if href}
   <a
     {href}
-    class={classes}
-    aria-disabled={disabled || undefined}
-    tabindex={disabled ? -1 : undefined}
+    class="{classes}{inert ? ' pointer-events-none opacity-50' : ''}"
+    aria-disabled={inert || undefined}
+    tabindex={inert ? -1 : undefined}
     {...rest}
   >
     {#if loading}
@@ -73,7 +78,7 @@
     {@render children?.()}
   </a>
 {:else}
-  <button {type} class={classes} disabled={disabled || loading} {...rest}>
+  <button {type} class={classes} disabled={inert} {...rest}>
     {#if loading}
       <LoaderCircle size={14} class="animate-spin" aria-hidden="true" />
     {/if}

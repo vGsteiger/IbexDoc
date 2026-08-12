@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/svelte';
 import Badge from '$lib/components/ui/Badge.svelte';
 import Button from '$lib/components/ui/Button.svelte';
 import Card from '$lib/components/ui/Card.svelte';
+import IconButton from '$lib/components/ui/IconButton.svelte';
 import Input from '$lib/components/ui/Input.svelte';
 import Spinner from '$lib/components/ui/Spinner.svelte';
 
@@ -60,6 +61,34 @@ describe('Button', () => {
     expect(clicks).toBe(1);
   });
 
+  // An <a> is never :disabled, so Tailwind's disabled: variants silently do
+  // nothing on the href branch. Without an explicit guard an inert link stays
+  // clickable and navigates.
+  it('makes a disabled link inert while keeping its link semantics', () => {
+    render(Button, { href: '/patients', disabled: true });
+    const link = screen.getByRole('link');
+    expect(link).toHaveClass('pointer-events-none');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    expect(link).toHaveAttribute('tabindex', '-1');
+    expect(link).toHaveAttribute('href');
+  });
+
+  it('treats a loading link as inert too', () => {
+    render(Button, { href: '/patients', loading: true });
+    const link = screen.getByRole('link');
+    expect(link).toHaveClass('pointer-events-none');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    expect(link).toHaveAttribute('href');
+  });
+
+  it('leaves an enabled link navigable', () => {
+    render(Button, { href: '/patients' });
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/patients');
+    expect(link).not.toHaveClass('pointer-events-none');
+    expect(link).not.toHaveAttribute('aria-disabled');
+  });
+
   it('keeps both control sizes on the shared 28/32px rhythm', () => {
     const { unmount } = render(Button, { size: 'sm' });
     expect(screen.getByRole('button')).toHaveClass('h-7');
@@ -94,6 +123,21 @@ describe('Input', () => {
   it('emits no raw palette utilities', () => {
     render(Input, { invalid: true });
     expect(screen.getByRole('textbox').className).not.toMatch(RAW_PALETTE);
+  });
+});
+
+describe('IconButton', () => {
+  it('always exposes an accessible name', () => {
+    render(IconButton, { label: 'Delete medication' });
+    expect(screen.getByRole('button')).toHaveAccessibleName('Delete medication');
+  });
+
+  it('makes a disabled link inert', () => {
+    render(IconButton, { label: 'Edit', href: '/patients/1/edit', disabled: true });
+    const link = screen.getByRole('link');
+    expect(link).toHaveClass('pointer-events-none');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    expect(link).toHaveAttribute('href');
   });
 });
 
