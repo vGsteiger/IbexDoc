@@ -96,13 +96,15 @@
   >
     <div class="flex items-start justify-between gap-4">
       <div class="flex-1">
-        <h3 class="text-body font-semibold text-fg mb-1">Update Available</h3>
+        <h3 class="text-body font-semibold text-fg mb-1">{$t('settings.updateAvailableTitle')}</h3>
         <p class="text-caption text-fg-muted mb-2">
-          Version {updateInfo.latest_version} is now available. You are currently on version {updateInfo.current_version}.
+          {$t('settings.updateVersionInfo')
+            .replace('{latest}', updateInfo.latest_version ?? '')
+            .replace('{current}', updateInfo.current_version ?? '')}
         </p>
         {#if updateInfo.body}
           <div class="text-caption text-fg-muted mb-3 max-h-24 overflow-y-auto">
-            <p class="font-medium mb-1">What's new:</p>
+            <p class="font-medium mb-1">{$t('settings.whatsNew')}</p>
             <div>{@html renderMarkdown(updateInfo.body)}</div>
           </div>
         {/if}
@@ -110,7 +112,7 @@
         {#if installing}
           <div class="mb-3">
             <div class="flex justify-between text-caption text-fg-muted mb-1">
-              <span>Downloading update...</span>
+              <span>{$t('settings.downloadingUpdate')}</span>
               <span>{downloadProgress}%</span>
             </div>
             <div class="w-full bg-surface-selected rounded-full h-2">
@@ -132,14 +134,14 @@
             disabled={installing}
             class="h-7 px-2.5 text-caption rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
           >
-            {installing ? 'Installing...' : 'Install Update'}
+            {installing ? $t('settings.installing') : $t('settings.installUpdateAction')}
           </button>
           <button
             onclick={dismiss}
             disabled={installing}
             class="h-7 px-2.5 text-caption rounded-control bg-surface-selected hover:bg-surface-selected disabled:opacity-50 disabled:cursor-not-allowed text-fg transition-colors"
           >
-            Later
+            {$t('settings.later')}
           </button>
         </div>
       </div>

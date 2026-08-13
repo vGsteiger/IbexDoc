@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { page } from '$app/stores';
   import {
     ClipboardList,
@@ -17,17 +18,17 @@
   let { patientId }: Props = $props();
 
   const tabs = $derived([
-    { path: `/patients/${patientId}`, label: 'Overview', icon: ClipboardList },
-    { path: `/patients/${patientId}/sessions`, label: 'Sessions', icon: CalendarDays },
-    { path: `/patients/${patientId}/files`, label: 'Files', icon: FolderOpen },
-    { path: `/patients/${patientId}/diagnoses`, label: 'Diagnoses', icon: Hospital },
-    { path: `/patients/${patientId}/medications`, label: 'Medications', icon: Pill },
+    { path: `/patients/${patientId}`, label: $t('patients.overview'), icon: ClipboardList },
+    { path: `/patients/${patientId}/sessions`, label: $t('patients.sessions'), icon: CalendarDays },
+    { path: `/patients/${patientId}/files`, label: $t('patients.files'), icon: FolderOpen },
+    { path: `/patients/${patientId}/diagnoses`, label: $t('patients.diagnoses'), icon: Hospital },
+    { path: `/patients/${patientId}/medications`, label: $t('patients.medications'), icon: Pill },
     {
       path: `/patients/${patientId}/treatment-plans`,
-      label: 'Treatment Plans',
+      label: $t('treatmentPlans.title'),
       icon: ClipboardCheck,
     },
-    { path: `/patients/${patientId}/reports`, label: 'Reports', icon: FileText },
+    { path: `/patients/${patientId}/reports`, label: $t('patients.reports'), icon: FileText },
   ]);
 
   let currentPath = $derived($page.url.pathname);

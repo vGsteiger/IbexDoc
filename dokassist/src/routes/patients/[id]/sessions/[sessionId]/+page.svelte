@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionTypeLabel } from '$lib/translations/labels';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
@@ -352,7 +353,7 @@ ${activeDiagnoses ? `Aktive Diagnosen:\n${activeDiagnoses}` : ''}
         <div class="flex justify-between items-start mb-6">
           <div>
             <h1 class="text-display font-semibold text-fg">
-              {session.session_type}
+              {$sessionTypeLabel(session.session_type)}
             </h1>
             <p class="text-fg-muted mt-1">
               {formatDate(session.session_date)}

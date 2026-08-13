@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionTypeLabel } from '$lib/translations/labels';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { getDashboardData, type DashboardData } from '$lib/api';
@@ -10,13 +11,6 @@
   let data = $state<DashboardData | null>(null);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-
-  function getSessionTypeLabel(sessionType: string): string {
-    const key = `sessions.types.${sessionType}`;
-    const translated = $t(key);
-    // If translation doesn't exist, $t returns the key itself
-    return translated === key ? sessionType : translated;
-  }
 
   function formatDate(isoDate: string): string {
     const d = new Date(isoDate + 'T00:00:00');
@@ -71,7 +65,7 @@
               >
                 <p class="truncate text-body font-medium text-fg">{item.patient_name}</p>
                 <div class="mt-1 flex items-center gap-2">
-                  <Badge>{getSessionTypeLabel(item.session.session_type)}</Badge>
+                  <Badge>{$sessionTypeLabel(item.session.session_type)}</Badge>
                   {#if item.session.duration_minutes}
                     <span class="text-caption text-fg-subtle">
                       {item.session.duration_minutes}
@@ -150,7 +144,7 @@
                   <span class="text-caption text-fg-subtle">
                     {formatDate(item.session.session_date)}
                   </span>
-                  <Badge tone="warning">{getSessionTypeLabel(item.session.session_type)}</Badge>
+                  <Badge tone="warning">{$sessionTypeLabel(item.session.session_type)}</Badge>
                 </div>
               </button>
             {/each}

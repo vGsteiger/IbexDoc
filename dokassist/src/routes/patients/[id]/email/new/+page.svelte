@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
@@ -79,7 +80,7 @@
     showThinking = false;
 
     try {
-      const session = await createChatSession('patient', patientId, 'Email Draft');
+      const session = await createChatSession('patient', patientId, get(t)('chat.emailDraftTitle'));
       const userIntent =
         aiPrompt.trim() || 'Schreibe eine professionelle E-Mail für diesen Patienten.';
       const prompt = `Schreibe den Text einer E-Mail an den Patienten. Verwende KEIN Tool – gib nur den fertigen E-Mail-Text aus (ohne Betreff, nur den Nachrichtentext). Anweisung: ${userIntent}`;

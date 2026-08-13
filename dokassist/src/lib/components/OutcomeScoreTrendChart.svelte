@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { interpretationLabel } from '$lib/translations/labels';
   import { onMount } from 'svelte';
   import type { OutcomeScore } from '$lib/api';
 
@@ -86,7 +87,14 @@
       ctx.fillStyle = '#6B7280';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(band.label, padding.left + chartWidth + 5, (yStart + yEnd) / 2 + 4);
+      // Band labels use the same values the backend stores for interpretation,
+      // so they share the translation map. Reading the store here also makes
+      // the redraw reactive to a language change.
+      ctx.fillText(
+        $interpretationLabel(band.label),
+        padding.left + chartWidth + 5,
+        (yStart + yEnd) / 2 + 4
+      );
     });
 
     // Draw grid lines

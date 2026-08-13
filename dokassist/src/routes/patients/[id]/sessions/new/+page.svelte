@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionTypeLabel } from '$lib/translations/labels';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { createSession, type CreateSession } from '$lib/api';
@@ -64,7 +65,7 @@
       };
 
       await createSession(input);
-      addToast('Session saved');
+      addToast(get(t)('sessions.saved'));
       goto(`/patients/${patientId}/sessions`);
     } catch (err) {
       error =
@@ -93,7 +94,7 @@
     <div class="grid grid-cols-3 gap-4">
       <div class="col-span-2">
         <label for="session-type" class="block text-body font-medium text-fg-muted mb-1">
-          Sitzungstyp *
+          {$t('sessions.sessionType')} *
         </label>
         <select
           id="session-type"
@@ -102,14 +103,14 @@
           class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
         >
           {#each sessionTypes as type}
-            <option value={type}>{type}</option>
+            <option value={type}>{$sessionTypeLabel(type)}</option>
           {/each}
         </select>
       </div>
 
       <div>
         <label for="duration" class="block text-body font-medium text-fg-muted mb-1">
-          Dauer (Min.)
+          {$t('sessions.duration')}
         </label>
         <input
           id="duration"
@@ -125,7 +126,7 @@
 
     <div>
       <label for="session-date" class="block text-body font-medium text-fg-muted mb-1">
-        Datum *
+        {$t('sessions.date')} *
       </label>
       <input
         id="session-date"
@@ -138,7 +139,7 @@
 
     <div>
       <label for="session-time" class="block text-body font-medium text-fg-muted mb-1">
-        Uhrzeit (optional)
+        {$t('sessions.timeOptional')}
       </label>
       <input
         id="session-time"
@@ -169,15 +170,13 @@
           bind:checked={showAMDP}
           class="w-4 h-4 bg-surface-selected border-line rounded-control text-accent-fg focus:ring-2 focus:ring-accent/30"
         />
-        <span class="text-body font-medium text-fg-muted"
-          >AMDP psychopathologische Befunde erfassen</span
-        >
+        <span class="text-body font-medium text-fg-muted">{$t('sessions.amdpToggle')}</span>
       </label>
     </div>
 
     {#if showAMDP}
       <div class="border border-line rounded-card p-4">
-        <h2 class="text-heading font-semibold text-fg mb-4">AMDP Befunderhebung</h2>
+        <h2 class="text-heading font-semibold text-fg mb-4">{$t('sessions.amdpTitle')}</h2>
         <AMDPForm categories={amdpCategories} onScoreChange={handleAMDPScoreChange} />
       </div>
     {/if}

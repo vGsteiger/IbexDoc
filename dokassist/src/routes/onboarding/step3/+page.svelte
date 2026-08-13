@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
   import { ChevronRight, ChevronLeft, FileText, Database } from 'lucide-svelte';
 
@@ -14,11 +15,8 @@
 <div class="min-h-screen bg-surface flex items-center justify-center p-8">
   <div class="max-w-3xl w-full">
     <div class="mb-8 text-center">
-      <h1 class="text-display font-semibold text-fg mb-2">Import Existing Data</h1>
-      <p class="text-fg-muted">
-        Optionally import patient data from CSV files or a DokAssist backup. You can also do this
-        later from Settings.
-      </p>
+      <h1 class="text-display font-semibold text-fg mb-2">{$t('onboarding.step3.title')}</h1>
+      <p class="text-fg-muted">{$t('onboarding.step3.subtitle')}</p>
       <div class="flex items-center justify-center gap-2 mt-4">
         <div class="h-2 w-16 bg-accent rounded-full"></div>
         <div class="h-2 w-16 bg-accent rounded-full"></div>
@@ -32,8 +30,8 @@
         <div class="inline-block p-4 bg-surface-hover rounded-full mb-4">
           <Database size={48} class="text-fg-muted" />
         </div>
-        <h2 class="text-title font-semibold text-fg mb-2">Data Import Options</h2>
-        <p class="text-fg-muted">Choose how you'd like to import your data</p>
+        <h2 class="text-title font-semibold text-fg mb-2">{$t('onboarding.step3.optionsTitle')}</h2>
+        <p class="text-fg-muted">{$t('onboarding.step3.optionsSubtitle')}</p>
       </div>
 
       <div class="space-y-4">
@@ -48,11 +46,8 @@
               <FileText size={24} class="text-accent-fg" />
             </div>
             <div class="flex-1">
-              <h3 class="text-fg font-semibold mb-1">Import from CSV</h3>
-              <p class="text-fg-muted text-body">
-                Import patient records from a CSV file with automatic column detection for German,
-                French, and English headers.
-              </p>
+              <h3 class="text-fg font-semibold mb-1">{$t('onboarding.step3.importCsv')}</h3>
+              <p class="text-fg-muted text-body">{$t('onboarding.step3.importCsvDesc')}</p>
             </div>
             <ChevronRight
               size={20}
@@ -72,11 +67,8 @@
               <Database size={24} class="text-success-fg" />
             </div>
             <div class="flex-1">
-              <h3 class="text-fg font-semibold mb-1">Restore from Backup</h3>
-              <p class="text-fg-muted text-body">
-                Restore a complete DokAssist backup archive including patients, sessions, and
-                encrypted files.
-              </p>
+              <h3 class="text-fg font-semibold mb-1">{$t('onboarding.step3.restoreBackup')}</h3>
+              <p class="text-fg-muted text-body">{$t('onboarding.step3.restoreBackupDesc')}</p>
             </div>
             <ChevronRight
               size={20}
@@ -88,8 +80,8 @@
 
       <div class="bg-warning-subtle border border-warning-line rounded-card p-4">
         <p class="text-warning-fg text-body">
-          <strong>Note:</strong> You can skip this step and import data later from the Settings page.
-          The import features will always be available.
+          <strong>{$t('onboarding.step3.noteLabel')}</strong>
+          {$t('onboarding.step3.note')}
         </p>
       </div>
     </div>
@@ -100,14 +92,14 @@
         class="px-6 py-3 border border-line bg-surface-raised hover:bg-surface-hover text-fg font-medium rounded-control transition-colors flex items-center gap-2"
       >
         <ChevronLeft size={20} />
-        Back
+        {$t('common.back')}
       </button>
 
       <button
         onclick={handleImportLater}
         class="px-6 py-3 bg-accent hover:bg-accent-hover text-on-accent font-medium rounded-control transition-colors flex items-center gap-2"
       >
-        Skip for now
+        {$t('onboarding.skipForNow')}
         <ChevronRight size={20} />
       </button>
     </div>

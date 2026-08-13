@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -44,7 +45,7 @@
 
   async function loadPatient() {
     if (!patientId) {
-      error = 'No patient ID provided';
+      error = get(t)('patients.noPatientId');
       isLoading = false;
       return;
     }
@@ -54,7 +55,7 @@
       error = '';
       patient = await getPatient(patientId);
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load patient';
+      error = e instanceof Error ? e.message : get(t)('patients.loadFailed');
       console.error('Error loading patient:', e);
     } finally {
       isLoading = false;
@@ -84,7 +85,7 @@
       patient = await updatePatient(event.detail.id, event.detail.data);
       isEditing = false;
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update patient';
+      error = e instanceof Error ? e.message : get(t)('patients.updateFailed');
       console.error('Error updating patient:', e);
     } finally {
       isSubmitting = false;
@@ -100,7 +101,7 @@
       await deletePatient(patientId);
       goto('/patients');
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete patient';
+      error = e instanceof Error ? e.message : get(t)('patients.deleteFailed');
       console.error('Error deleting patient:', e);
       isDeleting = false;
       showDeleteConfirm = false;
@@ -140,7 +141,7 @@
         await writeTextFile(filePath, fhirJson);
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to export FHIR bundle';
+      error = e instanceof Error ? e.message : get(t)('patients.exportFhirFailed');
       console.error('Error exporting FHIR bundle:', e);
     } finally {
       isExporting = false;
@@ -165,7 +166,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to export patient summary';
+      error = e instanceof Error ? e.message : get(t)('patients.exportSummaryFailed');
       console.error('Error exporting patient summary:', e);
     } finally {
       isExporting = false;
@@ -241,7 +242,7 @@
                   disabled={isExporting}
                   class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
-                  {isExporting ? 'Exporting...' : 'Export'}
+                  {isExporting ? $t('patients.exporting') : $t('common.export')}
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -259,14 +260,14 @@
                       onclick={handleExportFhir}
                       class="w-full text-left h-8 px-3 hover:bg-surface-hover rounded-control transition-colors"
                     >
-                      Export FHIR R4
+                      {$t('patients.exportFhir')}
                     </button>
                     <button
                       onclick={handleExportPdf}
                       disabled={isExporting}
                       class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isExporting ? 'Exporting...' : 'Export PDF'}
+                      {isExporting ? $t('patients.exporting') : $t('patients.exportPdf')}
                     </button>
                   </div>
                 {/if}
@@ -294,7 +295,7 @@
                   onclick={() => (showTrendChart = !showTrendChart)}
                   class="flex items-center justify-between w-full mb-4 hover:text-accent-fg transition-colors"
                 >
-                  <h3 class="text-heading font-semibold text-fg">Outcome Score Trends</h3>
+                  <h3 class="text-heading font-semibold text-fg">{$t('outcomeScores.trends')}</h3>
                   {#if showTrendChart}
                     <ChevronUp class="w-5 h-5" />
                   {:else}

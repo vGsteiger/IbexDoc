@@ -150,7 +150,7 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-display font-semibold text-fg">Diagnosen</h1>
+    <h1 class="text-display font-semibold text-fg">{$t('diagnoses.title')}</h1>
     <button
       class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
       onclick={() => {
@@ -178,7 +178,7 @@
       </h2>
       <form onsubmit={handleSubmit} class="space-y-4">
         <div>
-          <p class="block text-body font-medium text-fg-muted mb-1">ICD-10 Code *</p>
+          <p class="block text-body font-medium text-fg-muted mb-1">{$t('diagnoses.icdCode')} *</p>
           <IcdSearch onSelect={handleIcdSelect} />
           {#if selectedCode}
             <div class="mt-2 p-3 bg-surface-selected rounded-card border border-line">
@@ -191,7 +191,7 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label for="diagnosed-date" class="block text-body font-medium text-fg-muted mb-1">
-              Diagnosedatum *
+              {$t('diagnoses.diagnosedOn')} *
             </label>
             <input
               id="diagnosed-date"
@@ -204,7 +204,7 @@
 
           <div>
             <label for="status" class="block text-body font-medium text-fg-muted mb-1">
-              Status *
+              {$t('diagnoses.status')} *
             </label>
             <select
               id="status"

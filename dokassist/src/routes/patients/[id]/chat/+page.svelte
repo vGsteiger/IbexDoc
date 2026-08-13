@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { t } from '$lib/translations';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
@@ -32,7 +33,7 @@
 
   async function handleNewSession() {
     try {
-      const session = await createChatSession('patient', patientId, 'Neuer Chat');
+      const session = await createChatSession('patient', patientId, get(t)('chat.defaultTitle'));
       sessions = [session, ...sessions];
       activeSessionId = session.id;
     } catch (e) {
@@ -61,7 +62,9 @@
   <!-- Sidebar: session list -->
   <div class="w-56 border-r border-line flex flex-col shrink-0">
     <div class="p-4 border-b border-line">
-      <h2 class="text-body font-semibold text-fg-muted uppercase tracking-wide">Chats</h2>
+      <h2 class="text-body font-semibold text-fg-muted uppercase tracking-wide">
+        {$t('chat.chats')}
+      </h2>
     </div>
     {#if !isLoading}
       <ChatSessionList
@@ -88,7 +91,7 @@
             onclick={handleNewSession}
             class="text-accent-fg hover:text-accent-fg underline text-body"
           >
-            Neuen Chat starten
+            {$t('chat.startNewChat')}
           </button>
         </div>
       </div>

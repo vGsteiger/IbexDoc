@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
   import { completeOnboarding, parseError } from '$lib/api';
   import { ChevronLeft, Users, Mic, Search, FileText, Calendar, CheckCircle } from 'lucide-svelte';
@@ -32,51 +33,19 @@
   }
 
   const features = [
-    {
-      icon: Users,
-      title: 'Patient Management',
-      description:
-        'Create and manage patient records with comprehensive demographic information, diagnoses, medications, and treatment plans.',
-      color: 'blue',
-    },
-    {
-      icon: Calendar,
-      title: 'Session Scheduling',
-      description:
-        'Schedule therapy sessions with calendar integration. Track session notes, AMDP data, and clinical observations.',
-      color: 'green',
-    },
-    {
-      icon: Mic,
-      title: 'Session Recording',
-      description:
-        'Record therapy sessions and generate AI-powered summaries. All processing happens locally for maximum privacy.',
-      color: 'purple',
-    },
-    {
-      icon: Search,
-      title: 'Global Search',
-      description:
-        'Quickly find patients, sessions, and notes using powerful full-text search. Press Cmd+K to open search from anywhere.',
-      color: 'yellow',
-    },
-    {
-      icon: FileText,
-      title: 'Report Generation',
-      description:
-        'Generate clinical reports, letters, and documentation with AI assistance. All data stays on your device.',
-      color: 'red',
-    },
+    { icon: Users, key: 'patients', color: 'blue' },
+    { icon: Calendar, key: 'scheduling', color: 'green' },
+    { icon: Mic, key: 'recording', color: 'purple' },
+    { icon: Search, key: 'search', color: 'yellow' },
+    { icon: FileText, key: 'reports', color: 'red' },
   ];
 </script>
 
 <div class="min-h-screen bg-surface flex items-center justify-center p-8">
   <div class="max-w-4xl w-full">
     <div class="mb-8 text-center">
-      <h1 class="text-display font-semibold text-fg mb-2">Welcome to RamDoc!</h1>
-      <p class="text-fg-muted">
-        Here's a quick overview of the key features to help you get started.
-      </p>
+      <h1 class="text-display font-semibold text-fg mb-2">{$t('onboarding.step4.title')}</h1>
+      <p class="text-fg-muted">{$t('onboarding.step4.subtitle')}</p>
       <div class="flex items-center justify-center gap-2 mt-4">
         <div class="h-2 w-16 bg-accent rounded-full"></div>
         <div class="h-2 w-16 bg-accent rounded-full"></div>
@@ -99,8 +68,12 @@
             <div class="inline-block p-3 {colorClasses[feature.color].bg} rounded-card mb-4">
               <FeatureIcon size={28} class={colorClasses[feature.color].text} />
             </div>
-            <h3 class="text-fg font-semibold mb-2">{feature.title}</h3>
-            <p class="text-fg-muted text-body">{feature.description}</p>
+            <h3 class="text-fg font-semibold mb-2">
+              {$t(`onboarding.step4.features.${feature.key}Title`)}
+            </h3>
+            <p class="text-fg-muted text-body">
+              {$t(`onboarding.step4.features.${feature.key}Desc`)}
+            </p>
           </div>
         {/each}
       </div>
@@ -111,22 +84,19 @@
             <CheckCircle size={24} class="text-accent-fg" />
           </div>
           <div>
-            <h3 class="text-accent-fg font-semibold mb-2">Privacy & Security</h3>
+            <h3 class="text-accent-fg font-semibold mb-2">{$t('onboarding.step4.privacyTitle')}</h3>
             <p class="text-fg-muted text-body leading-relaxed">
-              All your data is encrypted at rest using SQLCipher with AES-256 encryption. Patient
-              files are stored in an encrypted vault. The AI model runs locally on your machine, so
-              patient data never leaves your device. Audit logs track all data access for nDSG
-              compliance.
+              {$t('onboarding.step4.privacyBody')}
             </p>
           </div>
         </div>
       </div>
 
       <div class="bg-surface-hover rounded-card p-6 border border-line">
-        <h3 class="text-fg font-semibold mb-3">Quick Keyboard Shortcuts</h3>
+        <h3 class="text-fg font-semibold mb-3">{$t('onboarding.step4.shortcutsTitle')}</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="flex items-center justify-between">
-            <span class="text-fg-muted text-body">Open command palette</span>
+            <span class="text-fg-muted text-body">{$t('onboarding.step4.openPalette')}</span>
             <kbd
               class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
             >
@@ -134,7 +104,7 @@
             </kbd>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-fg-muted text-body">Create new patient</span>
+            <span class="text-fg-muted text-body">{$t('onboarding.step4.newPatient')}</span>
             <kbd
               class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
             >
@@ -142,7 +112,7 @@
             </kbd>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-fg-muted text-body">Create new session</span>
+            <span class="text-fg-muted text-body">{$t('onboarding.step4.newSession')}</span>
             <kbd
               class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
             >
@@ -150,7 +120,7 @@
             </kbd>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-fg-muted text-body">Close command palette</span>
+            <span class="text-fg-muted text-body">{$t('onboarding.step4.closePalette')}</span>
             <kbd
               class="px-2 py-1 bg-surface-raised border border-line rounded-control text-fg-muted text-caption font-mono"
             >
@@ -168,7 +138,7 @@
         class="px-6 py-3 border border-line bg-surface-raised hover:bg-surface-hover disabled:bg-surface-hover disabled:cursor-not-allowed text-fg font-medium rounded-control transition-colors flex items-center gap-2"
       >
         <ChevronLeft size={20} />
-        Back
+        {$t('common.back')}
       </button>
 
       <button
@@ -177,9 +147,9 @@
         class="px-8 py-3 bg-accent hover:bg-accent-hover disabled:bg-surface-selected disabled:cursor-not-allowed text-on-accent font-semibold rounded-control transition-colors flex items-center gap-2 text-heading"
       >
         {#if isCompleting}
-          Completing...
+          {$t('onboarding.step4.completing')}
         {:else}
-          Get Started
+          {$t('onboarding.step4.getStarted')}
           <CheckCircle size={24} />
         {/if}
       </button>

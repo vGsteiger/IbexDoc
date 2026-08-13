@@ -154,7 +154,7 @@
           ? 'bg-surface-raised text-fg'
           : 'text-fg-muted hover:text-fg'}"
       >
-        Edit
+        {$t('reports.edit')}
       </button>
       <button
         on:click={() => (showPreview = true)}
@@ -162,7 +162,7 @@
           ? 'bg-surface-raised text-fg'
           : 'text-fg-muted hover:text-fg'}"
       >
-        Preview
+        {$t('reports.preview')}
       </button>
     </div>
 

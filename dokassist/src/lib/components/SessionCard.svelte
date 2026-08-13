@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionTypeLabel } from '$lib/translations/labels';
   import { t } from '$lib/translations';
   import type { Session } from '$lib/api';
   import { Card } from '$lib/components/ui';
@@ -32,7 +33,7 @@
 <Card padding="sm" {onclick}>
   <div class="flex items-start justify-between gap-4">
     <div class="min-w-0 flex-1">
-      <h3 class="truncate text-heading text-fg">{session.session_type}</h3>
+      <h3 class="truncate text-heading text-fg">{$sessionTypeLabel(session.session_type)}</h3>
       <p class="mt-0.5 text-caption text-fg-muted" data-numeric>
         {formatDate(session.session_date)}
       </p>

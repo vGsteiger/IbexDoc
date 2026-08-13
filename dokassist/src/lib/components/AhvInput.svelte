@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { createEventDispatcher } from 'svelte';
   import { Input } from '$lib/components/ui';
 
@@ -85,18 +86,18 @@
       validationError = '';
       isValid = true;
     } else if (digits.length < 13) {
-      validationError = `Enter 13 digits (${digits.length}/13)`;
+      validationError = $t('patients.ahvEnterDigits').replace('{count}', String(digits.length));
       isValid = false;
     } else if (digits.length === 13) {
       isValid = validateAhvChecksum(digits);
       if (!isValid) {
-        validationError = 'Invalid AHV checksum';
+        validationError = $t('patients.ahvInvalidChecksum');
       } else {
         validationError = '';
       }
     } else {
       // More than 13 digits is invalid
-      validationError = 'AHV must contain exactly 13 digits';
+      validationError = $t('patients.ahvExactDigits');
       isValid = false;
     }
   }

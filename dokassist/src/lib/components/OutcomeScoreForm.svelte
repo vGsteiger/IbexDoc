@@ -68,7 +68,9 @@
 
 <form onsubmit={handleSubmit} class="space-y-4">
   <div>
-    <label for="scale-type" class="block text-body font-medium text-fg mb-1"> Fragebogen * </label>
+    <label for="scale-type" class="block text-body font-medium text-fg mb-1">
+      {$t('outcomeScores.questionnaire')} *
+    </label>
     <select
       id="scale-type"
       bind:value={scaleType}
@@ -92,7 +94,7 @@
       required
       min="0"
       max={maxScore}
-      placeholder="z.B. 12"
+      placeholder={$t('outcomeScores.scorePlaceholder')}
       class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
     />
   </div>

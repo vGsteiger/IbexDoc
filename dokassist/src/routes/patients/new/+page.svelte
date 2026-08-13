@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
+  import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
   import { createPatient, parseError, type CreatePatient, type UpdatePatient } from '$lib/api';
   import PatientForm from '$lib/components/PatientForm.svelte';
@@ -16,14 +18,14 @@
       isSubmitting = true;
       error = '';
       const patient = await createPatient(event.detail);
-      addToast('Patient created');
+      addToast(get(t)('patients.created'));
       goto(`/patients/${patient.id}`);
     } catch (e) {
       const { code } = parseError(e);
       if (code === 'DB_UNIQUE_CONSTRAINT') {
         error = 'A patient with this AHV number already exists.';
       } else {
-        error = e instanceof Error ? e.message : 'Failed to create patient';
+        error = e instanceof Error ? e.message : get(t)('patients.createFailed');
       }
       console.error('Error creating patient:', e);
       isSubmitting = false;
@@ -37,7 +39,7 @@
 
 <div class="p-8">
   <div class="max-w-3xl mx-auto">
-    <PageHeader title="New Patient" />
+    <PageHeader title={$t('patients.newPatient')} />
 
     {#if error}
       <Alert tone="danger" class="mb-4">{error}</Alert>

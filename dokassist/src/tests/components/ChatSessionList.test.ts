@@ -51,10 +51,10 @@ describe('ChatSessionList', () => {
         onsessionnew: vi.fn(),
       },
     });
-    expect(screen.getByText('Keine Chats vorhanden')).toBeInTheDocument();
+    expect(screen.getByText('No chats yet')).toBeInTheDocument();
   });
 
-  it('"Neuer Chat" button calls onsessionnew', async () => {
+  it('the new-chat button calls onsessionnew', async () => {
     const onsessionnew = vi.fn();
     render(ChatSessionList, {
       props: {
@@ -64,7 +64,7 @@ describe('ChatSessionList', () => {
         onsessionnew,
       },
     });
-    await fireEvent.click(screen.getByText('Neuer Chat'));
+    await fireEvent.click(screen.getByText('New Chat'));
     expect(onsessionnew).toHaveBeenCalledOnce();
   });
 
@@ -91,8 +91,8 @@ describe('ChatSessionList', () => {
         onsessionnew: vi.fn(),
       },
     });
-    // Trigger rename by clicking the rename button (Pencil icon has title "Umbenennen")
-    const renameBtn = screen.getByTitle('Umbenennen');
+    // Trigger rename by clicking the rename button (Pencil icon, title "Rename")
+    const renameBtn = screen.getByTitle('Rename');
     await fireEvent.click(renameBtn);
     const input = screen.getByRole<HTMLInputElement>('textbox');
     expect(input).toBeInTheDocument();
@@ -111,7 +111,7 @@ describe('ChatSessionList', () => {
         onsessionnew: vi.fn(),
       },
     });
-    const renameBtn = screen.getByTitle('Umbenennen');
+    const renameBtn = screen.getByTitle('Rename');
     await fireEvent.click(renameBtn);
     const input = screen.getByRole<HTMLInputElement>('textbox');
     await fireEvent.input(input, { target: { value: 'Renamed Chat' } });

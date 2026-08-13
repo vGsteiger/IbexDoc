@@ -77,7 +77,7 @@
           type="button"
           class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onEdit}
-          title="Bearbeiten"
+          title={$t('common.edit')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

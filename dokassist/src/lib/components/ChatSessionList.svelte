@@ -76,13 +76,13 @@
  text-on-accent text-body font-medium rounded-control transition-colors"
     >
       <span>+</span>
-      <span>Neuer Chat</span>
+      <span>{$t('chat.newChat')}</span>
     </button>
   </div>
 
   <div class="flex-1 overflow-y-auto">
     {#if sessions.length === 0}
-      <p class="text-center text-fg-subtle text-body p-4">Keine Chats vorhanden</p>
+      <p class="text-center text-fg-subtle text-body p-4">{$t('chat.noChats')}</p>
     {:else}
       <ul class="py-2">
         {#each sessions as session (session.id)}
@@ -134,7 +134,7 @@
                       startRename(session);
                     }}
                     class="text-caption text-fg-muted hover:text-fg p-0.5"
-                    title="Umbenennen"><Pencil size={14} /></button
+                    title={$t('common.rename')}><Pencil size={14} /></button
                   >
                   <button
                     onclick={(e) => {

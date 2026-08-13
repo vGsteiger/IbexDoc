@@ -66,7 +66,8 @@ describe('ReportView — loading', () => {
     mockInvoke.mockResolvedValueOnce(REPORT);
     render(ReportView);
     await waitFor(() => {
-      expect(screen.getByText('Befundbericht')).toBeInTheDocument();
+      // The stored value stays German; the display label is translated.
+      expect(screen.getByText('Assessment report')).toBeInTheDocument();
     });
   });
 });

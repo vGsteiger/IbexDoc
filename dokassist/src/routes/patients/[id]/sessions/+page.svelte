@@ -43,7 +43,7 @@
 </script>
 
 <div class="p-8">
-  <PageHeader title="Sitzungen">
+  <PageHeader title={$t('sessions.title')}>
     {#snippet actions()}
       <Button variant="primary" onclick={handleNewSession}>
         <Plus size={14} />

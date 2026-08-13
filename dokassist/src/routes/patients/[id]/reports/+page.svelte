@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { reportTypeLabel } from '$lib/translations/labels';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { listReports, deleteReport, parseError, type Report, type AppError } from '$lib/api';
@@ -44,19 +45,6 @@
     });
   }
 
-  function formatReportType(type: string): string {
-    switch (type) {
-      case 'Befundbericht':
-        return 'Befundbericht';
-      case 'Verlaufsbericht':
-        return 'Verlaufsbericht';
-      case 'Ueberweisungsschreiben':
-        return 'Überweisungsschreiben';
-      default:
-        return type;
-    }
-  }
-
   onMount(() => {
     loadReports();
   });
@@ -94,7 +82,7 @@
           <div class="flex justify-between items-start mb-3">
             <div>
               <h3 class="text-heading font-semibold text-fg">
-                {formatReportType(report.report_type)}
+                {$reportTypeLabel(report.report_type)}
               </h3>
               <p class="text-body text-fg-muted mt-1">
                 {$t('reports.generated')}

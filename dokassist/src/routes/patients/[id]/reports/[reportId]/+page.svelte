@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { reportTypeLabel } from '$lib/translations/labels';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -77,19 +78,6 @@
     });
   }
 
-  function formatReportType(type: string): string {
-    switch (type) {
-      case 'Befundbericht':
-        return 'Befundbericht';
-      case 'Verlaufsbericht':
-        return 'Verlaufsbericht';
-      case 'Ueberweisungsschreiben':
-        return 'Überweisungsschreiben';
-      default:
-        return type;
-    }
-  }
-
   async function handleExportPdf() {
     if (!report) return;
 
@@ -107,7 +95,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${formatReportType(report.report_type)}_${new Date(report.generated_at).toISOString().split('T')[0]}.pdf`;
+      a.download = `${report.report_type}_${new Date(report.generated_at).toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -136,7 +124,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${formatReportType(report.report_type)}_${new Date(report.generated_at).toISOString().split('T')[0]}.docx`;
+      a.download = `${report.report_type}_${new Date(report.generated_at).toISOString().split('T')[0]}.docx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -162,7 +150,7 @@
         <div class="flex items-center justify-between mb-4">
           <div>
             <h2 class="text-display font-semibold text-fg">
-              {formatReportType(report.report_type)}
+              {$reportTypeLabel(report.report_type)}
             </h2>
             <p class="text-body text-fg-muted mt-1">
               {$t('reports.generated')}
