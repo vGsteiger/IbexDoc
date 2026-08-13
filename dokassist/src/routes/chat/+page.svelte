@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { onMount } from 'svelte';
   import {
     listChatSessions,
@@ -30,7 +31,7 @@
 
   async function handleNewSession() {
     try {
-      const session = await createChatSession('global', undefined, 'Neuer Chat');
+      const session = await createChatSession('global', undefined, get(t)('chat.defaultTitle'));
       sessions = [session, ...sessions];
       activeSessionId = session.id;
     } catch (e) {
@@ -88,7 +89,7 @@
             onclick={handleNewSession}
             class="text-accent-fg hover:text-accent-fg underline text-body"
           >
-            Neuen Chat starten
+            {$t('chat.startNewChat')}
           </button>
         </div>
       </div>

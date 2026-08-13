@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
+  import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { getSettings, updateSettings, parseError, type PracticeSettings } from '$lib/api';
+  import { getSettings, updateSettings, type PracticeSettings } from '$lib/api';
   import { ChevronRight, Building, User, Mail, Phone, MapPin, Globe } from 'lucide-svelte';
 
   let settings = $state<PracticeSettings>({
@@ -70,7 +72,7 @@
       await updateSettings({ ...settings, canton: settings.canton || null });
       goto('/onboarding/step2');
     } catch (err) {
-      error = parseError(err).message;
+      error = $errorText(err);
     } finally {
       isSaving = false;
     }
@@ -84,10 +86,8 @@
 <div class="min-h-screen bg-surface flex items-center justify-center p-8">
   <div class="max-w-3xl w-full">
     <div class="mb-8 text-center">
-      <h1 class="text-display font-semibold text-fg mb-2">Configure Practice Details</h1>
-      <p class="text-fg-muted">
-        Set up your practice information. This will be used for billing and patient documentation.
-      </p>
+      <h1 class="text-display font-semibold text-fg mb-2">{$t('onboarding.step1.title')}</h1>
+      <p class="text-fg-muted">{$t('onboarding.step1.subtitle')}</p>
       <div class="flex items-center justify-center gap-2 mt-4">
         <div class="h-2 w-16 bg-accent rounded-full"></div>
         <div class="h-2 w-16 bg-surface-selected rounded-full"></div>
@@ -105,7 +105,7 @@
     {#if isLoading}
       <div class="text-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-        <p class="mt-4 text-fg-muted">Loading settings...</p>
+        <p class="mt-4 text-fg-muted">{$t('onboarding.step1.loading')}</p>
       </div>
     {:else}
       <div class="bg-surface-raised border border-line-subtle rounded-card p-8 space-y-6">
@@ -113,13 +113,13 @@
           <div>
             <label for="practice-name" class="flex items-center gap-2 text-fg-muted mb-2">
               <Building size={16} />
-              Practice Name
+              {$t('onboarding.step1.practiceName')}
             </label>
             <input
               id="practice-name"
               type="text"
               bind:value={settings.practice_name}
-              placeholder="Enter practice name"
+              placeholder={$t('onboarding.step1.practiceNamePlaceholder')}
               class="w-full px-4 py-3 bg-surface-hover border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
@@ -127,13 +127,13 @@
           <div>
             <label for="therapist-name" class="flex items-center gap-2 text-fg-muted mb-2">
               <User size={16} />
-              Therapist Name
+              {$t('onboarding.step1.therapistName')}
             </label>
             <input
               id="therapist-name"
               type="text"
               bind:value={settings.therapist_name}
-              placeholder="Enter your name"
+              placeholder={$t('onboarding.step1.therapistNamePlaceholder')}
               class="w-full px-4 py-3 bg-surface-hover border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
@@ -142,12 +142,12 @@
         <div>
           <label for="practice-address" class="flex items-center gap-2 text-fg-muted mb-2">
             <MapPin size={16} />
-            Practice Address
+            {$t('onboarding.step1.practiceAddress')}
           </label>
           <textarea
             id="practice-address"
             bind:value={settings.practice_address}
-            placeholder="Enter practice address"
+            placeholder={$t('onboarding.step1.practiceAddressPlaceholder')}
             rows="3"
             class="w-full px-4 py-3 bg-surface-hover border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
           ></textarea>
@@ -157,7 +157,7 @@
           <div>
             <label for="practice-phone" class="flex items-center gap-2 text-fg-muted mb-2">
               <Phone size={16} />
-              Phone
+              {$t('onboarding.step1.phone')}
             </label>
             <input
               id="practice-phone"
@@ -171,7 +171,7 @@
           <div>
             <label for="practice-email" class="flex items-center gap-2 text-fg-muted mb-2">
               <Mail size={16} />
-              Email
+              {$t('onboarding.step1.email')}
             </label>
             <input
               id="practice-email"
@@ -186,20 +186,22 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label for="zsr-number" class="text-fg-muted mb-2 block">
-              ZSR Number <span class="text-fg-muted">(for TARMED billing)</span>
+              {$t('onboarding.step1.zsrNumber')}
+              <span class="text-fg-muted">{$t('onboarding.step1.zsrHint')}</span>
             </label>
             <input
               id="zsr-number"
               type="text"
               bind:value={settings.zsr_number}
-              placeholder="ZSR number"
+              placeholder={$t('onboarding.step1.zsrPlaceholder')}
               class="w-full px-4 py-3 bg-surface-hover border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
 
           <div>
             <label for="canton" class="text-fg-muted mb-2 block">
-              Canton <span class="text-fg-muted">(for Taxpunktwert)</span>
+              {$t('onboarding.step1.canton')}
+              <span class="text-fg-muted">{$t('onboarding.step1.cantonHint')}</span>
             </label>
             <select
               id="canton"
@@ -209,7 +211,7 @@
               }}
               class="w-full px-4 py-3 bg-surface-hover border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             >
-              <option value="">Select canton...</option>
+              <option value="">{$t('onboarding.step1.cantonSelect')}</option>
               {#each cantons as canton}
                 <option value={canton.code}>{canton.name} ({canton.code})</option>
               {/each}
@@ -220,13 +222,13 @@
         <div>
           <label for="clinical-specialty" class="flex items-center gap-2 text-fg-muted mb-2">
             <Globe size={16} />
-            Clinical Specialty
+            {$t('onboarding.step1.clinicalSpecialty')}
           </label>
           <input
             id="clinical-specialty"
             type="text"
             bind:value={settings.clinical_specialty}
-            placeholder="e.g., Clinical Psychology, Psychiatry"
+            placeholder={$t('onboarding.step1.clinicalSpecialtyPlaceholder')}
             class="w-full px-4 py-3 bg-surface-hover border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </div>
@@ -237,7 +239,7 @@
           onclick={handleSkip}
           class="px-6 py-3 text-fg-muted hover:text-fg font-medium transition-colors"
         >
-          Skip for now
+          {$t('onboarding.skipForNow')}
         </button>
 
         <button
@@ -246,9 +248,9 @@
           class="px-6 py-3 bg-accent hover:bg-accent-hover disabled:bg-surface-selected disabled:cursor-not-allowed text-on-accent font-medium rounded-control transition-colors flex items-center gap-2"
         >
           {#if isSaving}
-            Saving...
+            {$t('common.saving')}
           {:else}
-            Continue
+            {$t('common.continue')}
             <ChevronRight size={20} />
           {/if}
         </button>

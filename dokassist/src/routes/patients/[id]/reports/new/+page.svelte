@@ -458,7 +458,9 @@
                 </svg>
                 <span class="text-body text-success-fg flex-1">
                   {$t('reports.uploadedFile').replace('{name}', uploadedFileName)}
-                  <span class="text-fg-muted ml-2">({uploadedFileContent.length} chars)</span>
+                  <span class="text-fg-muted ml-2">
+                    {$t('reports.fileChars').replace('{count}', String(uploadedFileContent.length))}
+                  </span>
                 </span>
                 <button on:click={clearFile} class="text-body text-danger-fg hover:underline">
                   {$t('reports.clearFile')}

@@ -101,7 +101,7 @@
       ? 'border-accent bg-accent-subtle'
       : 'border-line bg-surface-sunken'}"
     role="region"
-    aria-label="File upload area"
+    aria-label={$t('files.uploadArea')}
     ondragover={handleDragOver}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}

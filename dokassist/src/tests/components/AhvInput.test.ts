@@ -85,6 +85,6 @@ describe('AhvInput validation', () => {
     render(AhvInput);
     const input = screen.getByRole('textbox');
     await fireEvent.input(input, { target: { value: '75612345678971' } }); // 14 digits
-    expect(screen.getByText('AHV must contain exactly 13 digits')).toBeInTheDocument();
+    expect(screen.getByText('The AHV number must contain exactly 13 digits')).toBeInTheDocument();
   });
 });

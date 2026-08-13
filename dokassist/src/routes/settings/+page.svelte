@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
+  import { get } from 'svelte/store';
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import { getVersion } from '@tauri-apps/api/app';
@@ -10,7 +12,6 @@
     downloadModel,
     loadModel,
     resetApp,
-    parseError,
     checkForUpdates,
     installUpdate,
     exportAllPatientData,
@@ -166,7 +167,7 @@
         {} as Record<string, string>
       );
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     } finally {
       loadingModels = false;
     }
@@ -181,7 +182,7 @@
       embedPhase = 'done';
     } catch (e) {
       embedPhase = 'error';
-      embedError = parseError(e).message;
+      embedError = $errorText(e);
     }
   }
 
@@ -200,7 +201,7 @@
       medRefPhase = 'done';
     } catch (e) {
       medRefPhase = 'error';
-      medRefError = parseError(e).message;
+      medRefError = $errorText(e);
     } finally {
       medRefUnlisten?.();
       medRefUnlisten = null;
@@ -220,7 +221,7 @@
     try {
       updateInfo = await checkForUpdates();
     } catch (e) {
-      updateError = parseError(e).message;
+      updateError = $errorText(e);
     } finally {
       checkingUpdate = false;
     }
@@ -249,7 +250,7 @@
       updateUnlisten?.();
       updateUnlisten = null;
       installingUpdate = false;
-      updateError = parseError(e).message;
+      updateError = $errorText(e);
     }
   }
 
@@ -301,7 +302,7 @@
       unlisten?.();
       unlisten = null;
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -315,7 +316,7 @@
       phase = 'done';
     } catch (e) {
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -342,7 +343,7 @@
       await loadInstalledModels();
     } catch (e) {
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     } finally {
       unlisten?.();
       unlisten = null;
@@ -362,7 +363,7 @@
       phase = 'done';
     } catch (e) {
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -371,7 +372,7 @@
       await deleteModel(modelId);
       await loadInstalledModels();
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     }
   }
 
@@ -380,7 +381,7 @@
       await setDefaultModel(modelId);
       await loadInstalledModels();
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     }
   }
 
@@ -394,7 +395,7 @@
       }
       await loadInstalledModels();
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     }
   }
 
@@ -434,7 +435,7 @@
       await resetApp();
       goto('/');
     } catch (e) {
-      resetError = parseError(e).message;
+      resetError = $errorText(e);
       resetting = false;
     }
   }
@@ -464,7 +465,7 @@
       showExportConfirm = false;
       exportInput = '';
     } catch (e) {
-      exportError = parseError(e).message;
+      exportError = $errorText(e);
     } finally {
       exporting = false;
     }
@@ -489,7 +490,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      backupError = parseError(e).message;
+      backupError = $errorText(e);
     } finally {
       creatingBackup = false;
     }
@@ -512,7 +513,7 @@
       const backupArray = Array.from(new Uint8Array(arrayBuffer));
       validatedBackupInfo = await validateBackupArchive(backupArray);
     } catch (e) {
-      restoreError = parseError(e).message;
+      restoreError = $errorText(e);
       selectedBackupFile = null;
       validatedBackupInfo = null;
     }
@@ -537,7 +538,7 @@
       // Redirect to unlock page since database was replaced
       goto('/');
     } catch (e) {
-      restoreError = parseError(e).message;
+      restoreError = $errorText(e);
     } finally {
       restoring = false;
     }
@@ -546,7 +547,7 @@
   async function handleSelectCsvFile() {
     try {
       const selected = await open({
-        title: 'Select CSV file',
+        title: get(t)('settings.selectCsvDialogTitle'),
         filters: [
           {
             name: 'CSV',
@@ -571,7 +572,7 @@
       csvPreview = await parseCsvPreview(selectedCsvPath);
       columnMappings = csvPreview.detected_mappings;
     } catch (e) {
-      csvError = parseError(e).message;
+      csvError = $errorText(e);
       selectedCsvPath = null;
     }
   }
@@ -591,7 +592,7 @@
         columnMappings = [];
       }
     } catch (e) {
-      csvError = parseError(e).message;
+      csvError = $errorText(e);
     } finally {
       importing = false;
     }
@@ -609,27 +610,37 @@
   }
 
   // Check if all required fields are mapped
+  const REQUIRED_PATIENT_FIELDS = ['ahv_number', 'first_name', 'last_name', 'date_of_birth'];
+
   function hasAllRequiredFieldsMapped(): boolean {
-    const requiredFields = ['ahv_number', 'first_name', 'last_name', 'date_of_birth'];
     const mappedFields = new Set(columnMappings.map((m) => m.patient_field).filter((f) => f));
-    return requiredFields.every((field) => mappedFields.has(field));
+    return REQUIRED_PATIENT_FIELDS.every((field) => mappedFields.has(field));
   }
 
-  const patientFields = [
-    { value: '', label: '(Skip)' },
-    { value: 'ahv_number', label: 'AHV Number *' },
-    { value: 'first_name', label: 'First Name *' },
-    { value: 'last_name', label: 'Last Name *' },
-    { value: 'date_of_birth', label: 'Date of Birth *' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'address', label: 'Address' },
-    { value: 'phone', label: 'Phone' },
-    { value: 'email', label: 'Email' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'gp_name', label: 'GP Name' },
-    { value: 'gp_address', label: 'GP Address' },
-    { value: 'notes', label: 'Notes' },
-  ];
+  // The CSV target fields are the patient fields, so they reuse the labels the
+  // patient form already has rather than duplicating them under settings.
+  const PATIENT_FIELD_KEYS: Record<string, string> = {
+    ahv_number: 'ahvNumber',
+    first_name: 'firstName',
+    last_name: 'lastName',
+    date_of_birth: 'dateOfBirth',
+    gender: 'gender',
+    address: 'address',
+    phone: 'phone',
+    email: 'email',
+    insurance: 'insurance',
+    gp_name: 'gpName',
+    gp_address: 'gpAddress',
+    notes: 'notes',
+  };
+
+  let patientFields = $derived([
+    { value: '', label: $t('settings.csvImport.skipColumn') },
+    ...Object.entries(PATIENT_FIELD_KEYS).map(([value, key]) => ({
+      value,
+      label: $t(`patients.${key}`) + (REQUIRED_PATIENT_FIELDS.includes(value) ? ' *' : ''),
+    })),
+  ]);
 </script>
 
 <div class="p-8 max-w-xl">
@@ -962,27 +973,34 @@
       {#if status?.last_generation_stats}
         {@const s = status.last_generation_stats}
         <div class="border-t border-line pt-3">
-          <p class="text-caption font-medium text-fg-muted mb-2">Last generation performance</p>
+          <p class="text-caption font-medium text-fg-muted mb-2">
+            {$t('settings.lastGenerationPerformance')}
+          </p>
           <div class="grid grid-cols-2 gap-3">
             <div class="bg-surface-selected rounded-card p-2.5 text-center">
               <p class="text-heading font-semibold text-fg">
                 {(s.ttft_ms / 1000).toFixed(2)}s
               </p>
-              <p class="text-caption text-fg-muted">Time to first token</p>
+              <p class="text-caption text-fg-muted">{$t('settings.timeToFirstToken')}</p>
             </div>
             <div class="bg-surface-selected rounded-card p-2.5 text-center">
               <p class="text-heading font-semibold text-fg">
                 {s.tps.toFixed(1)} tok/s
               </p>
-              <p class="text-caption text-fg-muted">Throughput</p>
+              <p class="text-caption text-fg-muted">{$t('settings.throughput')}</p>
             </div>
           </div>
           <p class="text-caption text-fg-subtle mt-2">
-            {s.prompt_tokens} prompt tokens · {s.completion_tokens} generated tokens
+            {$t('settings.tokenStats')
+              .replace('{prompt}', String(s.prompt_tokens))
+              .replace('{completion}', String(s.completion_tokens))}
           </p>
           <p class="text-caption text-fg-subtle mt-1">
-            {s.cache_hit ? 'Warm context' : 'Cold context'} · {s.reused_prompt_tokens} reused ·
-            {s.evaluated_prompt_tokens} evaluated · {s.prefill_ms.toFixed(0)}ms prefill
+            {s.cache_hit ? $t('settings.contextWarm') : $t('settings.contextCold')} ·
+            {$t('settings.cacheStats')
+              .replace('{reused}', String(s.reused_prompt_tokens))
+              .replace('{evaluated}', String(s.evaluated_prompt_tokens))
+              .replace('{prefill}', s.prefill_ms.toFixed(0))}
           </p>
         </div>
       {/if}
@@ -1077,15 +1095,16 @@
 
     <!-- Available Models Card -->
     <div class="mb-6">
-      <h3 class="text-md font-semibold text-fg mb-3">Available Models</h3>
+      <h3 class="text-heading font-semibold text-fg mb-3">{$t('settings.availableModels')}</h3>
       <p class="text-caption text-fg-muted mb-4">
-        Choose a model based on your system's available RAM. Your system has {status?.total_ram_bytes
-          ? formatBytes(status.total_ram_bytes)
-          : '...'} of RAM.
+        {$t('settings.availableModelsHint').replace(
+          '{ram}',
+          status?.total_ram_bytes ? formatBytes(status.total_ram_bytes) : '…'
+        )}
       </p>
 
       {#if loadingModels}
-        <p class="text-body text-fg-muted">Loading available models...</p>
+        <p class="text-body text-fg-muted">{$t('settings.loadingAvailableModels')}</p>
       {:else}
         <div class="space-y-3">
           {#each availableModels as model}
@@ -1114,18 +1133,18 @@
                       <span
                         class="px-2 py-0.5 text-caption rounded-card bg-success text-on-success"
                       >
-                        Downloaded
+                        {$t('settings.downloadedBadge')}
                       </span>
                     {/if}
                     {#if !canRunModel}
                       <span
                         class="px-2 py-0.5 text-caption rounded-card bg-warning text-on-warning"
                       >
-                        Needs {model.min_ram_gb}GB+ RAM
+                        {$t('settings.needsRam').replace('{gb}', String(model.min_ram_gb))}
                       </span>
                     {:else}
                       <span class="px-2 py-0.5 text-caption rounded-card bg-accent text-on-accent">
-                        Compatible
+                        {$t('settings.compatibleBadge')}
                       </span>
                     {/if}
                   </div>
@@ -1138,8 +1157,10 @@
                     </p>
                   {/if}
                   <p class="text-caption text-fg-subtle">
-                    Size: {formatBytes(model.size_bytes)} • Minimum RAM: {model.min_ram_gb}GB •
-                    Native context: {Math.round(model.context_window_tokens / 1024)}K
+                    {$t('settings.modelSpecs')
+                      .replace('{size}', formatBytes(model.size_bytes))
+                      .replace('{ram}', String(model.min_ram_gb))
+                      .replace('{context}', String(Math.round(model.context_window_tokens / 1024)))}
                   </p>
                   <p class="text-caption text-fg-subtle mt-1">
                     {model.parameters} • {model.license}
@@ -1152,7 +1173,7 @@
                   {#if phase === 'downloading' && activeDownloadFilename === model.filename}
                     <div class="mb-3">
                       <div class="flex justify-between text-caption text-fg-muted mb-1">
-                        <span>Downloading...</span>
+                        <span>{$t('settings.downloadingEllipsis')}</span>
                         <span>{downloadProgress ?? 0}%</span>
                       </div>
                       <div class="w-full bg-surface-selected rounded-full h-2">
@@ -1170,14 +1191,17 @@
                     class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
                   >
                     {phase === 'downloading' && activeDownloadFilename === model.filename
-                      ? 'Downloading...'
-                      : 'Download Model'}
+                      ? $t('settings.downloadingEllipsis')
+                      : $t('settings.downloadModel')}
                   </button>
                   {#if !canRunModel}
                     <p class="text-caption text-warning-fg mt-2">
-                      This model requires at least {model.min_ram_gb}GB RAM. Your system has {status?.total_ram_bytes
-                        ? formatBytes(status.total_ram_bytes)
-                        : '...'}.
+                      {$t('settings.insufficientRam')
+                        .replace('{required}', String(model.min_ram_gb))
+                        .replace(
+                          '{available}',
+                          status?.total_ram_bytes ? formatBytes(status.total_ram_bytes) : '…'
+                        )}
                     </p>
                   {/if}
                 </div>
@@ -1406,15 +1430,12 @@
   </section>
 
   <section class="mt-10">
-    <h2 class="text-heading font-semibold text-fg mb-4">CSV Patient Import</h2>
+    <h2 class="text-heading font-semibold text-fg mb-4">{$t('settings.csvImport.section')}</h2>
 
     <div class="bg-surface-hover rounded-card p-4">
       <div class="mb-3">
-        <p class="text-body font-medium text-fg mb-1">Import Patients from CSV</p>
-        <p class="text-caption text-fg-muted mb-3">
-          Import patient records from a CSV file. The wizard will detect columns and allow you to
-          map them to patient fields.
-        </p>
+        <p class="text-body font-medium text-fg mb-1">{$t('settings.csvImport.title')}</p>
+        <p class="text-caption text-fg-muted mb-3">{$t('settings.csvImport.description')}</p>
       </div>
 
       <div class="mb-3">
@@ -1422,11 +1443,14 @@
           onclick={handleSelectCsvFile}
           class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover text-on-accent transition-colors"
         >
-          Select CSV File
+          {$t('settings.csvImport.selectFile')}
         </button>
         {#if selectedCsvPath}
           <p class="text-caption text-fg-muted mt-2">
-            Selected: {selectedCsvPath.split('/').pop() || selectedCsvPath.split('\\').pop()}
+            {$t('settings.csvImport.selected').replace(
+              '{name}',
+              selectedCsvPath.split('/').pop() || selectedCsvPath.split('\\').pop() || ''
+            )}
           </p>
         {/if}
       </div>
@@ -1434,20 +1458,26 @@
       {#if csvPreview}
         <div class="mb-4 p-3 bg-accent-subtle border border-accent rounded-card">
           <p class="text-caption font-medium text-accent-fg mb-2">
-            CSV file parsed: {csvPreview.total_rows} rows detected
+            {$t('settings.csvImport.parsed').replace('{rows}', String(csvPreview.total_rows))}
           </p>
 
           {#if csvPreview.warnings.length > 0}
             <div class="mb-3 text-caption text-warning-fg">
-              <p class="font-medium mb-1">Warnings:</p>
+              <p class="font-medium mb-1">{$t('settings.csvImport.warnings')}</p>
               {#each csvPreview.warnings as warning}
-                <p>• {warning.row ? `Row ${warning.row}: ` : ''}{warning.message}</p>
+                <p>
+                  • {warning.row
+                    ? $t('settings.csvImport.rowPrefix').replace('{row}', String(warning.row))
+                    : ''}{warning.message}
+                </p>
               {/each}
             </div>
           {/if}
 
           <div class="mb-3">
-            <p class="text-caption font-medium text-fg-muted mb-2">Column Mapping:</p>
+            <p class="text-caption font-medium text-fg-muted mb-2">
+              {$t('settings.csvImport.columnMapping')}
+            </p>
             <div class="space-y-2">
               {#each csvPreview.headers as header}
                 <div class="flex items-center gap-2">
@@ -1468,7 +1498,9 @@
           </div>
 
           <div class="mb-3">
-            <p class="text-caption font-medium text-fg-muted mb-2">Sample Data (first 3 rows):</p>
+            <p class="text-caption font-medium text-fg-muted mb-2">
+              {$t('settings.csvImport.sampleData')}
+            </p>
             <div class="overflow-x-auto">
               <table class="text-caption w-full">
                 <thead>
@@ -1496,12 +1528,14 @@
             disabled={importing || !hasAllRequiredFieldsMapped()}
             class="h-8 px-3 text-body rounded-control bg-success hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed text-on-success transition-colors"
           >
-            {importing ? 'Importing…' : 'Import Patients'}
+            {importing
+              ? $t('settings.csvImport.importing')
+              : $t('settings.csvImport.importPatients')}
           </button>
 
           {#if !hasAllRequiredFieldsMapped()}
             <p class="text-caption text-warning-fg mt-2">
-              * Please map all required fields (AHV Number, First Name, Last Name, Date of Birth)
+              {$t('settings.csvImport.requiredFieldsHint')}
             </p>
           {/if}
         </div>
@@ -1518,22 +1552,39 @@
               ? 'text-success-fg'
               : 'text-warning-fg'} mb-2"
           >
-            Import completed
+            {$t('settings.csvImport.completed')}
           </p>
           <div class="text-caption text-fg-muted space-y-1">
-            <p>Imported: {importResult.imported_count}</p>
-            <p>Failed: {importResult.failed_count}</p>
+            <p>
+              {$t('settings.csvImport.imported').replace(
+                '{count}',
+                String(importResult.imported_count)
+              )}
+            </p>
+            <p>
+              {$t('settings.csvImport.failed').replace(
+                '{count}',
+                String(importResult.failed_count)
+              )}
+            </p>
           </div>
 
           {#if importResult.errors.length > 0}
             <div class="mt-2 text-caption text-danger-fg max-h-40 overflow-y-auto">
-              <p class="font-medium mb-1">Errors:</p>
+              <p class="font-medium mb-1">{$t('settings.csvImport.errors')}</p>
               {#each importResult.errors.slice(0, 10) as error}
-                <p>• {error.row ? `Row ${error.row}: ` : ''}{error.message}</p>
+                <p>
+                  • {error.row
+                    ? $t('settings.csvImport.rowPrefix').replace('{row}', String(error.row))
+                    : ''}{error.message}
+                </p>
               {/each}
               {#if importResult.errors.length > 10}
                 <p class="text-fg-muted mt-1">
-                  ... and {importResult.errors.length - 10} more errors
+                  {$t('settings.csvImport.moreErrors').replace(
+                    '{count}',
+                    String(importResult.errors.length - 10)
+                  )}
                 </p>
               {/if}
             </div>
@@ -1548,25 +1599,21 @@
   </section>
 
   <section class="mt-10">
-    <h2 class="text-heading font-semibold text-fg mb-4">Encrypted Backup & Restore</h2>
+    <h2 class="text-heading font-semibold text-fg mb-4">{$t('settings.backup.section')}</h2>
 
     <!-- Create Backup -->
     <div class="bg-surface-hover rounded-card p-4 mb-4">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-body font-medium text-fg">Create Encrypted Backup</p>
-          <p class="text-caption text-fg-muted mt-1">
-            Export your entire vault (database + encrypted files) as a single encrypted .dokassist
-            archive. The backup is encrypted with your master password and includes checksums for
-            verification.
-          </p>
+          <p class="text-body font-medium text-fg">{$t('settings.backup.createTitle')}</p>
+          <p class="text-caption text-fg-muted mt-1">{$t('settings.backup.createDesc')}</p>
         </div>
         <button
           onclick={handleCreateBackup}
           disabled={creatingBackup}
           class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors shrink-0"
         >
-          {creatingBackup ? 'Creating…' : 'Export Backup'}
+          {creatingBackup ? $t('settings.backup.creating') : $t('settings.backup.exportBackup')}
         </button>
       </div>
       {#if backupError}
@@ -1577,16 +1624,13 @@
     <!-- Restore Backup -->
     <div class="bg-surface-hover rounded-card p-4">
       <div class="mb-3">
-        <p class="text-body font-medium text-fg mb-1">Restore from Backup</p>
-        <p class="text-caption text-fg-muted">
-          Restore your vault from a .dokassist backup archive. This will replace ALL current data
-          with the backup contents.
-        </p>
+        <p class="text-body font-medium text-fg mb-1">{$t('settings.backup.restoreTitle')}</p>
+        <p class="text-caption text-fg-muted">{$t('settings.backup.restoreDesc')}</p>
       </div>
 
       <div class="mb-3">
         <label for="restore-backup-file" class="block text-caption font-medium text-fg-muted mb-2">
-          Select Backup File (.dokassist)
+          {$t('settings.backup.selectFile')}
         </label>
         <input
           id="restore-backup-file"
@@ -1599,13 +1643,28 @@
 
       {#if validatedBackupInfo}
         <div class="mb-3 p-3 bg-success-subtle border border-success rounded-card">
-          <p class="text-caption font-medium text-success-fg mb-2">Backup validated successfully</p>
+          <p class="text-caption font-medium text-success-fg mb-2">
+            {$t('settings.backup.validated')}
+          </p>
           <div class="text-caption text-fg-muted space-y-1">
             <p>
-              Created: {new Date(validatedBackupInfo.created_at).toLocaleString()}
+              {$t('settings.backup.createdAt').replace(
+                '{date}',
+                new Date(validatedBackupInfo.created_at).toLocaleString()
+              )}
             </p>
-            <p>Files: {validatedBackupInfo.file_count}</p>
-            <p>DB Schema: v{validatedBackupInfo.db_schema_version}</p>
+            <p>
+              {$t('settings.backup.fileCount').replace(
+                '{count}',
+                String(validatedBackupInfo.file_count)
+              )}
+            </p>
+            <p>
+              {$t('settings.backup.dbSchema').replace(
+                '{version}',
+                String(validatedBackupInfo.db_schema_version)
+              )}
+            </p>
           </div>
         </div>
 
@@ -1618,15 +1677,17 @@
             }}
             class="h-8 px-3 text-body rounded-control bg-warning hover:bg-warning text-on-warning transition-colors"
           >
-            Restore from This Backup
+            {$t('settings.backup.restoreFromThis')}
           </button>
         {/if}
 
         {#if showRestoreConfirm}
           <div class="mt-3 border-t border-warning-line pt-3">
             <p class="text-body text-warning-fg mb-3">
-              <strong>Warning:</strong> This will replace ALL current data with the backup. Type
-              <strong>RESTORE</strong> to confirm.
+              <strong>{$t('settings.backup.warningLabel')}</strong>
+              {$t('settings.backup.warningBody')}
+              <strong>RESTORE</strong>
+              {$t('settings.backup.warningConfirm')}
             </p>
             <div class="flex gap-2">
               <input
@@ -1643,7 +1704,7 @@
                 disabled={restoring || restoreInput !== 'RESTORE'}
                 class="h-8 px-3 text-body rounded-control bg-warning hover:bg-warning disabled:opacity-50 disabled:cursor-not-allowed text-on-warning transition-colors shrink-0"
               >
-                {restoring ? 'Restoring…' : 'Confirm Restore'}
+                {restoring ? $t('settings.backup.restoring') : $t('settings.backup.confirmRestore')}
               </button>
               <button
                 onclick={() => {
@@ -1653,7 +1714,7 @@
                 }}
                 class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors shrink-0"
               >
-                Cancel
+                {$t('common.cancel')}
               </button>
             </div>
           </div>

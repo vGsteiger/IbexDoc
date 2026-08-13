@@ -5,7 +5,7 @@ import ReportStream from '$lib/components/ReportStream.svelte';
 describe('ReportStream — idle (not streaming)', () => {
   it('shows placeholder text when content is empty and not streaming', () => {
     render(ReportStream, { content: '', isStreaming: false });
-    expect(screen.getByText(/Report will appear here/i)).toBeInTheDocument();
+    expect(screen.getByText(/report appears here/i)).toBeInTheDocument();
   });
 
   it('renders provided content', () => {
@@ -25,9 +25,9 @@ describe('ReportStream — streaming', () => {
     expect(screen.getByText('Generating...')).toBeInTheDocument();
   });
 
-  it('shows the "Waiting for LLM..." message when streaming with no content yet', () => {
+  it('shows the waiting message when streaming with no content yet', () => {
     render(ReportStream, { content: '', isStreaming: true });
-    expect(screen.getByText('Waiting for LLM...')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for the language model...')).toBeInTheDocument();
   });
 
   it('shows both the Generating indicator and partial content while streaming', () => {
@@ -38,6 +38,6 @@ describe('ReportStream — streaming', () => {
 
   it('does not show the placeholder when streaming (even with no content)', () => {
     render(ReportStream, { content: '', isStreaming: true });
-    expect(screen.queryByText(/Report will appear here/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/report appears here/i)).not.toBeInTheDocument();
   });
 });

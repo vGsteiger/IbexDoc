@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
+  import { get } from 'svelte/store';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { listPatients, globalSearch, type Patient } from '$lib/api';
@@ -36,7 +38,7 @@
       patients = await listPatients(100, 0);
       filteredPatients = patients;
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load patients';
+      error = $errorText(e, get(t)('patients.loadFailed'));
       console.error('Error loading patients:', e);
     } finally {
       isLoading = false;

@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { checkAuth, getSettings, parseError } from '$lib/api';
+  import { checkAuth, getSettings } from '$lib/api';
   import { authStatus, isLoading } from '$lib/stores/auth';
   import { t } from '$lib/translations';
 
@@ -35,7 +36,7 @@
       }
     } catch (err) {
       console.error('Failed to check auth:', err);
-      error = parseError(err).message;
+      error = $errorText(err);
     } finally {
       isLoading.set(false);
     }

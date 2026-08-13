@@ -140,7 +140,7 @@
 
 <div class="p-8 max-w-4xl mx-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-display font-semibold text-fg">Medikation</h1>
+    <h1 class="text-display font-semibold text-fg">{$t('medications.title')}</h1>
     <button
       class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
       onclick={() => {
@@ -217,9 +217,12 @@
                 {medication.dosage} • {medication.frequency}
               </p>
               <p class="text-body text-fg-muted mt-1">
-                Von {formatDate(medication.start_date)}
+                {$t('medications.dateRangeFrom').replace(
+                  '{date}',
+                  formatDate(medication.start_date)
+                )}
                 {#if medication.end_date}
-                  bis {formatDate(medication.end_date)}
+                  {$t('medications.dateRangeTo').replace('{date}', formatDate(medication.end_date))}
                 {/if}
               </p>
               {#if medication.notes}
@@ -231,7 +234,7 @@
                 type="button"
                 class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
                 onclick={() => handleEdit(medication)}
-                title="Bearbeiten"
+                title={$t('common.edit')}
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

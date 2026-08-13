@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { LoaderCircle } from 'lucide-svelte';
 
   let {
@@ -18,6 +19,6 @@
     {size}
     class="animate-spin text-fg-subtle {className}"
     role="status"
-    aria-label="Loading"
+    aria-label={$t('common.loading')}
   />
 {/if}

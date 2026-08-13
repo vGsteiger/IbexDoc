@@ -1,29 +1,19 @@
 <script lang="ts">
+  import { reportTypeLabel } from '$lib/translations/labels';
   export let selectedType: string = '';
   import { t } from '$lib/translations';
 
   interface ReportTypeInfo {
     value: string;
-    label: string;
     descriptionKey: string;
   }
 
+  // `value` is the stored form and is matched against the Rust ReportType
+  // enum, so it stays as-is; the label comes from the bundle.
   const reportTypes: ReportTypeInfo[] = [
-    {
-      value: 'Befundbericht',
-      label: 'Befundbericht',
-      descriptionKey: 'reports.types.befundbericht',
-    },
-    {
-      value: 'Verlaufsbericht',
-      label: 'Verlaufsbericht',
-      descriptionKey: 'reports.types.verlaufsbericht',
-    },
-    {
-      value: 'Ueberweisungsschreiben',
-      label: 'Überweisungsschreiben',
-      descriptionKey: 'reports.types.ueberweisungsschreiben',
-    },
+    { value: 'Befundbericht', descriptionKey: 'reports.types.befundbericht' },
+    { value: 'Verlaufsbericht', descriptionKey: 'reports.types.verlaufsbericht' },
+    { value: 'Ueberweisungsschreiben', descriptionKey: 'reports.types.ueberweisungsschreiben' },
   ];
 
   function selectType(type: string) {
@@ -41,7 +31,7 @@
           ? 'border-accent bg-accent-subtle'
           : 'border-line bg-surface-raised hover:border-line-strong'}"
       >
-        <div class="font-semibold text-fg mb-2">{type.label}</div>
+        <div class="font-semibold text-fg mb-2">{$reportTypeLabel(type.value)}</div>
         <div class="text-body text-fg-muted">{$t(type.descriptionKey)}</div>
       </button>
     {/each}

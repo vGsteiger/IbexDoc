@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   export let content: string = '';
   export let readonly: boolean = false;
 
@@ -13,7 +14,7 @@
         ? 'bg-surface-raised text-fg'
         : 'text-fg-muted hover:text-fg'}"
     >
-      Edit
+      {$t('reports.edit')}
     </button>
     <button
       on:click={() => (showPreview = true)}
@@ -21,7 +22,7 @@
         ? 'bg-surface-raised text-fg'
         : 'text-fg-muted hover:text-fg'}"
     >
-      Preview
+      {$t('reports.preview')}
     </button>
   </div>
 
@@ -31,7 +32,7 @@
         {#if content}
           <pre class="whitespace-pre-wrap font-sans text-fg">{content}</pre>
         {:else}
-          <p class="text-fg-subtle italic">No content to preview</p>
+          <p class="text-fg-subtle italic">{$t('reports.noPreviewContent')}</p>
         {/if}
       </div>
     {:else}
@@ -39,7 +40,7 @@
         bind:value={content}
         {readonly}
         class="w-full h-full p-6 bg-surface-raised text-fg font-mono text-body resize-none focus:outline-none"
-        placeholder="Report content will appear here..."></textarea>
+        placeholder={$t('reports.contentPlaceholder')}></textarea>
     {/if}
   </div>
 </div>

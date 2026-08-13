@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import type { Snippet } from 'svelte';
   import { X } from 'lucide-svelte';
 
@@ -60,7 +61,7 @@
     <button
       type="button"
       class="fixed inset-0 bg-black/25 dark:bg-black/55"
-      aria-label="Close dialog"
+      aria-label={$t('common.close')}
       data-dialog-dismiss
       onclick={close}
     ></button>
@@ -88,7 +89,7 @@
             data-dialog-dismiss
             onclick={close}
             class="-mr-1 -mt-0.5 rounded-control p-1 text-fg-subtle transition-colors duration-150 ease-standard hover:bg-surface-hover hover:text-fg"
-            aria-label="Close"
+            aria-label={$t('common.close')}
           >
             <X size={16} />
           </button>

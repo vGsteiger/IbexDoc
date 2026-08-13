@@ -31,13 +31,15 @@
 <div class="space-y-4">
   {#if thinkContent}
     <div class="bg-surface-hover border border-line rounded-card p-4">
-      <p class="text-caption font-medium text-fg-subtle uppercase tracking-wide mb-2">Thinking</p>
+      <p class="text-caption font-medium text-fg-subtle uppercase tracking-wide mb-2">
+        {$t('reports.streamThinking')}
+      </p>
       <pre
         class="not-prose whitespace-pre-wrap font-sans text-body text-fg-muted italic">{thinkContent}</pre>
       {#if isStreaming && !reportContent}
         <div class="flex items-center space-x-2 text-fg-subtle mt-2">
           <div class="animate-pulse text-caption">●</div>
-          <span class="text-caption">Thinking...</span>
+          <span class="text-caption">{$t('reports.streamThinkingEllipsis')}</span>
         </div>
       {/if}
     </div>
@@ -48,7 +50,7 @@
       <div class="absolute top-4 right-4">
         <div class="flex items-center space-x-2 text-body text-accent-fg">
           <div class="animate-pulse">●</div>
-          <span>Generating...</span>
+          <span>{$t('reports.streamGenerating')}</span>
         </div>
       </div>
     {/if}
@@ -57,7 +59,7 @@
       {#if reportContent}
         <pre class="not-prose whitespace-pre-wrap font-sans text-fg">{reportContent}</pre>
       {:else if !isStreaming && !thinkContent}
-        <p class="text-fg-subtle italic">Report will appear here as it's generated...</p>
+        <p class="text-fg-subtle italic">{$t('reports.streamWillAppear')}</p>
       {:else if isStreaming && isSummarizing && !thinkContent && !reportContent}
         <div class="flex items-center space-x-2 text-fg-subtle">
           <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-warning"></div>
@@ -66,10 +68,10 @@
       {:else if isStreaming && !thinkContent && !reportContent}
         <div class="flex items-center space-x-2 text-fg-subtle">
           <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
-          <span>Waiting for LLM...</span>
+          <span>{$t('reports.streamWaiting')}</span>
         </div>
       {:else if !isStreaming && thinkContent && !reportContent}
-        <p class="text-fg-subtle italic">No report content was generated.</p>
+        <p class="text-fg-subtle italic">{$t('reports.streamEmpty')}</p>
       {/if}
     </div>
   </div>

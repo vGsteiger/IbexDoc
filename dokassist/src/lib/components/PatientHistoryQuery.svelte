@@ -1,11 +1,11 @@
 <script lang="ts">
   import { t } from '$lib/translations';
+  import { errorMessage } from '$lib/translations/labels';
   import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import {
     queryPatientHistory,
     parseError,
-    formatError,
     type AnswerAudit,
     type EvidenceManifest,
   } from '$lib/api';
@@ -95,7 +95,10 @@
       audit = result.audit;
     } catch (e) {
       const appError = parseError(e);
-      error = formatError(appError);
+      error =
+        $errorMessage(appError.code, appError.message) +
+        '\n\n' +
+        $t('errors.referenceLine').replace('{ref}', appError.ref);
       console.error('Error querying patient history:', appError);
       isQuerying = false;
       // Clean up listeners on error
@@ -137,7 +140,7 @@
     onclick={() => (isExpanded = !isExpanded)}
     class="flex items-center justify-between w-full p-4 hover:bg-surface-hover transition-colors rounded-t-card"
   >
-    <h3 class="text-heading font-semibold text-fg">Ask about this patient</h3>
+    <h3 class="text-heading font-semibold text-fg">{$t('patientHistory.title')}</h3>
     {#if isExpanded}
       <ChevronUp class="w-5 h-5 text-fg-muted" />
     {:else}
@@ -149,7 +152,7 @@
     <div class="p-4 border-t border-line space-y-4">
       <!-- Suggested queries -->
       <div class="space-y-2">
-        <p class="text-body text-fg-muted">Suggested queries:</p>
+        <p class="text-body text-fg-muted">{$t('patientHistory.suggestedQueries')}</p>
         <div class="flex flex-wrap gap-2">
           {#each suggestedQueries as suggested (suggested)}
             <button
@@ -169,7 +172,7 @@
           bind:value={question}
           onkeydown={handleKeydown}
           disabled={isQuerying}
-          placeholder="Ask a question about this patient's history..."
+          placeholder={$t('patientHistory.placeholder')}
           class="flex-1 px-4 py-2 border border-line rounded-control focus:ring-2 focus:ring-accent/30 focus:border-transparent bg-surface-raised text-fg disabled:opacity-50 disabled:cursor-not-allowed resize-none"
           rows="2"></textarea>
         <button
@@ -179,10 +182,10 @@
         >
           {#if isQuerying}
             <Loader2 class="w-4 h-4 animate-spin" />
-            <span>Querying...</span>
+            <span>{$t('patientHistory.querying')}</span>
           {:else}
             <Send class="w-4 h-4" />
-            <span>Ask</span>
+            <span>{$t('patientHistory.ask')}</span>
           {/if}
         </button>
       </div>
@@ -198,11 +201,11 @@
       {#if response || isQuerying}
         <div class="bg-surface-sunken rounded-card p-4 border border-line">
           <div class="flex items-center justify-between mb-2">
-            <h4 class="text-body font-semibold text-fg-muted">Response:</h4>
+            <h4 class="text-body font-semibold text-fg-muted">{$t('patientHistory.response')}</h4>
             {#if isQuerying}
               <div class="flex items-center gap-2 text-body text-fg-muted">
                 <Loader2 class="w-4 h-4 animate-spin" />
-                <span>Generating...</span>
+                <span>{$t('patientHistory.generating')}</span>
               </div>
             {/if}
           </div>
@@ -212,7 +215,7 @@
                 {response}
               </div>
             {:else}
-              <div class="text-fg-muted italic">Waiting for response...</div>
+              <div class="text-fg-muted italic">{$t('patientHistory.waitingForResponse')}</div>
             {/if}
           </div>
         </div>
@@ -226,8 +229,10 @@
             class="flex items-center justify-between w-full text-left"
           >
             <span class="text-body font-semibold text-fg-muted">
-              Evidence ({manifest.entries.length} excerpts, {manifest.prompt_tokens} of {manifest.token_budget}
-              tokens)
+              {$t('patientHistory.evidence')
+                .replace('{count}', String(manifest.entries.length))
+                .replace('{used}', String(manifest.prompt_tokens))
+                .replace('{budget}', String(manifest.token_budget))}
             </span>
             {#if showEvidence}
               <ChevronUp class="w-4 h-4 text-fg-muted" />
@@ -242,8 +247,10 @@
             >
               <AlertTriangle class="w-4 h-4 mt-0.5 shrink-0" />
               <span>
-                Citations without a current source: {citationWarnings.join(', ')}. Re-run the query
-                after record changes.
+                {$t('patientHistory.citationWarning').replace(
+                  '{citations}',
+                  citationWarnings.join(', ')
+                )}
               </span>
             </div>
           {/if}
@@ -255,24 +262,33 @@
                   <span class="font-mono text-caption">[{check.citation}]</span>
                   {entry?.label}
                   <span class="text-fg-muted">
-                    — {entry?.occurred_at}, characters {entry?.char_start}–{entry?.char_end},
-                    revision {entry?.revision}
+                    {$t('patientHistory.excerptRange')
+                      .replace('{date}', String(entry?.occurred_at ?? ''))
+                      .replace('{from}', String(entry?.char_start ?? ''))
+                      .replace('{to}', String(entry?.char_end ?? ''))
+                      .replace('{revision}', String(entry?.revision ?? ''))}
                   </span>
                   {#if !check.traceable}
-                    <span class="text-warning-fg"> (source changed)</span>
+                    <span class="text-warning-fg">&nbsp;{$t('patientHistory.sourceChanged')}</span>
                   {/if}
                   <div class="text-caption text-fg-muted">
-                    Selected because: {entry?.selection_reasons?.join('; ') ?? '—'}
+                    {$t('patientHistory.selectedBecause').replace(
+                      '{reasons}',
+                      entry?.selection_reasons?.join('; ') ?? '—'
+                    )}
                   </div>
                 </li>
               {/each}
               {#if citedEntries.length === 0}
-                <li class="text-fg-muted italic">The answer cited no excerpts.</li>
+                <li class="text-fg-muted italic">{$t('patientHistory.noExcerpts')}</li>
               {/if}
             </ul>
             {#if manifest.omitted.length > 0}
               <p class="text-caption text-fg-muted">
-                {manifest.omitted.length} further excerpt(s) were not included (budget or archive pointers).
+                {$t('patientHistory.omittedExcerpts').replace(
+                  '{count}',
+                  String(manifest.omitted.length)
+                )}
               </p>
             {/if}
           {/if}

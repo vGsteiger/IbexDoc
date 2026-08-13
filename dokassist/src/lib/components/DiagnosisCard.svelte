@@ -65,9 +65,9 @@
         {diagnosis.description}
       </h3>
       <p class="text-body text-fg-muted mt-1">
-        Diagnostiziert: {formatDate(diagnosis.diagnosed_date)}
+        {$t('diagnoses.diagnosedOnValue').replace('{date}', formatDate(diagnosis.diagnosed_date))}
         {#if diagnosis.resolved_date}
-          • {$t('diagnoses.resolved')}: {formatDate(diagnosis.resolved_date)}
+          • {$t('diagnoses.resolvedOnValue').replace('{date}', formatDate(diagnosis.resolved_date))}
         {/if}
       </p>
     </div>
@@ -77,7 +77,7 @@
           type="button"
           class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onEdit}
-          title="Bearbeiten"
+          title={$t('common.edit')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

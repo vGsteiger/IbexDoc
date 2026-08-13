@@ -186,7 +186,7 @@ describe('Badge and Card', () => {
 describe('Spinner', () => {
   it('exposes a status role with an accessible name', () => {
     render(Spinner);
-    expect(screen.getByRole('status')).toHaveAccessibleName('Loading');
+    expect(screen.getByRole('status')).toHaveAccessibleName('Loading...');
   });
 
   it('uses the provided label as the accessible name', () => {

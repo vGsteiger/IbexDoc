@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { AlertCircle, CheckCircle2, X } from 'lucide-svelte';
   import { toasts, removeToast } from '$lib/stores/toast';
 </script>
@@ -24,7 +25,7 @@
       <button
         onclick={() => removeToast(toast.id)}
         class="-mr-0.5 -mt-0.5 shrink-0 rounded-control p-0.5 text-fg-subtle transition-colors duration-150 ease-standard hover:bg-surface-hover hover:text-fg"
-        aria-label="Dismiss notification"
+        aria-label={$t('common.dismiss')}
       >
         <X size={14} />
       </button>

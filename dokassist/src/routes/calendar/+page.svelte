@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { t } from '$lib/translations';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -254,12 +255,12 @@
         notes: completeNotes.trim() || '—',
       });
       allSessions = await listAllSessions(500);
-      addToast('Session marked as completed');
+      addToast(get(t)('sessions.markedCompleted'));
       showCompleteModal = false;
       completeSession = null;
       completeNotes = '';
     } catch {
-      addToast('Failed to update session', 'error');
+      addToast(get(t)('sessions.updateFailed'), 'error');
     } finally {
       isSavingCompletion = false;
     }
@@ -272,7 +273,7 @@
 
 <div class="p-8 max-w-7xl mx-auto">
   <div class="flex items-center justify-between mb-6">
-    <h1 class="text-display font-semibold text-fg">Kalender</h1>
+    <h1 class="text-display font-semibold text-fg">{$t('calendar.title')}</h1>
 
     <!-- View mode toggle -->
     <div class="flex gap-2">
@@ -282,7 +283,7 @@
           ? 'bg-accent text-on-accent'
           : 'bg-surface-selected text-fg hover:bg-surface-selected'}"
       >
-        Woche
+        {$t('calendar.week')}
       </button>
       <button
         onclick={() => (viewMode = 'month')}
@@ -290,7 +291,7 @@
           ? 'bg-accent text-on-accent'
           : 'bg-surface-selected text-fg hover:bg-surface-selected'}"
       >
-        Monat
+        {$t('calendar.month')}
       </button>
     </div>
   </div>
@@ -316,7 +317,7 @@
       onclick={goToToday}
       class="h-7 px-2.5 rounded-control bg-surface-selected hover:bg-surface-selected text-fg text-body transition-colors"
     >
-      Heute
+      {$t('calendar.today')}
     </button>
   </div>
 
@@ -343,7 +344,9 @@
             {#if daySessions.length === 0}
               <button
                 onclick={() => handleTimeSlotClick(day, hour)}
-                aria-label="New session at {formatTime(hour)} on {toLocalISODate(day)}"
+                aria-label={$t('calendar.newSessionAt')
+                  .replace('{time}', formatTime(hour))
+                  .replace('{date}', toLocalISODate(day))}
                 class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-accent-subtle hover:bg-accent-subtle/20 transition-opacity flex items-center justify-center text-caption text-accent-fg"
               >
                 +
@@ -360,15 +363,14 @@
               >
                 <button
                   onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                  aria-label="Session with {session.patient_name}, status: {status}"
                   class="w-full text-left hover:opacity-80 transition-opacity"
                 >
                   <span class="sr-only"
                     >{status === 'completed'
-                      ? 'Completed'
+                      ? $t('calendar.completed')
                       : status === 'note-pending'
-                        ? 'Pending notes'
-                        : 'Scheduled'} —
+                        ? $t('calendar.notePending')
+                        : $t('calendar.scheduled')} —
                   </span>
                   <div class="font-medium truncate">{session.patient_name}</div>
                   {#if session.session.duration_minutes}
@@ -378,9 +380,12 @@
                 {#if status !== 'completed'}
                   <button
                     onclick={() => openCompleteModal(session)}
-                    aria-label="Mark session with {session.patient_name} as completed"
+                    aria-label={$t('calendar.markCompletedFor').replace(
+                      '{name}',
+                      session.patient_name
+                    )}
                     class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded-control bg-success text-on-success text-[10px] hover:bg-success transition-colors"
-                    title="Mark as completed">✓</button
+                    title={$t('calendar.markCompleted')}>✓</button
                   >
                 {/if}
               </div>
@@ -397,15 +402,14 @@
                 >
                   <button
                     onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                    aria-label="Session with {session.patient_name} (no scheduled time), status: {status}"
                     class="w-full text-left hover:opacity-80 transition-opacity"
                   >
                     <span class="sr-only"
                       >{status === 'completed'
-                        ? 'Completed'
+                        ? $t('calendar.completed')
                         : status === 'note-pending'
-                          ? 'Pending notes'
-                          : 'Scheduled'} —
+                          ? $t('calendar.notePending')
+                          : $t('calendar.scheduled')} —
                     </span>
                     <div class="font-medium truncate">{session.patient_name}</div>
                     <div class="text-[10px]">{$t('sessions.noTime')}</div>
@@ -413,9 +417,12 @@
                   {#if status !== 'completed'}
                     <button
                       onclick={() => openCompleteModal(session)}
-                      aria-label="Mark session with {session.patient_name} as completed"
+                      aria-label={$t('calendar.markCompletedFor').replace(
+                        '{name}',
+                        session.patient_name
+                      )}
                       class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded-control bg-success text-on-success text-[10px] hover:bg-success transition-colors"
-                      title="Mark as completed">✓</button
+                      title={$t('calendar.markCompleted')}>✓</button
                     >
                   {/if}
                 </div>
@@ -546,7 +553,7 @@
     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     role="dialog"
     aria-modal="true"
-    aria-label="New session"
+    aria-label={$t('calendar.newSession')}
   >
     <div class="bg-surface-raised rounded-card shadow-modal p-6 w-96 max-w-full mx-4">
       <h2 class="text-heading font-semibold text-fg mb-1">{$t('sessions.newSession')}</h2>
@@ -555,14 +562,14 @@
       </p>
 
       <label for="modal-patient" class="block text-body font-medium text-fg-muted mb-2">
-        Patient
+        {$t('common.patient')}
       </label>
       <select
         id="modal-patient"
         bind:value={modalPatientId}
         class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 mb-6"
       >
-        <option value="">— Select patient —</option>
+        <option value="">{$t('common.selectPatient')}</option>
         {#each allPatients as patient}
           <option value={patient.id}>{patient.last_name}, {patient.first_name}</option>
         {/each}
@@ -573,14 +580,14 @@
           onclick={() => (showNewSessionModal = false)}
           class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors"
         >
-          Cancel
+          {$t('common.cancel')}
         </button>
         <button
           onclick={confirmNewSession}
           disabled={!modalPatientId}
           class="h-8 px-3 text-body rounded-control bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent transition-colors"
         >
-          Continue
+          {$t('common.continue')}
         </button>
       </div>
     </div>
@@ -593,7 +600,7 @@
     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     role="dialog"
     aria-modal="true"
-    aria-label="Complete session"
+    aria-label={$t('calendar.completeSession')}
   >
     <div class="bg-surface-raised rounded-card shadow-modal p-6 w-96 max-w-full mx-4">
       <h2 class="text-heading font-semibold text-fg mb-1">{$t('sessions.complete')}</h2>
@@ -625,14 +632,14 @@
           disabled={isSavingCompletion}
           class="h-8 px-3 text-body rounded-control bg-surface-selected hover:bg-surface-selected text-fg transition-colors disabled:opacity-50"
         >
-          Cancel
+          {$t('common.cancel')}
         </button>
         <button
           onclick={confirmComplete}
           disabled={isSavingCompletion}
           class="h-8 px-3 text-body rounded-control bg-success hover:bg-success-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-success transition-colors"
         >
-          {isSavingCompletion ? 'Saving…' : 'Mark Completed'}
+          {isSavingCompletion ? $t('common.saving') : $t('calendar.markCompletedAction')}
         </button>
       </div>
     </div>

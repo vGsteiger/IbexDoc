@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { interpretationLabel } from '$lib/translations/labels';
   import { t } from '$lib/translations';
   import type { OutcomeScore } from '$lib/api';
 
@@ -53,13 +54,13 @@
               outcomeScore.interpretation
             )}"
           >
-            {outcomeScore.interpretation}
+            {$interpretationLabel(outcomeScore.interpretation)}
           </span>
         {/if}
       </div>
       <div class="flex items-baseline gap-2">
         <span class="text-display font-semibold text-fg">{outcomeScore.score}</span>
-        <span class="text-body text-fg-muted">Punkte</span>
+        <span class="text-body text-fg-muted">{$t('outcomeScores.points')}</span>
       </div>
       <p class="text-body text-fg-muted mt-1">
         {formatDate(outcomeScore.administered_at)}
@@ -71,7 +72,7 @@
           type="button"
           class="p-2 text-fg-muted hover:text-accent-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onEdit}
-          title="Bearbeiten"
+          title={$t('common.edit')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

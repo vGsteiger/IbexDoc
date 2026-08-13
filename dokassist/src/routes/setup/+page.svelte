@@ -153,13 +153,13 @@
             onclick={() => (showConfirmation = false)}
             class="px-6 py-3 border border-line bg-surface-raised hover:bg-surface-hover text-fg font-medium rounded-control transition-colors"
           >
-            Back
+            {$t('common.back')}
           </button>
           <button
             onclick={validateConfirmation}
             class="px-6 py-3 bg-accent hover:bg-accent-hover text-on-accent font-medium rounded-control transition-colors"
           >
-            Continue
+            {$t('common.continue')}
           </button>
         </div>
       </div>

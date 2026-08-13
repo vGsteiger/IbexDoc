@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { goto } from '$app/navigation';
-  import { resetApp, parseError } from '$lib/api';
+  import { resetApp } from '$lib/api';
   import { t } from '$lib/translations';
   import { AlertTriangle, RotateCcw } from 'lucide-svelte';
 
@@ -17,7 +18,7 @@
       await resetApp();
       await goto('/setup', { replaceState: true });
     } catch (err) {
-      error = parseError(err).message || $t('auth.resetFailed');
+      error = $errorText(err, $t('auth.resetFailed'));
     } finally {
       isResetting = false;
     }

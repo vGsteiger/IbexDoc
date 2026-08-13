@@ -15,7 +15,7 @@ const UPDATE_AVAILABLE = {
   current_version: '1.0.0',
   latest_version: '1.1.0',
   update_available: true,
-  body: '## What\'s new\n- Bug fixes\n- Performance improvements',
+  body: "## What's new\n- Bug fixes\n- Performance improvements",
   date: '2026-03-20T00:00:00Z',
 };
 
@@ -38,7 +38,7 @@ describe('UpdateNotification', () => {
     mockInvoke.mockResolvedValueOnce(UPDATE_AVAILABLE);
     render(UpdateNotification);
     await waitFor(() => {
-      expect(screen.getByText('Update Available')).toBeInTheDocument();
+      expect(screen.getByText('Update available')).toBeInTheDocument();
     });
     expect(screen.getByText(/Version 1.1.0 is now available/)).toBeInTheDocument();
   });
@@ -49,30 +49,30 @@ describe('UpdateNotification', () => {
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith('check_for_updates');
     });
-    expect(screen.queryByText('Update Available')).not.toBeInTheDocument();
+    expect(screen.queryByText('Update available')).not.toBeInTheDocument();
   });
 
   it('does not auto-check when autoCheck=false', async () => {
     render(UpdateNotification, { props: { autoCheck: false } });
     expect(mockInvoke).not.toHaveBeenCalled();
-    expect(screen.queryByText('Update Available')).not.toBeInTheDocument();
+    expect(screen.queryByText('Update available')).not.toBeInTheDocument();
   });
 
   it('dismisses notification on Later click', async () => {
     mockInvoke.mockResolvedValueOnce(UPDATE_AVAILABLE);
     render(UpdateNotification);
-    await waitFor(() => expect(screen.getByText('Update Available')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Update available')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: /Later/ }));
     await waitFor(() => {
-      expect(screen.queryByText('Update Available')).not.toBeInTheDocument();
+      expect(screen.queryByText('Update available')).not.toBeInTheDocument();
     });
   });
 
   it('renders changelog body as markdown', async () => {
     mockInvoke.mockResolvedValueOnce(UPDATE_AVAILABLE);
     render(UpdateNotification);
-    await waitFor(() => expect(screen.getByText('Update Available')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Update available')).toBeInTheDocument());
     expect(screen.getByText("What's new:")).toBeInTheDocument();
   });
 
@@ -84,7 +84,7 @@ describe('UpdateNotification', () => {
     });
     // Error is shown (parseError formats it)
     // No notification shown
-    expect(screen.queryByText('Update Available')).not.toBeInTheDocument();
+    expect(screen.queryByText('Update available')).not.toBeInTheDocument();
   });
 
   it('starts install when Install Update is clicked', async () => {
@@ -92,9 +92,11 @@ describe('UpdateNotification', () => {
     mockInvoke.mockResolvedValueOnce(undefined); // install_update
 
     render(UpdateNotification);
-    await waitFor(() => expect(screen.getByRole('button', { name: /Install Update/ })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Install update/ })).toBeInTheDocument()
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: /Install Update/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Install update/ }));
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith('install_update');
     });

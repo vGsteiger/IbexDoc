@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
+  import { get } from 'svelte/store';
+  import {
+    planStatusLabel,
+    goalStatusLabel,
+    interventionTypeLabel,
+  } from '$lib/translations/labels';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import {
@@ -62,27 +69,11 @@
   let interventionFrequency = $state('');
   let editingInterventionId = $state<string | null>(null);
 
-  const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'revised', label: 'Revised' },
-    { value: 'discontinued', label: 'Discontinued' },
-  ];
+  const statusOptions = ['active', 'completed', 'revised', 'discontinued'];
 
-  const goalStatusOptions = [
-    { value: 'pending', label: 'Pending' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'achieved', label: 'Achieved' },
-    { value: 'revised', label: 'Revised' },
-    { value: 'discontinued', label: 'Discontinued' },
-  ];
+  const goalStatusOptions = ['pending', 'in_progress', 'achieved', 'revised', 'discontinued'];
 
-  const interventionTypeOptions = [
-    { value: 'psychotherapy', label: 'Psychotherapy' },
-    { value: 'medication', label: 'Medication' },
-    { value: 'referral', label: 'Referral' },
-    { value: 'other', label: 'Other' },
-  ];
+  const interventionTypeOptions = ['psychotherapy', 'medication', 'referral', 'other'];
 
   onMount(async () => {
     await loadPlans();
@@ -95,7 +86,7 @@
       plans = await listTreatmentPlansForPatient(patientId!);
     } catch (err) {
       error =
-        'Error loading treatment plans: ' + (err instanceof Error ? err.message : String(err));
+        get(t)('common.loadFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to load treatment plans:', err);
     } finally {
       loading = false;
@@ -119,7 +110,8 @@
       goals = loadedGoals;
       interventions = loadedInterventions;
     } catch (err) {
-      error = 'Error loading plan details: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.loadFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to load plan details:', err);
     } finally {
       loadingDetails = false;
@@ -137,11 +129,7 @@
   }
 
   async function handleDelete(planId: string) {
-    if (
-      !confirm(
-        'Are you sure you want to delete this treatment plan? This will also delete all goals and interventions.'
-      )
-    ) {
+    if (!confirm(get(t)('treatmentPlans.confirmDeletePlan'))) {
       return;
     }
 
@@ -154,7 +142,8 @@
       }
       await loadPlans();
     } catch (err) {
-      error = 'Error deleting plan: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.deleteFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to delete plan:', err);
     }
   }
@@ -163,7 +152,7 @@
     event.preventDefault();
 
     if (!title) {
-      error = 'Please enter a title.';
+      error = get(t)('treatmentPlans.titleRequired');
       return;
     }
 
@@ -195,7 +184,8 @@
       resetForm();
       await loadPlans();
     } catch (err) {
-      error = 'Error saving plan: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.saveFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to save plan:', err);
     } finally {
       saving = false;
@@ -223,7 +213,7 @@
   }
 
   async function handleDeleteGoal(goalId: string) {
-    if (!confirm('Are you sure you want to delete this goal?')) {
+    if (!confirm(get(t)('treatmentPlans.confirmDeleteGoal'))) {
       return;
     }
 
@@ -233,7 +223,8 @@
         await loadPlanDetails(selectedPlanId);
       }
     } catch (err) {
-      error = 'Error deleting goal: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.deleteFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to delete goal:', err);
     }
   }
@@ -242,7 +233,7 @@
     event.preventDefault();
 
     if (!goalDescription || !selectedPlanId) {
-      error = 'Please enter a goal description.';
+      error = get(t)('treatmentPlans.goalDescriptionRequired');
       return;
     }
 
@@ -271,7 +262,8 @@
       resetGoalForm();
       await loadPlanDetails(selectedPlanId);
     } catch (err) {
-      error = 'Error saving goal: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.saveFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to save goal:', err);
     }
   }
@@ -295,7 +287,7 @@
   }
 
   async function handleDeleteIntervention(interventionId: string) {
-    if (!confirm('Are you sure you want to delete this intervention?')) {
+    if (!confirm(get(t)('treatmentPlans.confirmDeleteIntervention'))) {
       return;
     }
 
@@ -305,7 +297,8 @@
         await loadPlanDetails(selectedPlanId);
       }
     } catch (err) {
-      error = 'Error deleting intervention: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.deleteFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to delete intervention:', err);
     }
   }
@@ -314,7 +307,7 @@
     event.preventDefault();
 
     if (!interventionDescription || !selectedPlanId) {
-      error = 'Please enter an intervention description.';
+      error = get(t)('treatmentPlans.interventionDescriptionRequired');
       return;
     }
 
@@ -341,7 +334,8 @@
       resetInterventionForm();
       await loadPlanDetails(selectedPlanId);
     } catch (err) {
-      error = 'Error saving intervention: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.saveFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to save intervention:', err);
     }
   }
@@ -375,7 +369,7 @@
 
 <div class="p-8 max-w-6xl mx-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-display font-semibold text-fg">Treatment Plans</h1>
+    <h1 class="text-display font-semibold text-fg">{$t('treatmentPlans.title')}</h1>
     <button
       class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
       onclick={() => {
@@ -386,7 +380,7 @@
         }
       }}
     >
-      {showAddForm ? 'Cancel' : '+ New Treatment Plan'}
+      {showAddForm ? $t('common.cancel') : `+ ${$t('treatmentPlans.newPlan')}`}
     </button>
   </div>
 
@@ -399,12 +393,12 @@
   {#if showAddForm}
     <div class="bg-surface-raised border border-line rounded-card p-6 mb-6">
       <h2 class="text-heading font-semibold text-fg mb-4">
-        {editingId ? 'Edit Treatment Plan' : 'Add New Treatment Plan'}
+        {editingId ? $t('treatmentPlans.editPlan') : $t('treatmentPlans.newPlan')}
       </h2>
       <form onsubmit={handleSubmit} class="space-y-4">
         <div>
           <label for="title" class="block text-body font-medium text-fg-muted mb-1">
-            Title *
+            {$t('treatmentPlans.planTitle')} *
           </label>
           <input
             id="title"
@@ -417,7 +411,7 @@
 
         <div>
           <label for="description" class="block text-body font-medium text-fg-muted mb-1">
-            Description
+            {$t('treatmentPlans.description')}
           </label>
           <textarea
             id="description"
@@ -430,7 +424,7 @@
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label for="start-date" class="block text-body font-medium text-fg-muted mb-1">
-              Start Date *
+              {$t('treatmentPlans.startDate')} *
             </label>
             <input
               id="start-date"
@@ -443,7 +437,7 @@
 
           <div>
             <label for="end-date" class="block text-body font-medium text-fg-muted mb-1">
-              End Date
+              {$t('treatmentPlans.endDate')}
             </label>
             <input
               id="end-date"
@@ -455,7 +449,7 @@
 
           <div>
             <label for="status" class="block text-body font-medium text-fg-muted mb-1">
-              Status *
+              {$t('treatmentPlans.statusLabel')} *
             </label>
             <select
               id="status"
@@ -464,7 +458,7 @@
               class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
             >
               {#each statusOptions as option}
-                <option value={option.value}>{option.label}</option>
+                <option value={option}>{$planStatusLabel(option)}</option>
               {/each}
             </select>
           </div>
@@ -476,14 +470,14 @@
             onclick={resetForm}
             class="h-8 px-3 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
           >
-            Cancel
+            {$t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={saving}
             class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
+            {saving ? $t('common.saving') : editingId ? $t('common.update') : $t('common.create')}
           </button>
         </div>
       </form>
@@ -492,16 +486,16 @@
 
   {#if loading}
     <div class="flex justify-center py-12">
-      <div class="text-fg-muted">Loading treatment plans...</div>
+      <div class="text-fg-muted">{$t('treatmentPlans.loading')}</div>
     </div>
   {:else if plans.length === 0}
     <div class="text-center py-12">
-      <p class="text-fg-muted mb-4">No treatment plans yet</p>
+      <p class="text-fg-muted mb-4">{$t('treatmentPlans.noPlans')}</p>
       <button
         class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
         onclick={() => (showAddForm = true)}
       >
-        Add First Treatment Plan
+        {$t('treatmentPlans.addFirst')}
       </button>
     </div>
   {:else}
@@ -518,7 +512,7 @@
                       plan.status
                     )}"
                   >
-                    {plan.status}
+                    {$planStatusLabel(plan.status)}
                   </span>
                 </div>
                 {#if plan.description}
@@ -535,7 +529,7 @@
                 <button
                   onclick={() => handleEdit(plan)}
                   class="p-2 text-fg-muted hover:text-accent-fg transition-colors"
-                  title="Edit"
+                  title={$t('common.edit')}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -555,7 +549,7 @@
                 <button
                   onclick={() => handleDelete(plan.id)}
                   class="p-2 text-fg-muted hover:text-danger-fg transition-colors"
-                  title="Delete"
+                  title={$t('common.delete')}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -576,7 +570,9 @@
                   onclick={() =>
                     selectedPlanId === plan.id ? (selectedPlanId = null) : loadPlanDetails(plan.id)}
                   class="p-2 text-fg-muted hover:text-accent-fg transition-colors"
-                  title={selectedPlanId === plan.id ? 'Collapse' : 'View Details'}
+                  title={selectedPlanId === plan.id
+                    ? $t('treatmentPlans.collapse')
+                    : $t('treatmentPlans.viewDetails')}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -600,12 +596,14 @@
           {#if selectedPlanId === plan.id}
             <div class="border-t border-line p-4 bg-surface-sunken">
               {#if loadingDetails}
-                <div class="text-center py-4 text-fg-muted">Loading details...</div>
+                <div class="text-center py-4 text-fg-muted">
+                  {$t('treatmentPlans.loadingDetails')}
+                </div>
               {:else}
                 <!-- Goals Section -->
                 <div class="mb-6">
                   <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-md font-semibold text-fg">Goals</h4>
+                    <h4 class="text-md font-semibold text-fg">{$t('treatmentPlans.goals')}</h4>
                     <button
                       onclick={() => {
                         if (showAddGoalForm) {
@@ -617,7 +615,7 @@
                       }}
                       class="text-body h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                     >
-                      {showAddGoalForm ? 'Cancel' : '+ Add Goal'}
+                      {showAddGoalForm ? $t('common.cancel') : `+ ${$t('treatmentPlans.addGoal')}`}
                     </button>
                   </div>
 
@@ -631,7 +629,7 @@
                           for="goal-description"
                           class="block text-body font-medium text-fg-muted mb-1"
                         >
-                          Description *
+                          {$t('treatmentPlans.description')} *
                         </label>
                         <textarea
                           id="goal-description"
@@ -647,7 +645,7 @@
                             for="goal-target-date"
                             class="block text-body font-medium text-fg-muted mb-1"
                           >
-                            Target Date
+                            {$t('treatmentPlans.targetDate')}
                           </label>
                           <input
                             id="goal-target-date"
@@ -661,7 +659,7 @@
                             for="goal-status"
                             class="block text-body font-medium text-fg-muted mb-1"
                           >
-                            Status
+                            {$t('treatmentPlans.statusLabel')}
                           </label>
                           <select
                             id="goal-status"
@@ -669,7 +667,7 @@
                             class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                           >
                             {#each goalStatusOptions as option}
-                              <option value={option.value}>{option.label}</option>
+                              <option value={option}>{$goalStatusLabel(option)}</option>
                             {/each}
                           </select>
                         </div>
@@ -678,7 +676,7 @@
                             for="goal-priority"
                             class="block text-body font-medium text-fg-muted mb-1"
                           >
-                            Priority
+                            {$t('treatmentPlans.priority')}
                           </label>
                           <input
                             id="goal-priority"
@@ -695,20 +693,20 @@
                           onclick={resetGoalForm}
                           class="h-7 px-2.5 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
                         >
-                          Cancel
+                          {$t('common.cancel')}
                         </button>
                         <button
                           type="submit"
                           class="h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                         >
-                          {editingGoalId ? 'Update' : 'Add'}
+                          {editingGoalId ? $t('common.update') : $t('common.add')}
                         </button>
                       </div>
                     </form>
                   {/if}
 
                   {#if goals.length === 0}
-                    <p class="text-body text-fg-muted">No goals yet</p>
+                    <p class="text-body text-fg-muted">{$t('treatmentPlans.noGoals')}</p>
                   {:else}
                     <div class="space-y-2">
                       {#each goals as goal (goal.id)}
@@ -721,13 +719,16 @@
                                     goal.status
                                   )}"
                                 >
-                                  {goal.status}
+                                  {$goalStatusLabel(goal.status)}
                                 </span>
                               </div>
                               <p class="text-body text-fg">{goal.description}</p>
                               {#if goal.target_date}
                                 <p class="text-caption text-fg-muted mt-1">
-                                  Target: {goal.target_date}
+                                  {$t('treatmentPlans.targetDateValue').replace(
+                                    '{date}',
+                                    goal.target_date
+                                  )}
                                 </p>
                               {/if}
                             </div>
@@ -735,7 +736,7 @@
                               <button
                                 onclick={() => handleEditGoal(goal)}
                                 class="p-1 text-fg-muted hover:text-accent-fg transition-colors"
-                                aria-label="Edit goal"
+                                aria-label={$t('treatmentPlans.editGoal')}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -755,7 +756,7 @@
                               <button
                                 onclick={() => handleDeleteGoal(goal.id)}
                                 class="p-1 text-fg-muted hover:text-danger-fg transition-colors"
-                                aria-label="Delete goal"
+                                aria-label={$t('treatmentPlans.deleteGoal')}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -783,7 +784,9 @@
                 <!-- Interventions Section -->
                 <div>
                   <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-md font-semibold text-fg">Interventions</h4>
+                    <h4 class="text-md font-semibold text-fg">
+                      {$t('treatmentPlans.interventions')}
+                    </h4>
                     <button
                       onclick={() => {
                         if (showAddInterventionForm) {
@@ -795,7 +798,9 @@
                       }}
                       class="text-body h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                     >
-                      {showAddInterventionForm ? 'Cancel' : '+ Add Intervention'}
+                      {showAddInterventionForm
+                        ? $t('common.cancel')
+                        : `+ ${$t('treatmentPlans.addIntervention')}`}
                     </button>
                   </div>
 
@@ -809,7 +814,7 @@
                           for="intervention-type"
                           class="block text-body font-medium text-fg-muted mb-1"
                         >
-                          Type *
+                          {$t('treatmentPlans.interventionTypeLabel')} *
                         </label>
                         <select
                           id="intervention-type"
@@ -818,7 +823,7 @@
                           class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                         >
                           {#each interventionTypeOptions as option}
-                            <option value={option.value}>{option.label}</option>
+                            <option value={option}>{$interventionTypeLabel(option)}</option>
                           {/each}
                         </select>
                       </div>
@@ -827,7 +832,7 @@
                           for="intervention-description"
                           class="block text-body font-medium text-fg-muted mb-1"
                         >
-                          Description *
+                          {$t('treatmentPlans.description')} *
                         </label>
                         <textarea
                           id="intervention-description"
@@ -842,13 +847,13 @@
                           for="intervention-frequency"
                           class="block text-body font-medium text-fg-muted mb-1"
                         >
-                          Frequency
+                          {$t('treatmentPlans.frequency')}
                         </label>
                         <input
                           id="intervention-frequency"
                           type="text"
                           bind:value={interventionFrequency}
-                          placeholder="e.g., Weekly, Twice per week"
+                          placeholder={$t('treatmentPlans.frequencyPlaceholder')}
                           class="w-full px-3 py-2 bg-surface-sunken border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
                         />
                       </div>
@@ -858,20 +863,20 @@
                           onclick={resetInterventionForm}
                           class="h-7 px-2.5 border border-line text-fg-muted rounded-control hover:bg-surface-hover transition-colors"
                         >
-                          Cancel
+                          {$t('common.cancel')}
                         </button>
                         <button
                           type="submit"
                           class="h-7 px-2.5 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
                         >
-                          {editingInterventionId ? 'Update' : 'Add'}
+                          {editingInterventionId ? $t('common.update') : $t('common.add')}
                         </button>
                       </div>
                     </form>
                   {/if}
 
                   {#if interventions.length === 0}
-                    <p class="text-body text-fg-muted">No interventions yet</p>
+                    <p class="text-body text-fg-muted">{$t('treatmentPlans.noInterventions')}</p>
                   {:else}
                     <div class="space-y-2">
                       {#each interventions as intervention (intervention.id)}
@@ -882,13 +887,16 @@
                                 <span
                                   class="px-2 py-0.5 rounded-full text-caption bg-accent-subtle text-accent-fg"
                                 >
-                                  {intervention.type}
+                                  {$interventionTypeLabel(intervention.type)}
                                 </span>
                               </div>
                               <p class="text-body text-fg">{intervention.description}</p>
                               {#if intervention.frequency}
                                 <p class="text-caption text-fg-muted mt-1">
-                                  Frequency: {intervention.frequency}
+                                  {$t('treatmentPlans.frequencyValue').replace(
+                                    '{value}',
+                                    intervention.frequency
+                                  )}
                                 </p>
                               {/if}
                             </div>
@@ -896,7 +904,7 @@
                               <button
                                 onclick={() => handleEditIntervention(intervention)}
                                 class="p-1 text-fg-muted hover:text-accent-fg transition-colors"
-                                aria-label="Edit intervention"
+                                aria-label={$t('treatmentPlans.editIntervention')}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -916,7 +924,7 @@
                               <button
                                 onclick={() => handleDeleteIntervention(intervention.id)}
                                 class="p-1 text-fg-muted hover:text-danger-fg transition-colors"
-                                aria-label="Delete intervention"
+                                aria-label={$t('treatmentPlans.deleteIntervention')}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"

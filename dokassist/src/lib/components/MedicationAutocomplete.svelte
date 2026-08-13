@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { invoke } from '@tauri-apps/api/core';
   import { onDestroy } from 'svelte';
   import type { SubstanceSummary } from '$lib/api';
@@ -16,7 +17,7 @@
     value,
     onInput,
     onSelect,
-    placeholder = 'z.B. Sertralin',
+    placeholder = '',
     required = false,
     id = 'substance',
   }: Props = $props();
@@ -128,7 +129,7 @@
     <div
       id="{id}-listbox"
       role="listbox"
-      aria-label="Medication suggestions"
+      aria-label={$t('medications.suggestions')}
       class="absolute z-20 w-full mt-1 bg-surface-hover border border-line rounded-card shadow-modal max-h-64 overflow-y-auto"
     >
       {#each suggestions as entry, index}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { downloadFile, type FileRecord } from '$lib/api';
   import { onDestroy } from 'svelte';
   import { Hourglass, FileText } from 'lucide-svelte';
@@ -102,14 +103,14 @@
             class="h-8 px-3 bg-accent hover:bg-accent-hover text-on-accent rounded-control transition-colors"
             disabled={!blobUrl}
           >
-            Download
+            {$t('files.download')}
           </button>
 
           <button
             onclick={handleClose}
             class="h-8 px-3 bg-surface-selected hover:bg-surface-selected text-fg-muted rounded-control transition-colors"
           >
-            Close
+            {$t('common.close')}
           </button>
         </div>
       </div>
@@ -123,7 +124,7 @@
               <div class="mb-4 flex justify-center text-fg-muted">
                 <Hourglass size={48} />
               </div>
-              <p class="text-fg-muted">Loading file...</p>
+              <p class="text-fg-muted">{$t('files.loadingFile')}</p>
             </div>
           </div>
         {:else if errorMessage}
@@ -145,12 +146,12 @@
                 <div class="mb-4 flex justify-center text-fg-muted">
                   <FileText size={48} />
                 </div>
-                <p class="text-fg-muted mb-4">Preview not available for this file type</p>
+                <p class="text-fg-muted mb-4">{$t('files.previewNotAvailable')}</p>
                 <button
                   onclick={handleDownload}
                   class="h-8 px-3 bg-accent hover:bg-accent-hover text-on-accent rounded-control transition-colors"
                 >
-                  Download to View
+                  {$t('files.downloadToView')}
                 </button>
               </div>
             </div>
