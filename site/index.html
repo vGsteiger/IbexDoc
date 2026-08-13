@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RamDoc — local, encrypted patient records for macOS</title>
+    <meta
+      name="description"
+      content="RamDoc is a 100% local, encrypted macOS application for Swiss patient record management. Open source, no cloud, built for Apple Silicon."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="assets/icon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="canonical" href="https://vgsteiger.github.io/RamDoc/" />
+    <meta property="og:title" content="RamDoc" />
+    <meta
+      property="og:description"
+      content="A 100% local, encrypted macOS application for Swiss patient record management."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://vgsteiger.github.io/RamDoc/" />
+    <meta property="og:image" content="https://vgsteiger.github.io/RamDoc/assets/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="#main">
+          <img src="assets/icon.png" alt="" width="20" height="20" />
+          <span>RamDoc</span>
+        </a>
+        <nav aria-label="Sections">
+          <a href="#what-it-does">What it does</a>
+          <a href="security.html">Security model</a>
+          <a href="#architecture">Architecture</a>
+          <a href="https://github.com/vGsteiger/RamDoc">Source</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="intro">
+        <div class="container">
+          <img class="mark" src="assets/icon.png" alt="RamDoc logo" width="56" height="56" />
+          <h1>RamDoc</h1>
+          <p class="lede">
+            A 100% local, encrypted macOS application for Swiss patient record management.
+          </p>
+          <p>
+            Patients, sessions, diagnoses, medications, attachments and reports live in one
+            encrypted vault on your own Mac. There is no server, no account and no telemetry — the
+            application works with the network switched off.
+          </p>
+
+          <section class="download" aria-labelledby="download-heading">
+            <h2 id="download-heading">Download</h2>
+            <p class="download-lede">
+              The current release, built for Apple Silicon from the source in this repository.
+            </p>
+            <p class="actions">
+              <a class="button button-primary" href="https://github.com/vGsteiger/RamDoc/releases/latest">
+                Download the latest release
+              </a>
+              <a class="quiet-link" href="https://github.com/vGsteiger/RamDoc/blob/main/CONTRIBUTING.md">
+                Build from source
+              </a>
+            </p>
+
+            <dl class="specs">
+              <div>
+                <dt>Requires</dt>
+                <dd>macOS 13 or newer, on a Mac with Apple Silicon (M1 or later)</dd>
+              </div>
+              <div>
+                <dt>Distribution</dt>
+                <dd>
+                  Apple Silicon <code>.dmg</code>, published automatically on every versioned
+                  release
+                </dd>
+              </div>
+              <div>
+                <dt>Licence</dt>
+                <dd>MIT — free to use, read, fork and audit</dd>
+              </div>
+              <div>
+                <dt>Data location</dt>
+                <dd>An encrypted vault in your macOS application data directory. Nothing else.</dd>
+              </div>
+            </dl>
+          </section>
+
+          <aside class="note">
+            <p class="note-label">Why Apple Silicon only?</p>
+            <p>
+              RamDoc drafts reports with a language model running on your own Mac. That work is done
+              by the graphics chip through
+              <a href="https://developer.apple.com/metal/">Metal</a>, which Intel Macs cannot use
+              the same way. One platform supported properly beats two supported badly.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="what-it-does" class="section">
+        <div class="container">
+          <h2>What it does</h2>
+          <p class="section-lede">
+            Three concerns, each carried through the whole application rather than added as a
+            feature.
+          </p>
+
+          <div class="columns">
+            <section class="column">
+              <h3>Security</h3>
+              <ul>
+                <li>
+                  <strong>Encryption everywhere</strong>
+                  AES-256-GCM for every file in the vault; SQLCipher for the database itself.
+                </li>
+                <li>
+                  <strong>Keys in the Keychain</strong>
+                  Key material lives in the macOS Keychain and is zeroised in memory after use.
+                </li>
+                <li>
+                  <strong>Tamper-evident audit trail</strong>
+                  Every access is appended to an HMAC-chained log with an independent checkpoint.
+                </li>
+                <li>
+                  <strong>Recovery you hold</strong>
+                  A 24-word recovery phrase restores the vault. Nobody else can.
+                </li>
+              </ul>
+            </section>
+
+            <section class="column">
+              <h3>Specialisation</h3>
+              <ul>
+                <li>
+                  <strong>Swiss identifiers</strong>
+                  AHV numbers are validated on entry, checksum included.
+                </li>
+                <li>
+                  <strong>AMDP psychopathology</strong>
+                  Structured forms for the AMDP system, not free-text boxes.
+                </li>
+                <li>
+                  <strong>Clinical record model</strong>
+                  Sessions, ICD-10 diagnoses, medications, attachments and reports.
+                </li>
+                <li>
+                  <strong>Drafting that knows the record</strong>
+                  Reports are drafted from the patient's own history, with provenance kept.
+                </li>
+              </ul>
+            </section>
+
+            <section class="column">
+              <h3>Data protection</h3>
+              <ul>
+                <li>
+                  <strong>Local by construction</strong>
+                  No server, no sync, no account, no analytics. Nothing to leak.
+                </li>
+                <li>
+                  <strong>Inference stays on device</strong>
+                  The language model runs on your Mac; no text is sent to a provider.
+                </li>
+                <li>
+                  <strong>Search without exposure</strong>
+                  Full-text search runs inside the encrypted database.
+                </li>
+                <li>
+                  <strong>Careful with files</strong>
+                  Size caps, symlink-escape checks and non-guessable temporary filenames.
+                </li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section id="security" class="section section-alt">
+        <div class="container">
+          <h2>Security model</h2>
+          <p class="section-lede">
+            Records are encrypted at rest with AES-256-GCM, the database with SQLCipher, and the
+            keys are held by the macOS Keychain rather than by the application. Access is written to
+            a tamper-evident audit log, and recovery rests on a 24-word phrase that only you hold.
+          </p>
+          <p class="actions">
+            <a class="quiet-link" href="security.html">Read how each mechanism works</a>
+          </p>
+        </div>
+      </section>
+
+      <section id="architecture" class="section">
+        <div class="container">
+          <h2>How it is built</h2>
+          <p class="section-lede">
+            A Rust backend on Tauri 2, a Svelte 5 interface, and SQLCipher with versioned
+            migrations. Everything in the diagram runs on the one machine.
+          </p>
+
+          <figure class="diagram">
+            <a href="assets/architecture.png">
+              <img
+                src="assets/architecture.png"
+                alt="RamDoc architecture diagram: the Svelte frontend calls Tauri IPC commands, which reach the crypto, database, keychain, filesystem, recovery and local LLM modules, with the encrypted vault and SQLCipher database on local disk."
+                width="6402"
+                height="1836"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>Module overview — open the diagram for full resolution.</figcaption>
+          </figure>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>
+          Built by <a href="https://vgsteiger.com">Viktor Gsteiger</a> ·
+          <a href="https://github.com/vGsteiger">github.com/vGsteiger</a>
+        </p>
+        <nav aria-label="Project links">
+          <a href="https://github.com/vGsteiger/RamDoc">Repository</a>
+          <a href="https://github.com/vGsteiger/RamDoc/releases">Releases</a>
+          <a href="https://github.com/vGsteiger/RamDoc/blob/main/LICENSE">Licence</a>
+          <a href="https://github.com/vGsteiger/RamDoc/blob/main/SECURITY.md">Security</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
