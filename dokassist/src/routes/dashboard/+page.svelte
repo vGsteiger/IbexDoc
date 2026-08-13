@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sessionTypeLabel } from '$lib/translations/labels';
+  import { sessionTypeLabel, errorText } from '$lib/translations/labels';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { getDashboardData, type DashboardData } from '$lib/api';
@@ -27,7 +27,7 @@
       data = await getDashboardData();
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
-      error = err instanceof Error ? err.message : $t('dashboard.loadError');
+      error = $errorText(err, $t('dashboard.loadError'));
     } finally {
       isLoading = false;
     }

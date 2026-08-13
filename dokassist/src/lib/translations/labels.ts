@@ -1,4 +1,5 @@
 import { derived, type Readable } from 'svelte/store';
+import { parseError } from '$lib/api';
 import { t } from './index';
 
 /**
@@ -44,6 +45,26 @@ export const errorMessage: Readable<(code: string, fallback: string) => string> 
     const key = `errors.codes.${code}`;
     const message = $t(key);
     return message === key ? fallback : message;
+  }
+);
+
+/**
+ * The same lookup starting from a thrown value, for the common
+ * `catch (e) { error = … }` shape.
+ *
+ * Backend messages are English (see src-tauri/src/error.rs), so showing one
+ * raw puts English in a German UI. Translated copy for the error's code wins;
+ * otherwise the backend message is still shown, because it carries detail the
+ * generic text does not. `fallback` covers a throw that isn't an AppError.
+ */
+export const errorText: Readable<(thrown: unknown, fallback?: string) => string> = derived(
+  errorMessage,
+  ($errorMessage) => (thrown: unknown, fallback?: string) => {
+    const { code, message } = parseError(thrown);
+    // parseError stringifies a non-AppError throw, which prefixes "Error: ";
+    // the instance's own message is what these call sites showed before.
+    const detail = thrown instanceof Error ? thrown.message : message;
+    return $errorMessage(code, detail || fallback || '');
   }
 );
 

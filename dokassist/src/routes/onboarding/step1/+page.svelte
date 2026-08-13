@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { getSettings, updateSettings, parseError, type PracticeSettings } from '$lib/api';
+  import { getSettings, updateSettings, type PracticeSettings } from '$lib/api';
   import { ChevronRight, Building, User, Mail, Phone, MapPin, Globe } from 'lucide-svelte';
 
   let settings = $state<PracticeSettings>({
@@ -71,7 +72,7 @@
       await updateSettings({ ...settings, canton: settings.canton || null });
       goto('/onboarding/step2');
     } catch (err) {
-      error = parseError(err).message;
+      error = $errorText(err);
     } finally {
       isSaving = false;
     }

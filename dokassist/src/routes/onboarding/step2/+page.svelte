@@ -1,14 +1,10 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-  import {
-    getRecommendedModel,
-    downloadAndRegisterModel,
-    parseError,
-    type ModelChoice,
-  } from '$lib/api';
+  import { getRecommendedModel, downloadAndRegisterModel, type ModelChoice } from '$lib/api';
   import {
     ChevronRight,
     ChevronLeft,
@@ -34,7 +30,7 @@
     try {
       recommended = await getRecommendedModel();
     } catch (err) {
-      error = parseError(err).message;
+      error = $errorText(err);
     } finally {
       isLoading = false;
     }
@@ -63,7 +59,7 @@
 
       await downloadAndRegisterModel(recommended);
     } catch (err) {
-      error = parseError(err).message;
+      error = $errorText(err);
     } finally {
       doneUnsubscribe?.();
       unlisten?.();

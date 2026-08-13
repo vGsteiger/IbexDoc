@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { goto } from '$app/navigation';
-  import { recoverApp, parseError } from '$lib/api';
+  import { recoverApp } from '$lib/api';
   import { authStatus } from '$lib/stores/auth';
   import { t } from '$lib/translations';
   import { ShieldCheck } from 'lucide-svelte';
@@ -36,7 +37,7 @@
       authStatus.set('unlocked');
       goto('/dashboard');
     } catch (err) {
-      error = parseError(err).message || $t('auth.recoveryFailed');
+      error = $errorText(err, $t('auth.recoveryFailed'));
     } finally {
       isRecovering = false;
     }

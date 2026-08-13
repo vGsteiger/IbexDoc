@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import { getOrCreatePatientChatSession, runAgentTurn, type SubstanceDetail } from '$lib/api';
@@ -71,7 +72,7 @@ Nutze das compare_medications Tool, um detaillierte Informationen zu beiden Medi
       // Send the message to the agent
       await runAgentTurn(sessionId, prompt);
     } catch (err) {
-      error = err instanceof Error ? err.message : String(err);
+      error = $errorText(err);
       isGenerating = false;
       cleanupListeners();
     }

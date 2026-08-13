@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { interpretationLabel } from '$lib/translations/labels';
   import { onMount } from 'svelte';
   import type { OutcomeScore } from '$lib/api';
@@ -269,7 +270,7 @@
     >
       <div class="text-body">
         <div class="font-semibold text-fg">
-          Score: {hoveredPoint.score.score}
+          {$t('outcomeScores.scoreValue').replace('{score}', String(hoveredPoint.score.score))}
         </div>
         <div class="text-fg-muted">
           {hoveredPoint.score.interpretation}

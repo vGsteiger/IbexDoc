@@ -207,7 +207,8 @@
     "selectCsvDialogTitle": "CSV-Datei auswählen",
     "contextWarm": "Warmer Kontext",
     "contextCold": "Kalter Kontext",
-    "cacheStats": "{reused} wiederverwendet · {evaluated} ausgewertet · {prefill} ms Prefill"
+    "cacheStats": "{reused} wiederverwendet · {evaluated} ausgewertet · {prefill} ms Prefill",
+    "availableModelsHint": "Wählen Sie ein Modell passend zum verfügbaren Arbeitsspeicher. Ihr System hat {ram} RAM."
   },
   "auth": {
     "welcomeToRamDoc": "Willkommen bei RamDoc",
@@ -343,7 +344,8 @@
     "exportFhirFailed": "FHIR-Bundle konnte nicht exportiert werden",
     "exportSummaryFailed": "Patientenzusammenfassung konnte nicht exportiert werden",
     "exporting": "Wird exportiert...",
-    "exportPdf": "Als PDF exportieren"
+    "exportPdf": "Als PDF exportieren",
+    "duplicateAhv": "Ein Patient mit dieser AHV-Nummer existiert bereits."
   },
   "email": {
     "title": "E-Mails",
@@ -454,7 +456,9 @@
     "addDiagnosis": "Neue Diagnose hinzufügen",
     "editDiagnosis": "Diagnose bearbeiten",
     "addFirst": "Erste Diagnose erfassen",
-    "icdCode": "ICD-10-Code"
+    "icdCode": "ICD-10-Code",
+    "diagnosedOnValue": "Diagnostiziert: {date}",
+    "resolvedOnValue": "Aufgelöst: {date}"
   },
   "medications": {
     "title": "Medikation",
@@ -495,7 +499,9 @@
     "active": "Aktiv",
     "ended": "Beendet",
     "replacementNotEnded": "Neues Medikament wurde erfasst, aber das ersetzte Medikament konnte nicht beendet werden: ",
-    "suggestions": "Medikamentenvorschläge"
+    "suggestions": "Medikamentenvorschläge",
+    "dateRangeFrom": "Von {date}",
+    "dateRangeTo": "bis {date}"
   },
   "outcomeScores": {
     "title": "Outcome-Scores",
@@ -529,7 +535,9 @@
       "Moderate": "Mittel",
       "Moderately Severe": "Mittelschwer",
       "Severe": "Schwer"
-    }
+    },
+    "totalScoreLabel": "Gesamtpunktzahl",
+    "scoreValue": "Punktzahl: {score}"
   },
   "reports": {
     "title": "Berichte",
@@ -619,7 +627,8 @@
     "streamGenerating": "Wird erstellt...",
     "streamWillAppear": "Der Bericht erscheint hier, während er erstellt wird...",
     "streamWaiting": "Warten auf das Sprachmodell...",
-    "streamEmpty": "Es wurde kein Berichtsinhalt erstellt."
+    "streamEmpty": "Es wurde kein Berichtsinhalt erstellt.",
+    "fileChars": "({count} Zeichen)"
   },
   "files": {
     "title": "Dateien",
@@ -719,7 +728,9 @@
     "newSession": "Neue Sitzung",
     "completeSession": "Sitzung abschliessen",
     "markCompleted": "Als abgeschlossen markieren",
-    "markCompletedAction": "Als abgeschlossen markieren"
+    "markCompletedAction": "Als abgeschlossen markieren",
+    "newSessionAt": "Neue Sitzung um {time} am {date}",
+    "markCompletedFor": "Sitzung mit {name} als abgeschlossen markieren"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1009,7 +1020,8 @@
     "interventionDescriptionRequired": "Bitte geben Sie eine Interventionsbeschreibung ein.",
     "confirmDeleteGoal": "Möchten Sie dieses Ziel wirklich löschen?",
     "confirmDeleteIntervention": "Möchten Sie diese Intervention wirklich löschen?",
-    "confirmDeletePlan": "Möchten Sie diesen Behandlungsplan wirklich löschen? Alle Ziele und Interventionen werden ebenfalls gelöscht."
+    "confirmDeletePlan": "Möchten Sie diesen Behandlungsplan wirklich löschen? Alle Ziele und Interventionen werden ebenfalls gelöscht.",
+    "targetDateValue": "Ziel: {date}"
   },
   "errors": {
     "copy": "Kopieren",

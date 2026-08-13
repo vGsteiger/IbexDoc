@@ -344,7 +344,9 @@
             {#if daySessions.length === 0}
               <button
                 onclick={() => handleTimeSlotClick(day, hour)}
-                aria-label="New session at {formatTime(hour)} on {toLocalISODate(day)}"
+                aria-label={$t('calendar.newSessionAt')
+                  .replace('{time}', formatTime(hour))
+                  .replace('{date}', toLocalISODate(day))}
                 class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-accent-subtle hover:bg-accent-subtle/20 transition-opacity flex items-center justify-center text-caption text-accent-fg"
               >
                 +
@@ -361,7 +363,6 @@
               >
                 <button
                   onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                  aria-label="Session with {session.patient_name}, status: {status}"
                   class="w-full text-left hover:opacity-80 transition-opacity"
                 >
                   <span class="sr-only"
@@ -379,7 +380,10 @@
                 {#if status !== 'completed'}
                   <button
                     onclick={() => openCompleteModal(session)}
-                    aria-label="Mark session with {session.patient_name} as completed"
+                    aria-label={$t('calendar.markCompletedFor').replace(
+                      '{name}',
+                      session.patient_name
+                    )}
                     class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded-control bg-success text-on-success text-[10px] hover:bg-success transition-colors"
                     title={$t('calendar.markCompleted')}>✓</button
                   >
@@ -398,7 +402,6 @@
                 >
                   <button
                     onclick={() => goto(`/patients/${session.session.patient_id}/sessions`)}
-                    aria-label="Session with {session.patient_name} (no scheduled time), status: {status}"
                     class="w-full text-left hover:opacity-80 transition-opacity"
                   >
                     <span class="sr-only"
@@ -414,7 +417,10 @@
                   {#if status !== 'completed'}
                     <button
                       onclick={() => openCompleteModal(session)}
-                      aria-label="Mark session with {session.patient_name} as completed"
+                      aria-label={$t('calendar.markCompletedFor').replace(
+                        '{name}',
+                        session.patient_name
+                      )}
                       class="absolute top-0.5 right-0.5 opacity-0 group-hover/card:opacity-100 w-4 h-4 flex items-center justify-center rounded-control bg-success text-on-success text-[10px] hover:bg-success transition-colors"
                       title={$t('calendar.markCompleted')}>✓</button
                     >

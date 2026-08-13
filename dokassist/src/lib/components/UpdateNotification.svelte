@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-  import { checkForUpdates, installUpdate, parseError, type UpdateInfo } from '$lib/api';
+  import { checkForUpdates, installUpdate, type UpdateInfo } from '$lib/api';
   import { t } from '$lib/translations';
 
   function renderMarkdown(text: string): string {
@@ -54,7 +55,7 @@
         showNotification = true;
       }
     } catch (e) {
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -81,7 +82,7 @@
       unlisten?.();
       unlisten = null;
       installing = false;
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { get } from 'svelte/store';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -87,7 +88,7 @@
       await runAgentTurn(session.id, prompt);
     } catch (e) {
       isGenerating = false;
-      aiError = e instanceof Error ? e.message : String(e);
+      aiError = $errorText(e);
     }
   }
 

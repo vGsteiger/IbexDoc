@@ -725,7 +725,10 @@
                               <p class="text-body text-fg">{goal.description}</p>
                               {#if goal.target_date}
                                 <p class="text-caption text-fg-muted mt-1">
-                                  Target: {goal.target_date}
+                                  {$t('treatmentPlans.targetDateValue').replace(
+                                    '{date}',
+                                    goal.target_date
+                                  )}
                                 </p>
                               {/if}
                             </div>

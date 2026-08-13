@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { get } from 'svelte/store';
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
@@ -11,7 +12,6 @@
     downloadModel,
     loadModel,
     resetApp,
-    parseError,
     checkForUpdates,
     installUpdate,
     exportAllPatientData,
@@ -167,7 +167,7 @@
         {} as Record<string, string>
       );
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     } finally {
       loadingModels = false;
     }
@@ -182,7 +182,7 @@
       embedPhase = 'done';
     } catch (e) {
       embedPhase = 'error';
-      embedError = parseError(e).message;
+      embedError = $errorText(e);
     }
   }
 
@@ -201,7 +201,7 @@
       medRefPhase = 'done';
     } catch (e) {
       medRefPhase = 'error';
-      medRefError = parseError(e).message;
+      medRefError = $errorText(e);
     } finally {
       medRefUnlisten?.();
       medRefUnlisten = null;
@@ -221,7 +221,7 @@
     try {
       updateInfo = await checkForUpdates();
     } catch (e) {
-      updateError = parseError(e).message;
+      updateError = $errorText(e);
     } finally {
       checkingUpdate = false;
     }
@@ -250,7 +250,7 @@
       updateUnlisten?.();
       updateUnlisten = null;
       installingUpdate = false;
-      updateError = parseError(e).message;
+      updateError = $errorText(e);
     }
   }
 
@@ -302,7 +302,7 @@
       unlisten?.();
       unlisten = null;
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -316,7 +316,7 @@
       phase = 'done';
     } catch (e) {
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -343,7 +343,7 @@
       await loadInstalledModels();
     } catch (e) {
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     } finally {
       unlisten?.();
       unlisten = null;
@@ -363,7 +363,7 @@
       phase = 'done';
     } catch (e) {
       phase = 'error';
-      errorMsg = parseError(e).message;
+      errorMsg = $errorText(e);
     }
   }
 
@@ -372,7 +372,7 @@
       await deleteModel(modelId);
       await loadInstalledModels();
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     }
   }
 
@@ -381,7 +381,7 @@
       await setDefaultModel(modelId);
       await loadInstalledModels();
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     }
   }
 
@@ -395,7 +395,7 @@
       }
       await loadInstalledModels();
     } catch (e) {
-      modelManagementError = parseError(e).message;
+      modelManagementError = $errorText(e);
     }
   }
 
@@ -435,7 +435,7 @@
       await resetApp();
       goto('/');
     } catch (e) {
-      resetError = parseError(e).message;
+      resetError = $errorText(e);
       resetting = false;
     }
   }
@@ -465,7 +465,7 @@
       showExportConfirm = false;
       exportInput = '';
     } catch (e) {
-      exportError = parseError(e).message;
+      exportError = $errorText(e);
     } finally {
       exporting = false;
     }
@@ -490,7 +490,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      backupError = parseError(e).message;
+      backupError = $errorText(e);
     } finally {
       creatingBackup = false;
     }
@@ -513,7 +513,7 @@
       const backupArray = Array.from(new Uint8Array(arrayBuffer));
       validatedBackupInfo = await validateBackupArchive(backupArray);
     } catch (e) {
-      restoreError = parseError(e).message;
+      restoreError = $errorText(e);
       selectedBackupFile = null;
       validatedBackupInfo = null;
     }
@@ -538,7 +538,7 @@
       // Redirect to unlock page since database was replaced
       goto('/');
     } catch (e) {
-      restoreError = parseError(e).message;
+      restoreError = $errorText(e);
     } finally {
       restoring = false;
     }
@@ -572,7 +572,7 @@
       csvPreview = await parseCsvPreview(selectedCsvPath);
       columnMappings = csvPreview.detected_mappings;
     } catch (e) {
-      csvError = parseError(e).message;
+      csvError = $errorText(e);
       selectedCsvPath = null;
     }
   }
@@ -592,7 +592,7 @@
         columnMappings = [];
       }
     } catch (e) {
-      csvError = parseError(e).message;
+      csvError = $errorText(e);
     } finally {
       importing = false;
     }
@@ -1097,9 +1097,10 @@
     <div class="mb-6">
       <h3 class="text-heading font-semibold text-fg mb-3">{$t('settings.availableModels')}</h3>
       <p class="text-caption text-fg-muted mb-4">
-        Choose a model based on your system's available RAM. Your system has {status?.total_ram_bytes
-          ? formatBytes(status.total_ram_bytes)
-          : '...'} of RAM.
+        {$t('settings.availableModelsHint').replace(
+          '{ram}',
+          status?.total_ram_bytes ? formatBytes(status.total_ram_bytes) : '…'
+        )}
       </p>
 
       {#if loadingModels}

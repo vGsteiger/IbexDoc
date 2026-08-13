@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/translations';
+  import { errorMessage } from '$lib/translations/labels';
   import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import {
@@ -94,7 +95,10 @@
       audit = result.audit;
     } catch (e) {
       const appError = parseError(e);
-      error = appError.message + '\n\n' + $t('errors.referenceLine').replace('{ref}', appError.ref);
+      error =
+        $errorMessage(appError.code, appError.message) +
+        '\n\n' +
+        $t('errors.referenceLine').replace('{ref}', appError.ref);
       console.error('Error querying patient history:', appError);
       isQuerying = false;
       // Clean up listeners on error

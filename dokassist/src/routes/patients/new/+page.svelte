@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { get } from 'svelte/store';
   import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
@@ -23,9 +24,9 @@
     } catch (e) {
       const { code } = parseError(e);
       if (code === 'DB_UNIQUE_CONSTRAINT') {
-        error = 'A patient with this AHV number already exists.';
+        error = get(t)('patients.duplicateAhv');
       } else {
-        error = e instanceof Error ? e.message : get(t)('patients.createFailed');
+        error = $errorText(e, get(t)('patients.createFailed'));
       }
       console.error('Error creating patient:', e);
       isSubmitting = false;

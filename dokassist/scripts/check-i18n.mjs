@@ -45,14 +45,27 @@ const ALLOW = [
   'recipient@example.com',
   // The required-field marker rendered by ui/Field.
   '&nbsp;*',
+  // Identical in both languages, and shown as a prefix to a value.
+  'ATC:',
+  'AHV:',
+  // The authority and database behind the medication reference, a proper noun.
+  // The "Quelle:" / "Source:" prefix around it is translated.
+  ': Swissmedic AIPS',
 ];
 
 // Text that carries no words to translate: punctuation, symbols, numbers,
-// interpolations, short acronyms, and anything that looks like a CSS class.
+// short acronyms and units, and anything that looks like a CSS class. Units
+// matter now that interpolations are stripped — `{n} min` reduces to `min`.
 const NOISE =
-  /^(?:[\s—•·▸▾▶▼●✓→←↑↓↵|/\\:;,.\-–+*#%()[\]{}0-9]+|[A-Z]{2,5}|https?:.*|\{.*\}|[a-z-]+(?:\s[a-z-]+)*=.*)$/;
+  /^(?:[\s—•·▸▾▶▼●✓→←↑↓↵|/\\:;,.\-–+*#%()[\]{}0-9]+|[A-Z]{2,5}|[A-Za-zÄÖÜäöü]{1,3}\.?|https?:.*|&nbsp;|tok\/s|[a-z-]+(?:\s[a-z-]+)*=.*)$/;
 
-const ATTRS = /\b(placeholder|aria-label|title|alt|label|description|hint)="([^"{}]+)"/g;
+// Quoted attribute values, including ones that interpolate. A template such as
+// aria-label="Session with {name}, status: {status}" is still hardcoded English
+// prose — skipping any value containing braces is how four of them survived the
+// first sweep. Interpolations are blanked before the value is judged, so a
+// fully-dynamic aria-label={...} is unaffected (it has no quoted value at all).
+const ATTRS = /\b(placeholder|aria-label|title|alt|label|description|hint)="([^"]+)"/g;
+const INTERPOLATION = /\{[^{}]*\}/g;
 
 function walk(dir) {
   return readdirSync(dir).flatMap((entry) => {
@@ -70,6 +83,50 @@ function flatten(obj, prefix = '') {
       ? flatten(value, `${prefix}${key}.`)
       : [[`${prefix}${key}`, value]]
   );
+}
+
+/**
+ * Blanks out everything that isn't markup — script blocks, style blocks and
+ * comments — replacing each with the same number of newlines so reported line
+ * numbers still line up with the file.
+ *
+ * Tag matching is case-insensitive and comment stripping repeats until the
+ * source stops changing. This scans our own tree rather than untrusted input,
+ * but a single pass over a case-sensitive pattern is the classic sanitiser
+ * mistake, and here it would let a hardcoded string hide from the check.
+ */
+function stripNonMarkup(source) {
+  const blank = (m) => '\n'.repeat(m.split('\n').length - 1);
+  let out = source.replace(/<script\b[\s\S]*?<\/script\s*>/gi, blank);
+  out = out.replace(/<style\b[\s\S]*?<\/style\s*>/gi, blank);
+  let previous;
+  do {
+    previous = out;
+    out = out.replace(/<!--[\s\S]*?-->/g, blank);
+  } while (out !== previous);
+  // An unterminated comment would otherwise leave its body in the markup.
+  return out.replace(/<!--[\s\S]*$/, blank);
+}
+
+/**
+ * Removes every `{…}` region by counting brace depth, keeping newlines so line
+ * numbers survive. Depth counting rather than a regex because expressions nest
+ * (`{`+ ${$t('…')}`}`) and span lines.
+ *
+ * This is what lets a *partly* interpolated text node be judged on its literal
+ * words: `Von {a} bis {b}` reduces to `Von bis`, which is hardcoded German that
+ * a `[^{}]`-based matcher skips entirely. It also drops `{@const …}` blocks,
+ * whose `>=` would otherwise look like the end of a tag.
+ */
+function stripExpressions(markup) {
+  let out = '';
+  let depth = 0;
+  for (const char of markup) {
+    if (char === '{') depth++;
+    else if (char === '}') depth = Math.max(0, depth - 1);
+    else if (!depth || char === '\n') out += char;
+  }
+  return out;
 }
 
 const problems = [];
@@ -106,11 +163,9 @@ for (const file of walk(SRC)) {
   const rel = relative(ROOT, file);
   if (rel.startsWith('src/tests/')) continue;
 
-  const markup = readFileSync(file, 'utf8')
-    // Blank out script/style but keep line numbering intact.
-    .replace(/<script[\s\S]*?<\/script>/g, (m) => '\n'.repeat(m.split('\n').length - 1))
-    .replace(/<style[\s\S]*?<\/style>/g, (m) => '\n'.repeat(m.split('\n').length - 1))
-    .replace(/<!--[\s\S]*?-->/g, '');
+  // Expressions go first, so a partly interpolated text node is still judged
+  // on the literal words around the interpolation.
+  const markup = stripExpressions(stripNonMarkup(readFileSync(file, 'utf8')));
 
   const report = (line, kind, text) => {
     const value = text.replace(/\s+/g, ' ').trim();
@@ -121,11 +176,13 @@ for (const file of walk(SRC)) {
     problems.push(`${rel}:${line}  hardcoded ${kind}: ${value}`);
   };
 
-  for (const m of markup.matchAll(/>([^<>{}]+)</g)) {
+  for (const m of markup.matchAll(/>([^<>]+)</g)) {
     report(markup.slice(0, m.index).split('\n').length, 'text', m[1]);
   }
   markup.split('\n').forEach((line, i) => {
-    for (const m of line.matchAll(ATTRS)) report(i + 1, m[1], m[2]);
+    for (const m of line.matchAll(ATTRS)) {
+      report(i + 1, m[1], m[2].replace(INTERPOLATION, ' '));
+    }
   });
 }
 

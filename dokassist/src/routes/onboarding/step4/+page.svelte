@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { t } from '$lib/translations';
   import { goto } from '$app/navigation';
-  import { completeOnboarding, parseError } from '$lib/api';
+  import { completeOnboarding } from '$lib/api';
   import { ChevronLeft, Users, Mic, Search, FileText, Calendar, CheckCircle } from 'lucide-svelte';
 
   let isCompleting = $state(false);
@@ -23,7 +24,7 @@
       await completeOnboarding();
       goto('/dashboard');
     } catch (err) {
-      error = parseError(err).message;
+      error = $errorText(err);
       isCompleting = false;
     }
   }

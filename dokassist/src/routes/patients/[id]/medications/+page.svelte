@@ -217,9 +217,12 @@
                 {medication.dosage} • {medication.frequency}
               </p>
               <p class="text-body text-fg-muted mt-1">
-                Von {formatDate(medication.start_date)}
+                {$t('medications.dateRangeFrom').replace(
+                  '{date}',
+                  formatDate(medication.start_date)
+                )}
                 {#if medication.end_date}
-                  bis {formatDate(medication.end_date)}
+                  {$t('medications.dateRangeTo').replace('{date}', formatDate(medication.end_date))}
                 {/if}
               </p>
               {#if medication.notes}

@@ -85,7 +85,7 @@
 
   <div>
     <label for="score" class="block text-body font-medium text-fg mb-1">
-      Gesamtpunktzahl * (0-{maxScore})
+      {$t('outcomeScores.totalScoreLabel')} * (0-{maxScore})
     </label>
     <input
       id="score"

@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
 import { language } from '$lib/stores/language';
-import { sessionTypeLabel, reportTypeLabel } from '$lib/translations/labels';
+import {
+  sessionTypeLabel,
+  reportTypeLabel,
+  errorMessage,
+  errorText,
+} from '$lib/translations/labels';
 
 beforeEach(() => {
   language.set('en');
@@ -72,5 +77,44 @@ describe('reportTypeLabel', () => {
 
   it('falls back to the raw value for an unknown type', () => {
     expect(get(reportTypeLabel)('Kurzbericht')).toBe('Kurzbericht');
+  });
+});
+
+describe('errorMessage', () => {
+  it('translates a known AppError code', () => {
+    expect(get(errorMessage)('PATIENT_NOT_FOUND', 'raw')).toBe(
+      'The requested patient could not be found. They may have been deleted.'
+    );
+    language.set('de');
+    expect(get(errorMessage)('PATIENT_NOT_FOUND', 'raw')).toMatch(/nicht gefunden/);
+  });
+
+  it('falls back to the supplied message for an unmapped code', () => {
+    expect(get(errorMessage)('DB_ERROR', 'Database error: disk full')).toBe(
+      'Database error: disk full'
+    );
+  });
+});
+
+describe('errorText', () => {
+  it('translates a thrown AppError by its code', () => {
+    const thrown = { code: 'AUTH_REQUIRED', message: 'auth required', ref: 'R1' };
+    expect(get(errorText)(thrown)).toBe('Please unlock the application to continue.');
+  });
+
+  it('keeps the backend message for an unmapped code, since it carries detail', () => {
+    const thrown = { code: 'DB_ERROR', message: 'Database error: disk full', ref: 'R2' };
+    expect(get(errorText)(thrown)).toBe('Database error: disk full');
+  });
+
+  it("uses an Error's own message rather than its stringified form", () => {
+    // parseError stringifies a non-AppError throw, which would prefix "Error: ".
+    expect(get(errorText)(new Error('Boom'))).toBe('Boom');
+  });
+
+  it('falls back to the supplied text when the throw carries no message', () => {
+    expect(get(errorText)({ code: 'DB_ERROR', message: '', ref: 'R3' }, 'Could not load')).toBe(
+      'Could not load'
+    );
   });
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '$lib/translations/labels';
   import { get } from 'svelte/store';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
@@ -55,7 +56,7 @@
       error = '';
       patient = await getPatient(patientId);
     } catch (e) {
-      error = e instanceof Error ? e.message : get(t)('patients.loadFailed');
+      error = $errorText(e, get(t)('patients.loadFailed'));
       console.error('Error loading patient:', e);
     } finally {
       isLoading = false;
@@ -85,7 +86,7 @@
       patient = await updatePatient(event.detail.id, event.detail.data);
       isEditing = false;
     } catch (e) {
-      error = e instanceof Error ? e.message : get(t)('patients.updateFailed');
+      error = $errorText(e, get(t)('patients.updateFailed'));
       console.error('Error updating patient:', e);
     } finally {
       isSubmitting = false;
@@ -101,7 +102,7 @@
       await deletePatient(patientId);
       goto('/patients');
     } catch (e) {
-      error = e instanceof Error ? e.message : get(t)('patients.deleteFailed');
+      error = $errorText(e, get(t)('patients.deleteFailed'));
       console.error('Error deleting patient:', e);
       isDeleting = false;
       showDeleteConfirm = false;
@@ -141,7 +142,7 @@
         await writeTextFile(filePath, fhirJson);
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : get(t)('patients.exportFhirFailed');
+      error = $errorText(e, get(t)('patients.exportFhirFailed'));
       console.error('Error exporting FHIR bundle:', e);
     } finally {
       isExporting = false;
@@ -166,7 +167,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      error = e instanceof Error ? e.message : get(t)('patients.exportSummaryFailed');
+      error = $errorText(e, get(t)('patients.exportSummaryFailed'));
       console.error('Error exporting patient summary:', e);
     } finally {
       isExporting = false;
