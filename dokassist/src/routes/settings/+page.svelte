@@ -1349,11 +1349,11 @@
   </section>
 
   <section class="mt-10">
-    <h2 class="text-heading font-semibold text-fg mb-4">Medikamenten-Referenzdatenbank</h2>
+    <h2 class="text-heading font-semibold text-fg mb-4">
+      {$t('settings.medicationReference')}
+    </h2>
     <p class="text-caption text-fg-muted mb-4">
-      Offizielle Wirkstoffdaten aus dem Swissmedic AIPS-Kompendium für Autocomplete und
-      Fachinformationen. Die Daten werden lokal gespeichert — keine Patientendaten verlassen das
-      Gerät.
+      {$t('settings.medicationReferenceDesc')}
     </p>
 
     <div class="bg-surface-hover rounded-card p-4 mb-4 flex items-center gap-3">
@@ -1363,15 +1363,15 @@
       <div class="flex-1">
         {#if medRefVersion}
           <p class="text-body text-fg font-medium">
-            Installiert — Version {medRefVersion}
+            {$t('settings.medRefInstalled').replace('{version}', medRefVersion)}
           </p>
           <p class="text-caption text-fg-muted">
-            Aktualisierung empfohlen, wenn eine neue AIPS-Version verfügbar ist.
+            {$t('settings.medRefInstalledDesc')}
           </p>
         {:else}
-          <p class="text-body text-fg font-medium">Nicht installiert</p>
+          <p class="text-body text-fg font-medium">{$t('settings.medRefNotInstalled')}</p>
           <p class="text-caption text-fg-muted">
-            Herunterladen, um Autocomplete und Fachinformationen zu aktivieren.
+            {$t('settings.medRefNotInstalledDesc')}
           </p>
         {/if}
       </div>
@@ -1384,9 +1384,9 @@
         {#if medRefPhase === 'downloading'}
           {medRefProgress}%…
         {:else if medRefVersion}
-          Aktualisieren
+          {$t('settings.medRefUpdate')}
         {:else}
-          Herunterladen
+          {$t('settings.medRefDownload')}
         {/if}
       </button>
     </div>
@@ -1398,7 +1398,7 @@
           style="width: {medRefProgress}%"
         ></div>
       </div>
-      <p class="text-caption text-accent-fg">Datenbank wird heruntergeladen und verifiziert…</p>
+      <p class="text-caption text-accent-fg">{$t('settings.medRefDownloading')}</p>
     {/if}
     {#if medRefPhase === 'error'}
       <p class="text-caption text-danger-fg">{medRefError}</p>
