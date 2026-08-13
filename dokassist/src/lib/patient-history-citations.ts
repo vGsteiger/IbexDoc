@@ -15,6 +15,8 @@ export function linkPatientHistoryCitations(
 
   for (const match of answer.matchAll(citationPattern)) {
     const matchStart = match.index;
+    if (matchStart === undefined) continue;
+
     const entry = entriesByCitation.get(match[1].toUpperCase());
     if (!entry) continue;
 
@@ -53,4 +55,6 @@ export function patientHistoryCitationHref(entry: EvidenceManifestEntry): `/pati
     case 'outcome_score':
       return patientBase;
   }
+
+  return patientBase;
 }

@@ -85,4 +85,13 @@ describe('patientHistoryCitationHref', () => {
       expect(patientHistoryCitationHref(entry('E1', kind))).toBe(`/patients/patient%201${suffix}`);
     }
   );
+
+  it('falls back to the patient overview for an unknown runtime record kind', () => {
+    const unknownEntry = {
+      ...entry('E1'),
+      record_kind: 'future_record_kind',
+    } as unknown as EvidenceManifestEntry;
+
+    expect(patientHistoryCitationHref(unknownEntry)).toBe('/patients/patient%201');
+  });
 });
