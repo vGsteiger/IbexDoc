@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { renameChatSession, deleteChatSession, type ChatSession } from '$lib/api';
   import { Check, X, Pencil, Trash2 } from 'lucide-svelte';
 
@@ -104,12 +105,12 @@
                 <button
                   onclick={() => confirmRename(session.id)}
                   class="text-caption text-success-fg hover:text-success-fg px-1"
-                  aria-label="Bestätigen"><Check size={14} /></button
+                  aria-label={$t('common.confirm')}><Check size={14} /></button
                 >
                 <button
                   onclick={() => (renamingId = null)}
                   class="text-caption text-fg-muted hover:text-fg-muted px-1"
-                  aria-label="Abbrechen"><X size={14} /></button
+                  aria-label={$t('common.cancel')}><X size={14} /></button
                 >
               </div>
             {:else}
@@ -141,7 +142,7 @@
                       handleDelete(session.id);
                     }}
                     class="text-caption text-fg-muted hover:text-danger-fg p-0.5"
-                    title="Löschen"><Trash2 size={14} /></button
+                    title={$t('common.delete')}><Trash2 size={14} /></button
                   >
                 </div>
               </div>

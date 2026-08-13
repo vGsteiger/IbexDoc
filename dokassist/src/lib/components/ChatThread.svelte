@@ -179,7 +179,7 @@
       />
     {:else if isStreaming && !streamingContent}
       <div class="flex justify-start mb-3">
-        <div class="bg-surface-hover border border-line rounded-card rounded-bl-sm px-4 py-2">
+        <div class="bg-surface-hover border border-line rounded-card px-4 py-2">
           <span class="animate-pulse text-fg-muted text-body">●</span>
         </div>
       </div>

@@ -172,7 +172,7 @@
           {#if content}
             <pre class="whitespace-pre-wrap font-sans text-fg">{content}</pre>
           {:else}
-            <p class="text-fg-subtle italic">Kein Inhalt zur Vorschau</p>
+            <p class="text-fg-subtle italic">{$t('reports.noPreviewContent')}</p>
           {/if}
         </div>
       {:else}
@@ -183,7 +183,7 @@
           on:mouseup={handleTextSelection}
           {readonly}
           class="w-full h-full p-6 bg-surface-raised text-fg font-mono text-body resize-none focus:outline-none"
-          placeholder="Berichtinhalt wird hier angezeigt..."></textarea>
+          placeholder={$t('reports.contentPlaceholder')}></textarea>
       {/if}
     </div>
 

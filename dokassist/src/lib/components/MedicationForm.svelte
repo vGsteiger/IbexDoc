@@ -8,6 +8,8 @@
     SubstanceDetail,
   } from '$lib/api';
   import { getMedicationReferenceDetail, searchMedicationReference } from '$lib/api';
+  import { t } from '$lib/translations';
+  import { Button, Field, Input, Select, Textarea } from '$lib/components/ui';
   import MedicationAutocomplete from './MedicationAutocomplete.svelte';
   import MedicationInfoPanel from './MedicationInfoPanel.svelte';
   import MedicationChangeAssistant from './MedicationChangeAssistant.svelte';
@@ -174,39 +176,36 @@
           class="w-4 h-4 text-accent-fg border-line rounded-control focus:ring-accent/30"
         />
         <span class="text-body font-medium text-fg-muted">
-          Dieses Medikament ersetzt ein bestehendes Medikament
+          {$t('medications.replacesExisting')}
         </span>
       </label>
 
       {#if isReplacement}
-        <div class="mt-3">
-          <label for="replacing-medication" class="block text-body font-medium text-fg-muted mb-1">
-            Zu ersetzendes Medikament *
-          </label>
-          <select
+        <Field
+          label={$t('medications.medicationToReplace')}
+          for="replacing-medication"
+          required
+          class="mt-3"
+        >
+          <Select
             id="replacing-medication"
             bind:value={replacingMedicationId}
             required={isReplacement}
-            class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
           >
-            <option value={null}>-- Bitte wählen --</option>
+            <option value={null}>{$t('common.pleaseSelect')}</option>
             {#each activeMedications as med (med.id)}
               <option value={med.id}>
                 {med.substance} ({med.dosage}, {med.frequency})
               </option>
             {/each}
-          </select>
+          </Select>
 
           {#if replacingMedicationId && selectedSubstanceDetail && replacingSubstanceDetail && patientId}
-            <button
-              type="button"
-              onclick={handleShowComparison}
-              class="mt-2 w-full h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors text-body"
-            >
-              🤖 Medikamentenvergleich & KI-Entscheidungshilfe anzeigen
-            </button>
+            <Button onclick={handleShowComparison} full class="mt-2">
+              {$t('medications.showComparison')}
+            </Button>
           {/if}
-        </div>
+        </Field>
       {/if}
     </div>
   {/if}
@@ -222,10 +221,7 @@
     </div>
   {/if}
 
-  <div>
-    <label for="substance" class="block text-body font-medium text-fg-muted mb-1">
-      Wirkstoff *
-    </label>
+  <Field label={$t('medications.substance')} for="substance" required>
     <MedicationAutocomplete
       id="substance"
       value={substance}
@@ -235,88 +231,53 @@
       }}
       onSelect={handleSubstanceSelect}
       required
-      placeholder="z.B. Sertralin"
+      placeholder={$t('medications.substancePlaceholder')}
     />
     <MedicationInfoPanel substanceId={selectedSubstanceId} />
-  </div>
+  </Field>
 
-  <div>
-    <label for="dosage" class="block text-body font-medium text-fg-muted mb-1"> Dosierung * </label>
-    <input
+  <Field label={$t('medications.dosage')} for="dosage" required>
+    <Input
       id="dosage"
-      type="text"
       bind:value={dosage}
       required
-      placeholder="z.B. 50 mg"
-      class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
+      placeholder={$t('medications.dosagePlaceholder')}
     />
-  </div>
+  </Field>
 
-  <div>
-    <label for="frequency" class="block text-body font-medium text-fg-muted mb-1">
-      Häufigkeit *
-    </label>
-    <input
+  <Field label={$t('medications.frequency')} for="frequency" required>
+    <Input
       id="frequency"
-      type="text"
       bind:value={frequency}
       required
-      placeholder="z.B. 1x täglich"
-      class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
+      placeholder={$t('medications.frequencyPlaceholder')}
     />
-  </div>
+  </Field>
 
   <div class="grid grid-cols-2 gap-4">
-    <div>
-      <label for="start-date" class="block text-body font-medium text-fg-muted mb-1">
-        Startdatum *
-      </label>
-      <input
-        id="start-date"
-        type="date"
-        bind:value={startDate}
-        required
-        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
-      />
-    </div>
+    <Field label={$t('medications.startDate')} for="start-date" required>
+      <Input id="start-date" type="date" bind:value={startDate} required />
+    </Field>
 
-    <div>
-      <label for="end-date" class="block text-body font-medium text-fg-muted mb-1">
-        Enddatum
-      </label>
-      <input
-        id="end-date"
-        type="date"
-        bind:value={endDate}
-        class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
-      />
-    </div>
+    <Field label={$t('medications.endDate')} for="end-date">
+      <Input id="end-date" type="date" bind:value={endDate} />
+    </Field>
   </div>
 
-  <div>
-    <label for="notes" class="block text-body font-medium text-fg-muted mb-1"> Notizen </label>
-    <textarea
+  <Field label={$t('medications.notes')} for="notes">
+    <Textarea
       id="notes"
       bind:value={notes}
-      rows="3"
-      placeholder="Zusätzliche Informationen..."
-      class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
-    ></textarea>
-  </div>
+      rows={3}
+      placeholder={$t('medications.notesPlaceholder')}
+      class="resize-none"
+    />
+  </Field>
 
   <div class="flex justify-end gap-3 pt-4">
-    <button
-      type="button"
-      onclick={onCancel}
-      class="h-8 px-3 bg-surface-hover text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
-    >
-      Abbrechen
-    </button>
-    <button
-      type="submit"
-      class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
-    >
-      {medication ? 'Aktualisieren' : 'Hinzufügen'}
-    </button>
+    <Button onclick={onCancel}>{$t('common.cancel')}</Button>
+    <Button type="submit" variant="primary">
+      {medication ? $t('common.update') : $t('common.add')}
+    </Button>
   </div>
 </form>

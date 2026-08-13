@@ -11,7 +11,10 @@ in `src/app.css`. A raw palette class such as `bg-gray-100` or `text-blue-600`
 hardcodes a theme at the call site, which is what previously required 3420
 colour decisions and 1330 `dark:` variants to stay in sync by hand.
 
-`pnpm check:design` enforces this and runs in CI.
+`pnpm check:design` enforces this and runs in CI. It rejects raw palette
+utilities, `dark:` colour variants, and any radius or shadow from Tailwind's
+default scale — including corner variants like `rounded-bl-sm` and bare
+`rounded`, which are the ones that survive review.
 
 ---
 
@@ -101,7 +104,9 @@ dosages and scores align in columns.
 
 **Two radii.** `rounded-control` (6px) for buttons, inputs, selects, chips.
 `rounded-card` (10px) for cards, dialogs, popovers. `rounded-full` is reserved
-for avatars and dot indicators.
+for avatars and dot indicators. Corner variants take the same tokens —
+`rounded-t-card`, not `rounded-t-lg`. Chat bubbles get the plain card radius; a
+flattened tail corner is a third radius by another name.
 
 **Two control heights.** 32px (`h-8`, default) and 28px (`h-7`, dense). The
 primitives encode these; don't hand-roll `px-4 py-2`.

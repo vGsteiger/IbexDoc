@@ -44,7 +44,7 @@
       medications = await listMedicationsForPatient(patientId);
     } catch (err) {
       error =
-        'Fehler beim Laden der Medikamente: ' + (err instanceof Error ? err.message : String(err));
+        get(t)('common.loadFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to load medications:', err);
     } finally {
       loading = false;
@@ -65,7 +65,8 @@
       await deleteMedication(medicationId);
       await loadMedications();
     } catch (err) {
-      error = 'Fehler beim Löschen: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.deleteFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to delete medication:', err);
     }
   }
@@ -90,7 +91,7 @@
             await updateMedication(replacingMedicationId, { end_date: input.start_date });
           } catch (updateErr) {
             error =
-              'Neues Medikament wurde erfasst, aber das ersetzte Medikament konnte nicht beendet werden: ' +
+              get(t)('medications.replacementNotEnded') +
               (updateErr instanceof Error ? updateErr.message : String(updateErr));
             console.error('Failed to end-date replaced medication:', updateErr);
           }
@@ -102,7 +103,8 @@
       editingMedication = null;
       await loadMedications();
     } catch (err) {
-      error = 'Fehler beim Speichern: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.saveFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to save medication:', err);
     }
   }
@@ -146,7 +148,7 @@
         editingMedication = null;
       }}
     >
-      {showAddForm ? 'Abbrechen' : '+ Neues Medikament'}
+      {showAddForm ? $t('common.cancel') : `+ ${$t('medications.newMedication')}`}
     </button>
   </div>
 
@@ -159,7 +161,7 @@
   {#if showAddForm}
     <div class="bg-surface-raised border border-line rounded-card p-6 mb-6">
       <h2 class="text-heading font-semibold text-fg mb-4">
-        {editingMedication ? 'Medikament bearbeiten' : 'Neues Medikament hinzufügen'}
+        {editingMedication ? $t('medications.editMedication') : $t('medications.addMedication')}
       </h2>
       <MedicationForm
         medication={editingMedication || undefined}
@@ -173,17 +175,17 @@
 
   {#if loading}
     <div class="flex justify-center items-center py-12">
-      <div class="text-fg-muted">Lädt...</div>
+      <div class="text-fg-muted">{$t('common.loading')}</div>
     </div>
   {:else if medications.length === 0}
     <div class="text-center py-12">
-      <p class="text-fg-muted mb-4">Noch keine Medikamente erfasst</p>
+      <p class="text-fg-muted mb-4">{$t('medications.noMedications')}</p>
       {#if !showAddForm}
         <button
           class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
           onclick={() => (showAddForm = true)}
         >
-          Erstes Medikament erfassen
+          {$t('medications.addFirst')}
         </button>
       {/if}
     </div>
@@ -201,13 +203,13 @@
                   <span
                     class="px-2 py-0.5 rounded-full text-caption bg-success-subtle text-success-fg border border-success-line"
                   >
-                    Aktiv
+                    {$t('medications.active')}
                   </span>
                 {:else}
                   <span
                     class="px-2 py-0.5 rounded-full text-caption bg-surface-selected/20 text-fg-muted border border-line-strong/30"
                   >
-                    Beendet
+                    {$t('medications.ended')}
                   </span>
                 {/if}
               </div>
@@ -244,7 +246,7 @@
                 type="button"
                 class="p-2 text-fg-muted hover:text-danger-fg hover:bg-surface-hover rounded-control transition-colors"
                 onclick={() => handleDelete(medication.id)}
-                title="Löschen"
+                title={$t('common.delete')}
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

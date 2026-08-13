@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
+  import { get } from 'svelte/store';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -24,7 +26,7 @@
       sessions = await listSessionsForPatient(patientId);
     } catch (err) {
       error =
-        'Fehler beim Laden der Sitzungen: ' + (err instanceof Error ? err.message : String(err));
+        get(t)('common.loadFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to load sessions:', err);
     } finally {
       loading = false;
@@ -45,21 +47,21 @@
     {#snippet actions()}
       <Button variant="primary" onclick={handleNewSession}>
         <Plus size={14} />
-        Neue Sitzung
+        {$t('sessions.newSession')}
       </Button>
     {/snippet}
   </PageHeader>
 
   {#if loading}
     <div class="flex justify-center py-12">
-      <Spinner label="Lädt..." />
+      <Spinner label={$t('common.loading')} />
     </div>
   {:else if error}
     <Alert tone="danger">{error}</Alert>
   {:else if sessions.length === 0}
-    <EmptyState icon={CalendarClock} title="Noch keine Sitzungen vorhanden">
+    <EmptyState icon={CalendarClock} title={$t('sessions.noSessions')}>
       {#snippet action()}
-        <Button variant="primary" onclick={handleNewSession}>Erste Sitzung erfassen</Button>
+        <Button variant="primary" onclick={handleNewSession}>{$t('sessions.addFirst')}</Button>
       {/snippet}
     </EmptyState>
   {:else}

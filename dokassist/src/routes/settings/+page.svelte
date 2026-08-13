@@ -1434,7 +1434,7 @@
       {#if csvPreview}
         <div class="mb-4 p-3 bg-accent-subtle border border-accent rounded-card">
           <p class="text-caption font-medium text-accent-fg mb-2">
-            ✓ CSV file parsed: {csvPreview.total_rows} rows detected
+            CSV file parsed: {csvPreview.total_rows} rows detected
           </p>
 
           {#if csvPreview.warnings.length > 0}
@@ -1518,7 +1518,7 @@
               ? 'text-success-fg'
               : 'text-warning-fg'} mb-2"
           >
-            {importResult.success ? '✓' : '⚠'} Import completed
+            Import completed
           </p>
           <div class="text-caption text-fg-muted space-y-1">
             <p>Imported: {importResult.imported_count}</p>
@@ -1599,9 +1599,7 @@
 
       {#if validatedBackupInfo}
         <div class="mb-3 p-3 bg-success-subtle border border-success rounded-card">
-          <p class="text-caption font-medium text-success-fg mb-2">
-            ✓ Backup validated successfully
-          </p>
+          <p class="text-caption font-medium text-success-fg mb-2">Backup validated successfully</p>
           <div class="text-caption text-fg-muted space-y-1">
             <p>
               Created: {new Date(validatedBackupInfo.created_at).toLocaleString()}
@@ -1627,7 +1625,7 @@
         {#if showRestoreConfirm}
           <div class="mt-3 border-t border-warning-line pt-3">
             <p class="text-body text-warning-fg mb-3">
-              <strong>⚠️ WARNING:</strong> This will replace ALL current data with the backup. Type
+              <strong>Warning:</strong> This will replace ALL current data with the backup. Type
               <strong>RESTORE</strong> to confirm.
             </p>
             <div class="flex gap-2">

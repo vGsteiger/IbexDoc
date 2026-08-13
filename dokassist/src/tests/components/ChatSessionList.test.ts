@@ -134,7 +134,7 @@ describe('ChatSessionList', () => {
         onsessionnew: vi.fn(),
       },
     });
-    const deleteBtn = screen.getByTitle('Löschen');
+    const deleteBtn = screen.getByTitle('Delete');
     await fireEvent.click(deleteBtn);
     await waitFor(() =>
       expect(mockInvoke).toHaveBeenCalledWith('delete_chat_session', { sessionId: 's1' })

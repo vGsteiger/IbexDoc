@@ -8,7 +8,16 @@
     parseError,
     type ModelChoice,
   } from '$lib/api';
-  import { ChevronRight, ChevronLeft, Download, Check, Zap, Brain, Gauge } from 'lucide-svelte';
+  import {
+    ChevronRight,
+    ChevronLeft,
+    Download,
+    Check,
+    Cpu,
+    Gauge,
+    HardDrive,
+    Target,
+  } from 'lucide-svelte';
 
   let recommended = $state<ModelChoice | null>(null);
   let error = $state<string | null>(null);
@@ -107,8 +116,8 @@
     {:else if recommended}
       <div class="bg-surface-raised border border-line-subtle rounded-card p-8 space-y-6">
         <div class="text-center">
-          <div class="inline-block p-4 bg-accent-subtle rounded-full mb-4">
-            <Brain size={48} class="text-accent-fg" />
+          <div class="inline-block p-4 bg-surface-hover rounded-card mb-4">
+            <Cpu size={48} class="text-fg-subtle" />
           </div>
           <h2 class="text-display font-semibold text-fg mb-2">{recommended.name}</h2>
           <p class="text-fg-muted">Recommended for your system</p>
@@ -116,13 +125,13 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-surface-hover rounded-card p-4 text-center">
-            <Gauge size={24} class="text-fg-muted mx-auto mb-2" />
+            <HardDrive size={24} class="text-fg-muted mx-auto mb-2" />
             <p class="text-fg-muted text-body mb-1">Size</p>
             <p class="text-fg font-semibold">{formatBytes(recommended.size_bytes)}</p>
           </div>
 
           <div class="bg-surface-hover rounded-card p-4 text-center">
-            <Zap size={24} class="text-fg-muted mx-auto mb-2" />
+            <Gauge size={24} class="text-fg-muted mx-auto mb-2" />
             <p class="text-fg-muted text-body mb-1">Speed</p>
             <p class="text-fg font-semibold">
               {recommended.name.includes('30B') ? 'Good' : 'Fast'}
@@ -130,7 +139,7 @@
           </div>
 
           <div class="bg-surface-hover rounded-card p-4 text-center">
-            <Brain size={24} class="text-fg-muted mx-auto mb-2" />
+            <Target size={24} class="text-fg-muted mx-auto mb-2" />
             <p class="text-fg-muted text-body mb-1">Quality</p>
             <p class="text-fg font-semibold">
               {recommended.name.includes('30B') ? 'Excellent' : 'Very Good'}

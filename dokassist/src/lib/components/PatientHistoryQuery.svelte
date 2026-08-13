@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import {
@@ -46,13 +47,9 @@
   );
 
   // Suggested queries
-  const suggestedQueries = [
-    'Wann wurde die Medikation zuletzt geändert?',
-    'Was war der PHQ-9-Trend im letzten Quartal?',
-    'Wie hat sich die Stimmung in den letzten Sitzungen entwickelt?',
-    'Welche Behandlungsziele wurden erreicht?',
-    'Gab es Nebenwirkungen bei der aktuellen Medikation?',
-  ];
+  let suggestedQueries = $derived(
+    ['q1', 'q2', 'q3', 'q4', 'q5'].map((q) => $t(`patients.historySuggestions.${q}`))
+  );
 
   async function handleQuery() {
     if (!question.trim() || isQuerying) return;
@@ -138,7 +135,7 @@
 <div class="bg-surface-raised rounded-card border border-line">
   <button
     onclick={() => (isExpanded = !isExpanded)}
-    class="flex items-center justify-between w-full p-4 hover:bg-surface-hover transition-colors rounded-t-lg"
+    class="flex items-center justify-between w-full p-4 hover:bg-surface-hover transition-colors rounded-t-card"
   >
     <h3 class="text-heading font-semibold text-fg">Ask about this patient</h3>
     {#if isExpanded}

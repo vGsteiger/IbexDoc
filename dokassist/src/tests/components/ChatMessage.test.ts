@@ -30,10 +30,10 @@ describe('ChatMessage', () => {
     expect(screen.getByText('I can help with that.')).toBeInTheDocument();
   });
 
-  it('renders Thinking section when assistant content starts with <think>', () => {
+  it('renders reasoning section when assistant content starts with <think>', () => {
     const content = '<think>Let me reason...</think>Here is the answer.';
     render(ChatMessage, { props: { message: makeMsg({ role: 'assistant', content }) } });
-    expect(screen.getByText('Thinking')).toBeInTheDocument();
+    expect(screen.getByText('Reasoning')).toBeInTheDocument();
     expect(screen.getByText('Let me reason...')).toBeInTheDocument();
   });
 
@@ -42,8 +42,8 @@ describe('ChatMessage', () => {
     render(ChatMessage, { props: { message: makeMsg({ role: 'assistant', content }) } });
     // Main bubble shows the text after </think>
     expect(screen.getByText('Final answer.')).toBeInTheDocument();
-    // The think content is in the Thinking section (not in the main bubble)
-    expect(screen.getByText('Thinking')).toBeInTheDocument();
+    // The think content is in the reasoning section (not in the main bubble)
+    expect(screen.getByText('Reasoning')).toBeInTheDocument();
   });
 
   it('renders tool name for tool_call role', () => {
@@ -60,11 +60,11 @@ describe('ChatMessage', () => {
     expect(screen.getByText(/Tool: get_patient/)).toBeInTheDocument();
   });
 
-  it('renders Ergebnis button for tool_result role', () => {
+  it('renders the result disclosure for tool_result role', () => {
     render(ChatMessage, {
       props: { message: makeMsg({ role: 'tool_result', content: '{"name":"Anna"}' }) },
     });
-    expect(screen.getByRole('button', { name: /Ergebnis/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Show result/ })).toBeInTheDocument();
   });
 
   it('renders pulse indicator when streaming with empty content', () => {

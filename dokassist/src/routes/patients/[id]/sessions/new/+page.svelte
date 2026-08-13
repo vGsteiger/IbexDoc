@@ -67,7 +67,8 @@
       addToast('Session saved');
       goto(`/patients/${patientId}/sessions`);
     } catch (err) {
-      error = 'Fehler beim Speichern: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.saveFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to create session:', err);
     } finally {
       saving = false;
@@ -80,7 +81,7 @@
 </script>
 
 <div class="p-8 max-w-4xl mx-auto">
-  <h1 class="text-display font-semibold text-fg mb-6">Neue Sitzung erfassen</h1>
+  <h1 class="text-display font-semibold text-fg mb-6">{$t('sessions.newSessionTitle')}</h1>
 
   {#if error}
     <div class="bg-danger-subtle border border-danger-line text-danger-fg p-4 rounded-card mb-6">
@@ -148,13 +149,15 @@
     </div>
 
     <div>
-      <label for="notes" class="block text-body font-medium text-fg-muted mb-1"> Notizen * </label>
+      <label for="notes" class="block text-body font-medium text-fg-muted mb-1">
+        {$t('common.notes')} *
+      </label>
       <textarea
         id="notes"
         bind:value={notes}
         required
         rows="8"
-        placeholder="Gesprächsnotizen, Beobachtungen, Interventionen..."
+        placeholder={$t('sessions.notesPlaceholderDetailed')}
         class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
       ></textarea>
     </div>
@@ -186,14 +189,14 @@
         class="h-8 px-3 bg-surface-hover text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
         disabled={saving}
       >
-        Abbrechen
+        {$t('common.cancel')}
       </button>
       <button
         type="submit"
         class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={saving}
       >
-        {saving ? 'Speichert...' : 'Sitzung speichern'}
+        {saving ? $t('common.saving') : $t('sessions.saveSession')}
       </button>
     </div>
   </form>

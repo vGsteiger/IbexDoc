@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import type { Session } from '$lib/api';
   import { Card } from '$lib/components/ui';
 
@@ -23,7 +24,7 @@
   }
 
   function getSnippet(notes: string | null): string {
-    if (!notes) return 'Keine Notizen';
+    if (!notes) return $t('sessions.noNotes');
     return notes.length > 100 ? notes.substring(0, 100) + '...' : notes;
   }
 </script>
