@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Security model — RamDoc</title>
+    <meta
+      name="description"
+      content="How RamDoc protects patient records: encryption at rest, key storage in the macOS Keychain, recovery phrases, a tamper-evident audit trail, and a pinned build — with references to primary sources."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="assets/icon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="canonical" href="https://vgsteiger.com/RamDoc/security.html" />
+    <meta property="og:title" content="RamDoc — security model" />
+    <meta
+      property="og:description"
+      content="How RamDoc protects patient records, mechanism by mechanism, with references to primary sources."
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://vgsteiger.com/RamDoc/security.html" />
+    <meta property="og:image" content="https://vgsteiger.com/RamDoc/assets/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">
+          <img src="assets/icon.png" alt="" width="20" height="20" />
+          <span>RamDoc</span>
+        </a>
+        <nav aria-label="Sections">
+          <a href="index.html#what-it-does">What it does</a>
+          <a href="index.html#architecture">Architecture</a>
+          <a href="https://github.com/vGsteiger/RamDoc">Source</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="intro">
+        <div class="container">
+          <p class="breadcrumb"><a href="index.html">RamDoc</a></p>
+          <h1>Security model</h1>
+          <p class="lede">
+            What RamDoc protects, how each mechanism works, and where to read about it from a
+            primary source.
+          </p>
+          <p>
+            RamDoc uses standard, published cryptography rather than anything invented for it. The
+            summaries below are written for a reader who has to trust the application with patient
+            data without reading the code — though the code is there to read, and the references
+            are to the specifications themselves rather than to marketing pages.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section-flush">
+        <div class="container">
+          <dl class="explainers">
+            <div>
+              <dt>Your files are encrypted with AES-256-GCM</dt>
+              <dd>
+                <p>
+                  AES is the block cipher standardised by the US National Institute of Standards
+                  and Technology and used to protect classified information. GCM additionally
+                  detects modification, so a file that has been tampered with fails to decrypt
+                  rather than returning altered content. A copy of the vault taken off your Mac is
+                  unreadable without the key.
+                </p>
+                <p class="reference">
+                  <a href="https://csrc.nist.gov/pubs/fips/197/final">NIST FIPS 197 — the AES standard</a>
+                </p>
+              </dd>
+            </div>
+
+            <div>
+              <dt>The database is encrypted too, not just the files</dt>
+              <dd>
+                <p>
+                  Names, diagnoses and notes are stored in SQLCipher, which encrypts every database
+                  page on disk. Opening the file with an ordinary database tool shows random bytes.
+                  This matters because metadata — who is a patient at all — is often as sensitive
+                  as the notes themselves.
+                </p>
+                <p class="reference">
+                  <a href="https://www.zetetic.net/sqlcipher/design/">SQLCipher design documentation</a>
+                </p>
+              </dd>
+            </div>
+
+            <div>
+              <dt>Keys are held by macOS, not by the application</dt>
+              <dd>
+                <p>
+                  Encryption keys are stored in the macOS Keychain, the system service Apple
+                  provides for secrets, and are never written to disk in readable form. The
+                  application asks the operating system for a key when it needs one and wipes it
+                  from memory afterwards.
+                </p>
+                <p class="reference">
+                  <a href="https://support.apple.com/guide/security/keychain-data-protection-secb0694df1a/web">
+                    Apple Platform Security — Keychain data protection
+                  </a>
+                </p>
+              </dd>
+            </div>
+
+            <div>
+              <dt>Recovery is a 24-word phrase, derived the slow way</dt>
+              <dd>
+                <p>
+                  Because there is no company holding a copy of your data, there is no password
+                  reset. Instead you get a 24-word recovery phrase in the BIP-39 format used by
+                  cryptocurrency wallets, and the key is derived from it with Argon2id — a function
+                  deliberately made expensive in time and memory so that guessing the phrase is
+                  impractical. Keep the phrase somewhere safe and offline; without it the vault
+                  cannot be opened by anyone, including the author of this software.
+                </p>
+                <p class="reference">
+                  <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">BIP-39 specification</a>
+                  ·
+                  <a href="https://www.rfc-editor.org/rfc/rfc9106.html">RFC 9106 — Argon2</a>
+                </p>
+              </dd>
+            </div>
+
+            <div>
+              <dt>The audit log shows if it has been edited</dt>
+              <dd>
+                <p>
+                  Each audit entry carries a keyed hash (HMAC) computed over the entry before it,
+                  so the entries form a chain. Removing or rewriting one breaks every hash after
+                  it, and the head of the chain is stored separately in the Keychain — so the
+                  tampering is visible even if the whole database file is replaced.
+                </p>
+                <p class="reference">
+                  <a href="https://www.rfc-editor.org/rfc/rfc2104">RFC 2104 — HMAC</a>
+                </p>
+              </dd>
+            </div>
+
+            <div>
+              <dt>Search happens inside the encrypted database</dt>
+              <dd>
+                <p>
+                  Full-text search uses SQLite's FTS5 engine within the encrypted database, so
+                  there is no separate plaintext index sitting next to your records — a common way
+                  for otherwise-encrypted systems to leak their contents.
+                </p>
+                <p class="reference">
+                  <a href="https://www.sqlite.org/fts5.html">SQLite FTS5 documentation</a>
+                </p>
+              </dd>
+            </div>
+
+            <div>
+              <dt>The build itself is pinned</dt>
+              <dd>
+                <p>
+                  Every step of the automated build refers to third-party code by its exact commit
+                  hash rather than a moving tag, which is the practice GitHub recommends against
+                  supply-chain attacks: a compromised upstream release cannot silently enter a
+                  RamDoc build.
+                </p>
+                <p class="reference">
+                  <a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions">
+                    GitHub — security hardening for Actions
+                  </a>
+                </p>
+              </dd>
+            </div>
+          </dl>
+          <p class="section-note">
+            Security is a process, not a property. If you find a weakness, please report it
+            privately — the
+            <a href="https://github.com/vGsteiger/RamDoc/blob/main/SECURITY.md">security policy</a>
+            explains how. For the module-level view of where each mechanism sits, see the
+            <a href="index.html#architecture">architecture diagram</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>
+          Built by <a href="https://vgsteiger.com">Viktor Gsteiger</a> ·
+          <a href="https://github.com/vGsteiger">github.com/vGsteiger</a>
+        </p>
+        <nav aria-label="Project links">
+          <a href="index.html">Overview</a>
+          <a href="https://github.com/vGsteiger/RamDoc">Repository</a>
+          <a href="https://github.com/vGsteiger/RamDoc/releases">Releases</a>
+          <a href="https://github.com/vGsteiger/RamDoc/blob/main/LICENSE">Licence</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -14,6 +14,11 @@
 **RamDoc** is a 100% local, encrypted macOS application for Swiss patient record management.
 This repository (**RamDoc**) hosts the full open-source code.
 
+Showcase page: **[vgsteiger.com/RamDoc](https://vgsteiger.com/RamDoc/)** — overview,
+download and a plain-language [security model](https://vgsteiger.com/RamDoc/security.html).
+The page is built from [`site/`](site/) and deployed by
+[`pages.yml`](.github/workflows/pages.yml).
+
 ## Releases / Download
 
 Pre-built **macOS DMGs for Apple Silicon (aarch64)** are published automatically on every
