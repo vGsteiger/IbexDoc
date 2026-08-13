@@ -1056,6 +1056,7 @@
     "response": "Antwort:",
     "generating": "Wird erstellt...",
     "waitingForResponse": "Warten auf Antwort...",
+    "openCitation": "{label} vom {date} öffnen",
     "sourceChanged": "(Quelle geändert)",
     "noExcerpts": "Die Antwort hat keine Belege zitiert.",
     "evidence": "Belege ({count} Auszüge, {used} von {budget} Tokens)",

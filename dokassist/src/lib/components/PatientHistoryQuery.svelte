@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/translations';
   import { errorMessage } from '$lib/translations/labels';
+  import { resolve } from '$app/paths';
   import { onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import {
@@ -9,6 +10,10 @@
     type AnswerAudit,
     type EvidenceManifest,
   } from '$lib/api';
+  import {
+    linkPatientHistoryCitations,
+    patientHistoryCitationHref,
+  } from '$lib/patient-history-citations';
   import { Loader2, Send, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-svelte';
 
   interface Props {
@@ -45,6 +50,12 @@
   let citationWarnings = $derived(
     audit ? [...audit.unsupported_citations, ...audit.stale_citations] : []
   );
+
+  let responseParts = $derived(linkPatientHistoryCitations(response, manifest?.entries ?? []));
+
+  function citationLabel(label: string, date: string): string {
+    return $t('patientHistory.openCitation').replace('{label}', label).replace('{date}', date);
+  }
 
   // Suggested queries
   let suggestedQueries = $derived(
@@ -212,7 +223,17 @@
           <div class="prose prose-sm dark:prose-invert max-w-none">
             {#if response}
               <div class="whitespace-pre-wrap text-fg">
-                {response}
+                {#each responseParts as part, index (index)}
+                  {#if part.kind === 'citation'}
+                    <a
+                      href={resolve(patientHistoryCitationHref(part.entry))}
+                      aria-label={citationLabel(part.entry.label, part.entry.occurred_at)}
+                      title={citationLabel(part.entry.label, part.entry.occurred_at)}
+                      class="font-mono text-caption text-accent underline decoration-accent/40 underline-offset-2 hover:text-accent-hover"
+                      >{part.text}</a
+                    >
+                  {:else}{part.text}{/if}
+                {/each}
               </div>
             {:else}
               <div class="text-fg-muted italic">{$t('patientHistory.waitingForResponse')}</div>
@@ -259,7 +280,12 @@
             <ul class="space-y-2 text-body">
               {#each citedEntries as { check, entry } (check.citation)}
                 <li class="text-fg-muted">
-                  <span class="font-mono text-caption">[{check.citation}]</span>
+                  <a
+                    href={resolve(patientHistoryCitationHref(entry!))}
+                    aria-label={citationLabel(entry!.label, entry!.occurred_at)}
+                    class="font-mono text-caption text-accent underline decoration-accent/40 underline-offset-2 hover:text-accent-hover"
+                    >[{check.citation}]</a
+                  >
                   {entry?.label}
                   <span class="text-fg-muted">
                     {$t('patientHistory.excerptRange')
