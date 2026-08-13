@@ -11,14 +11,22 @@ const MAX_REF_DB_BYTES: u64 = 256 * 1024 * 1024;
 /// Hard maximum for the .minisig file (they're < 200 bytes in practice).
 const MAX_MINISIG_BYTES: usize = 4096;
 
-/// GitHub API endpoint for listing releases in this repository.
+/// GitHub API endpoint listing *only* the git tags that start with `medication-ref/`.
 ///
-/// ⚠️  We intentionally avoid `releases/latest` because GitHub resolves that to whichever
-/// release was most recently published as "latest" — which may be an app release (e.g. v0.9.6)
-/// that does not carry the medication-ref assets.  Instead we query the API, filter for tags
-/// with the `medication-ref/` prefix, and build the download URLs from the actual tag.
-const GITHUB_API_RELEASES: &str = "https://api.github.com/repos/vGsteiger/RamDoc/releases";
+/// ⚠️  We intentionally avoid both of the more obvious endpoints:
+///   - `releases/latest` resolves to whichever release was most recently published as "latest",
+///     which is normally an app release (e.g. v0.13.6) that carries no medication-ref assets.
+///   - `/releases` is ordered newest-first and interleaves every app release.  App releases are
+///     cut several times a day while medication-ref is rebuilt monthly, so the medication-ref
+///     release is pushed off the first page within days and a prefix filter over a single page
+///     silently finds nothing.
+///
+/// `matching-refs` returns only the medication-ref tags, so this lookup keeps working no matter
+/// how many app releases pile up in between.
+const GITHUB_API_MATCHING_TAGS: &str =
+    "https://api.github.com/repos/vGsteiger/RamDoc/git/matching-refs/tags/medication-ref/";
 const MEDICATION_REF_TAG_PREFIX: &str = "medication-ref/";
+const GIT_REF_TAG_PREFIX: &str = "refs/tags/";
 const ASSET_DB_NAME: &str = "medication_ref_de.sqlite";
 const ASSET_SIG_NAME: &str = "medication_ref_de.sqlite.minisig";
 
@@ -36,18 +44,15 @@ const ASSET_SIG_NAME: &str = "medication_ref_de.sqlite.minisig";
 /// trust for the reference DB.
 const REF_DB_PUBLIC_KEY: &str = "RWSfnrRB0cL2sWFA/bAJbZa8mvXCcVjjVq6N50oz6KA65wW9MkM4Vjv9";
 
-/// Query the GitHub releases API and return the tag name of the most recent release
-/// whose tag starts with `medication-ref/`.
+/// Query the GitHub tags API and return the name of the newest `medication-ref/*` tag.
 async fn fetch_latest_medication_ref_tag(client: &reqwest::Client) -> Result<String, AppError> {
-    // Fetch the first page (most-recent releases first); 10 is enough — medication-ref
-    // releases are infrequent and always near the top.
     let resp = client
-        .get(format!("{GITHUB_API_RELEASES}?per_page=10"))
+        .get(GITHUB_API_MATCHING_TAGS)
         .header("User-Agent", "RamDoc")
         .header("Accept", "application/vnd.github+json")
         .send()
         .await
-        .map_err(|e| AppError::Validation(format!("Failed to fetch GitHub releases: {e}")))?;
+        .map_err(|e| AppError::Validation(format!("Failed to fetch medication-ref tags: {e}")))?;
 
     if resp.status() == reqwest::StatusCode::FORBIDDEN {
         return Err(AppError::Validation(
@@ -59,25 +64,33 @@ async fn fetch_latest_medication_ref_tag(client: &reqwest::Client) -> Result<Str
 
     let body = resp
         .error_for_status()
-        .map_err(|e| AppError::Validation(format!("GitHub releases API error: {e}")))?
+        .map_err(|e| AppError::Validation(format!("GitHub tags API error: {e}")))?
         .bytes()
         .await
-        .map_err(|e| {
-            AppError::Validation(format!("Failed to read GitHub releases response: {e}"))
-        })?;
+        .map_err(|e| AppError::Validation(format!("Failed to read GitHub tags response: {e}")))?;
 
-    let releases: Vec<serde_json::Value> = serde_json::from_slice(&body)
-        .map_err(|e| AppError::Validation(format!("Failed to parse GitHub releases JSON: {e}")))?;
+    let refs: Vec<serde_json::Value> = serde_json::from_slice(&body)
+        .map_err(|e| AppError::Validation(format!("Failed to parse GitHub tags JSON: {e}")))?;
 
-    releases
-        .into_iter()
-        .filter_map(|r| r["tag_name"].as_str().map(str::to_owned))
-        .find(|tag| tag.starts_with(MEDICATION_REF_TAG_PREFIX))
-        .ok_or_else(|| {
-            AppError::Validation(
-                "No medication-ref release found on GitHub — has the workflow run yet?".to_string(),
-            )
-        })
+    latest_medication_ref_tag(&refs).ok_or_else(|| {
+        AppError::Validation(
+            "No medication-ref release found on GitHub — has the workflow run yet?".to_string(),
+        )
+    })
+}
+
+/// Pick the newest `medication-ref/*` tag out of a `matching-refs` API response.
+///
+/// Tags are named `medication-ref/vYYYY-MM` (see `.github/workflows/medication_ref.yml`), so a
+/// lexicographic maximum is also the chronological one.  We take the max explicitly rather than
+/// trusting the order the API happens to return refs in.
+fn latest_medication_ref_tag(refs: &[serde_json::Value]) -> Option<String> {
+    refs.iter()
+        .filter_map(|r| r["ref"].as_str())
+        .filter_map(|r| r.strip_prefix(GIT_REF_TAG_PREFIX))
+        .filter(|tag| tag.starts_with(MEDICATION_REF_TAG_PREFIX))
+        .max()
+        .map(str::to_owned)
 }
 
 /// Build a GitHub release asset download URL for the given tag and filename.
@@ -270,4 +283,57 @@ async fn verify_minisign_signature(
 
     log::info!("Medication reference DB signature verified OK.");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn refs(names: &[&str]) -> Vec<serde_json::Value> {
+        names
+            .iter()
+            .map(|r| serde_json::json!({ "ref": r }))
+            .collect()
+    }
+
+    #[test]
+    fn picks_newest_tag_regardless_of_api_order() {
+        let response = refs(&[
+            "refs/tags/medication-ref/v2026-03",
+            "refs/tags/medication-ref/v2026-08",
+            "refs/tags/medication-ref/v2026-07",
+        ]);
+        assert_eq!(
+            latest_medication_ref_tag(&response).as_deref(),
+            Some("medication-ref/v2026-08")
+        );
+    }
+
+    #[test]
+    fn ignores_tags_without_the_medication_ref_prefix() {
+        let response = refs(&["refs/tags/v0.13.6", "refs/tags/medication-ref/v2026-08"]);
+        assert_eq!(
+            latest_medication_ref_tag(&response).as_deref(),
+            Some("medication-ref/v2026-08")
+        );
+    }
+
+    /// Regression guard for the bug where many app releases hid the medication-ref release:
+    /// a response that contains only app tags must yield no tag rather than a wrong one.
+    #[test]
+    fn returns_none_when_no_medication_ref_tag_present() {
+        assert_eq!(
+            latest_medication_ref_tag(&refs(&["refs/tags/v0.13.6"])),
+            None
+        );
+        assert_eq!(latest_medication_ref_tag(&[]), None);
+    }
+
+    #[test]
+    fn asset_url_percent_encodes_the_slash_in_the_tag() {
+        assert_eq!(
+            build_asset_url("medication-ref/v2026-08", ASSET_DB_NAME),
+            "https://github.com/vGsteiger/RamDoc/releases/download/medication-ref%2Fv2026-08/medication_ref_de.sqlite"
+        );
+    }
 }
