@@ -97,8 +97,12 @@ function flatten(obj, prefix = '') {
  */
 function stripNonMarkup(source) {
   const blank = (m) => '\n'.repeat(m.split('\n').length - 1);
-  let out = source.replace(/<script\b[\s\S]*?<\/script\s*>/gi, blank);
-  out = out.replace(/<style\b[\s\S]*?<\/style\s*>/gi, blank);
+  // A closing tag may carry whitespace and junk before its `>` — a parser
+  // accepts `</script\t\n foo>` as the end of the block, so the pattern has to
+  // as well, or the script body would be treated as markup. The `\s` keeps
+  // `</scriptfoo>`, which is not a closing tag, from matching.
+  let out = source.replace(/<script\b[\s\S]*?<\/script(?:\s[^>]*)?>/gi, blank);
+  out = out.replace(/<style\b[\s\S]*?<\/style(?:\s[^>]*)?>/gi, blank);
   let previous;
   do {
     previous = out;
