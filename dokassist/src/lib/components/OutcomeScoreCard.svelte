@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import type { OutcomeScore } from '$lib/api';
 
   interface Props {
@@ -87,7 +88,7 @@
           type="button"
           class="p-2 text-fg-muted hover:text-danger-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onDelete}
-          title="Löschen"
+          title={$t('common.delete')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

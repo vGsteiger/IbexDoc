@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   export let content: string = '';
   export let isStreaming: boolean = false;
   export let isSummarizing: boolean = false;
@@ -60,7 +61,7 @@
       {:else if isStreaming && isSummarizing && !thinkContent && !reportContent}
         <div class="flex items-center space-x-2 text-fg-subtle">
           <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-warning"></div>
-          <span>Kontext wird komprimiert...</span>
+          <span>{$t('reports.compressingContext')}</span>
         </div>
       {:else if isStreaming && !thinkContent && !reportContent}
         <div class="flex items-center space-x-2 text-fg-subtle">

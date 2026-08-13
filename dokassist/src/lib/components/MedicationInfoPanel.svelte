@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
   import type { SubstanceDetail } from '$lib/api';
+  import { t } from '$lib/translations';
 
   interface Props {
     substanceId: string | null;
@@ -44,7 +45,7 @@
   <div
     class="mt-2 px-3 py-2 bg-surface-selected rounded-card text-caption text-fg-muted animate-pulse"
   >
-    Compendium-Daten werden geladen…
+    {$t('medications.loadingReference')}
   </div>
 {:else if detail}
   <div
@@ -74,27 +75,29 @@
       <div class="px-3 pb-3 space-y-2 border-t border-line">
         {#if detail.indication}
           <div class="pt-2">
-            <p class="font-semibold text-fg-muted mb-0.5">Indikation</p>
+            <p class="font-semibold text-fg-muted mb-0.5">{$t('medications.indication')}</p>
             <p class="text-fg-muted leading-relaxed">{detail.indication}</p>
           </div>
         {/if}
 
         {#if detail.side_effects}
           <div>
-            <p class="font-semibold text-warning-fg mb-0.5">Nebenwirkungen</p>
+            <p class="font-semibold text-warning-fg mb-0.5">{$t('medications.sideEffects')}</p>
             <p class="text-fg-muted leading-relaxed">{detail.side_effects}</p>
           </div>
         {/if}
 
         {#if detail.contraindications}
           <div>
-            <p class="font-semibold text-danger-fg mb-0.5">Kontraindikationen</p>
+            <p class="font-semibold text-danger-fg mb-0.5">{$t('medications.contraindications')}</p>
             <p class="text-fg-muted leading-relaxed">{detail.contraindications}</p>
           </div>
         {/if}
 
         {#if detail.source_version}
-          <p class="text-fg-muted pt-1">Quelle: Swissmedic AIPS {detail.source_version}</p>
+          <p class="text-fg-muted pt-1">
+            {$t('common.source')}: Swissmedic AIPS {detail.source_version}
+          </p>
         {/if}
       </div>
     {/if}

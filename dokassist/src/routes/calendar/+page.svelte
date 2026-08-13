@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import {
@@ -323,7 +324,7 @@
   {#if viewMode === 'week'}
     <!-- Week view grid -->
     <div
-      class="grid grid-cols-8 gap-px bg-surface-selected border-x border-b border-line rounded-b-lg overflow-hidden"
+      class="grid grid-cols-8 gap-px bg-surface-selected border-x border-b border-line rounded-b-card overflow-hidden"
     >
       {#each hours as hour}
         <!-- Hour label -->
@@ -407,7 +408,7 @@
                           : 'Scheduled'} —
                     </span>
                     <div class="font-medium truncate">{session.patient_name}</div>
-                    <div class="text-[10px]">Keine Zeit</div>
+                    <div class="text-[10px]">{$t('sessions.noTime')}</div>
                   </button>
                   {#if status !== 'completed'}
                     <button
@@ -429,15 +430,15 @@
     <div class="mt-4 flex gap-4 text-caption text-fg-muted">
       <div class="flex items-center gap-2">
         <span class="w-3 h-3 rounded-card border bg-accent-subtle border-accent-line"></span>
-        <span>Geplant</span>
+        <span>{$t('calendar.scheduled')}</span>
       </div>
       <div class="flex items-center gap-2">
         <span class="w-3 h-3 rounded-card border bg-success-subtle border-success-line"></span>
-        <span>Abgeschlossen</span>
+        <span>{$t('calendar.completed')}</span>
       </div>
       <div class="flex items-center gap-2">
         <span class="w-3 h-3 rounded-card border bg-warning-subtle border-warning-line"></span>
-        <span>Notizen ausstehend</span>
+        <span>{$t('calendar.notePending')}</span>
       </div>
     </div>
   {:else}
@@ -524,15 +525,15 @@
       <div class="mt-4 flex gap-4 text-caption text-fg-muted">
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-card border bg-accent-subtle border-accent-line"></span>
-          <span>Geplant</span>
+          <span>{$t('calendar.scheduled')}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-card border bg-success-subtle border-success-line"></span>
-          <span>Abgeschlossen</span>
+          <span>{$t('calendar.completed')}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-card border bg-warning-subtle border-warning-line"></span>
-          <span>Notizen ausstehend</span>
+          <span>{$t('calendar.notePending')}</span>
         </div>
       </div>
     </div>
@@ -548,7 +549,7 @@
     aria-label="New session"
   >
     <div class="bg-surface-raised rounded-card shadow-modal p-6 w-96 max-w-full mx-4">
-      <h2 class="text-heading font-semibold text-fg mb-1">Neue Sitzung</h2>
+      <h2 class="text-heading font-semibold text-fg mb-1">{$t('sessions.newSession')}</h2>
       <p class="text-body text-fg-muted mb-4">
         {modalDate.split('-').reverse().join('.')} um {modalTime}
       </p>
@@ -595,7 +596,7 @@
     aria-label="Complete session"
   >
     <div class="bg-surface-raised rounded-card shadow-modal p-6 w-96 max-w-full mx-4">
-      <h2 class="text-heading font-semibold text-fg mb-1">Sitzung abschliessen</h2>
+      <h2 class="text-heading font-semibold text-fg mb-1">{$t('sessions.complete')}</h2>
       <p class="text-body text-fg-muted mb-4">
         {completeSession.patient_name} · {completeSession.session.session_date
           .slice(0, 10)
@@ -605,13 +606,13 @@
       </p>
 
       <label for="complete-notes" class="block text-body font-medium text-fg-muted mb-2">
-        Notizen (optional)
+        {$t('sessions.notesOptional')}
       </label>
       <textarea
         id="complete-notes"
         bind:value={completeNotes}
         rows="4"
-        placeholder="Gesprächsnotizen..."
+        placeholder={$t('sessions.notesPlaceholder')}
         class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none mb-6"
       ></textarea>
 

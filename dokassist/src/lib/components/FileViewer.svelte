@@ -88,7 +88,7 @@
       onkeydown={(e) => e.stopPropagation()}
     >
       <div
-        class="absolute top-0 left-0 right-0 bg-surface-sunken border-b border-line-subtle p-4 flex items-center justify-between rounded-t-lg"
+        class="absolute top-0 left-0 right-0 bg-surface-sunken border-b border-line-subtle p-4 flex items-center justify-between rounded-t-card"
       >
         <div class="flex-1 min-w-0">
           <h2 class="text-fg font-medium truncate" title={file.filename}>
@@ -115,7 +115,7 @@
       </div>
 
       <div
-        class="absolute top-16 bottom-0 left-0 right-0 bg-surface-sunken rounded-b-lg overflow-hidden"
+        class="absolute top-16 bottom-0 left-0 right-0 bg-surface-sunken rounded-b-card overflow-hidden"
       >
         {#if isLoading}
           <div class="flex items-center justify-center h-full">

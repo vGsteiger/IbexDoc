@@ -33,9 +33,9 @@
   let editingId = $state<string | null>(null);
 
   const statusOptions = [
-    { value: 'active', label: 'Aktiv' },
-    { value: 'remission', label: 'Remission' },
-    { value: 'resolved', label: 'Aufgelöst' },
+    { value: 'active', label: get(t)('diagnoses.active') },
+    { value: 'remission', label: get(t)('diagnoses.remission') },
+    { value: 'resolved', label: get(t)('diagnoses.resolved') },
   ];
 
   onMount(async () => {
@@ -49,7 +49,7 @@
       diagnoses = await listDiagnosesForPatient(patientId);
     } catch (err) {
       error =
-        'Fehler beim Laden der Diagnosen: ' + (err instanceof Error ? err.message : String(err));
+        get(t)('common.loadFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to load diagnoses:', err);
     } finally {
       loading = false;
@@ -81,7 +81,8 @@
       await deleteDiagnosis(diagnosisId);
       await loadDiagnoses();
     } catch (err) {
-      error = 'Fehler beim Löschen: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.deleteFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to delete diagnosis:', err);
     }
   }
@@ -127,7 +128,8 @@
       resetForm();
       await loadDiagnoses();
     } catch (err) {
-      error = 'Fehler beim Speichern: ' + (err instanceof Error ? err.message : String(err));
+      error =
+        get(t)('common.saveFailed') + ': ' + (err instanceof Error ? err.message : String(err));
       console.error('Failed to save diagnosis:', err);
     } finally {
       saving = false;
@@ -159,7 +161,7 @@
         }
       }}
     >
-      {showAddForm ? 'Abbrechen' : '+ Neue Diagnose'}
+      {showAddForm ? $t('common.cancel') : `+ ${$t('diagnoses.newDiagnosis')}`}
     </button>
   </div>
 
@@ -172,7 +174,7 @@
   {#if showAddForm}
     <div class="bg-surface-raised border border-line rounded-card p-6 mb-6">
       <h2 class="text-heading font-semibold text-fg mb-4">
-        {editingId ? 'Diagnose bearbeiten' : 'Neue Diagnose hinzufügen'}
+        {editingId ? $t('diagnoses.editDiagnosis') : $t('diagnoses.addDiagnosis')}
       </h2>
       <form onsubmit={handleSubmit} class="space-y-4">
         <div>
@@ -220,7 +222,7 @@
         {#if status === 'resolved'}
           <div>
             <label for="resolved-date" class="block text-body font-medium text-fg-muted mb-1">
-              Auflösungsdatum
+              {$t('diagnoses.resolvedOn')}
             </label>
             <input
               id="resolved-date"
@@ -233,13 +235,13 @@
 
         <div>
           <label for="notes" class="block text-body font-medium text-fg-muted mb-1">
-            Notizen
+            {$t('common.notes')}
           </label>
           <textarea
             id="notes"
             bind:value={notes}
             rows="3"
-            placeholder="Zusätzliche Informationen..."
+            placeholder={$t('diagnoses.notesPlaceholder')}
             class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
           ></textarea>
         </div>
@@ -251,14 +253,14 @@
             class="h-8 px-3 bg-surface-hover text-fg-muted rounded-control hover:bg-surface-selected transition-colors"
             disabled={saving}
           >
-            Abbrechen
+            {$t('common.cancel')}
           </button>
           <button
             type="submit"
             class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={saving}
           >
-            {saving ? 'Speichert...' : editingId ? 'Aktualisieren' : 'Hinzufügen'}
+            {saving ? $t('common.saving') : editingId ? $t('common.update') : $t('common.add')}
           </button>
         </div>
       </form>
@@ -267,17 +269,17 @@
 
   {#if loading}
     <div class="flex justify-center items-center py-12">
-      <div class="text-fg-muted">Lädt...</div>
+      <div class="text-fg-muted">{$t('common.loading')}</div>
     </div>
   {:else if diagnoses.length === 0}
     <div class="text-center py-12">
-      <p class="text-fg-muted mb-4">Noch keine Diagnosen erfasst</p>
+      <p class="text-fg-muted mb-4">{$t('diagnoses.noDiagnoses')}</p>
       {#if !showAddForm}
         <button
           class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
           onclick={() => (showAddForm = true)}
         >
-          Erste Diagnose erfassen
+          {$t('diagnoses.addFirst')}
         </button>
       {/if}
     </div>

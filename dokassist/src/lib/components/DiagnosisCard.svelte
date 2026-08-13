@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import type { Diagnosis } from '$lib/api';
 
   interface Props {
@@ -38,11 +39,11 @@
   function getStatusLabel(status: string): string {
     switch (status) {
       case 'active':
-        return 'Aktiv';
+        return $t('diagnoses.active');
       case 'remission':
-        return 'Remission';
+        return $t('diagnoses.remission');
       case 'resolved':
-        return 'Aufgelöst';
+        return $t('diagnoses.resolved');
       default:
         return status;
     }
@@ -66,7 +67,7 @@
       <p class="text-body text-fg-muted mt-1">
         Diagnostiziert: {formatDate(diagnosis.diagnosed_date)}
         {#if diagnosis.resolved_date}
-          • Aufgelöst: {formatDate(diagnosis.resolved_date)}
+          • {$t('diagnoses.resolved')}: {formatDate(diagnosis.resolved_date)}
         {/if}
       </p>
     </div>
@@ -93,7 +94,7 @@
           type="button"
           class="p-2 text-fg-muted hover:text-danger-fg hover:bg-surface-hover rounded-control transition-colors"
           onclick={onDelete}
-          title="Löschen"
+          title={$t('common.delete')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

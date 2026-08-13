@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { untrack } from 'svelte';
   import type { CreateOutcomeScore, UpdateOutcomeScore, OutcomeScore } from '$lib/api';
 
@@ -98,7 +99,7 @@
 
   <div>
     <label for="administered-at" class="block text-body font-medium text-fg mb-1">
-      Durchführungsdatum *
+      {$t('outcomeScores.administeredOnLabel')} *
     </label>
     <input
       id="administered-at"
@@ -110,12 +111,14 @@
   </div>
 
   <div>
-    <label for="notes" class="block text-body font-medium text-fg mb-1"> Notizen </label>
+    <label for="notes" class="block text-body font-medium text-fg mb-1">
+      {$t('common.notes')}
+    </label>
     <textarea
       id="notes"
       bind:value={notes}
       rows="3"
-      placeholder="Zusätzliche Beobachtungen..."
+      placeholder={$t('outcomeScores.notesPlaceholder')}
       class="w-full px-3 py-2 bg-surface-raised border border-line rounded-control text-fg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
     ></textarea>
   </div>
@@ -126,13 +129,13 @@
       onclick={onCancel}
       class="h-8 px-3 bg-surface-selected text-fg rounded-control hover:bg-surface-selected transition-colors"
     >
-      Abbrechen
+      {$t('common.cancel')}
     </button>
     <button
       type="submit"
       class="h-8 px-3 bg-accent text-on-accent rounded-control hover:bg-accent-hover transition-colors"
     >
-      {outcomeScore ? 'Aktualisieren' : 'Hinzufügen'}
+      {outcomeScore ? $t('common.update') : $t('common.add')}
     </button>
   </div>
 </form>

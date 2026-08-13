@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import type { AMDPCategory } from '$lib/amdp';
   import AMDPCategoryComponent from './AMDPCategory.svelte';
 
@@ -43,7 +44,7 @@
       disabled={activeCategoryIndex === 0}
       onclick={() => (activeCategoryIndex = Math.max(0, activeCategoryIndex - 1))}
     >
-      ← Zurück
+      ← {$t('common.back')}
     </button>
     <button
       type="button"
@@ -52,7 +53,7 @@
       onclick={() =>
         (activeCategoryIndex = Math.min(categories.length - 1, activeCategoryIndex + 1))}
     >
-      Weiter →
+      {$t('common.next')} →
     </button>
   </div>
 </div>

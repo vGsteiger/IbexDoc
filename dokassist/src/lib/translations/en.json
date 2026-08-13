@@ -260,6 +260,13 @@
       "lastNameRequired": "Last name is required",
       "dateOfBirthRequired": "Date of birth is required",
       "dateOfBirthFuture": "Date of birth cannot be in the future"
+    },
+    "historySuggestions": {
+      "q1": "When was the medication last changed?",
+      "q2": "What was the PHQ-9 trend last quarter?",
+      "q3": "How has mood developed over the last sessions?",
+      "q4": "Which treatment goals have been met?",
+      "q5": "Were there side effects with the current medication?"
     }
   },
   "email": {
@@ -331,7 +338,14 @@
       "crisis": "Crisis Intervention",
       "phone": "Phone Call",
       "group": "Group Session"
-    }
+    },
+    "notesPlaceholderDetailed": "Session notes, observations, interventions...",
+    "addFirst": "Add the first session",
+    "newSessionTitle": "New session",
+    "saveSession": "Save session",
+    "complete": "Complete session",
+    "noTime": "No time",
+    "notesOptional": "Notes (optional)"
   },
   "diagnoses": {
     "title": "Diagnoses",
@@ -345,7 +359,13 @@
     "resolved": "Resolved",
     "search": "Search ICD codes...",
     "confirmDelete": "Are you sure you want to delete this diagnosis?",
-    "selectRequired": "Please select an ICD-10 diagnosis."
+    "selectRequired": "Please select an ICD-10 diagnosis.",
+    "resolvedOn": "Resolution date",
+    "notesPlaceholder": "Additional information...",
+    "remission": "Remission",
+    "addDiagnosis": "Add diagnosis",
+    "editDiagnosis": "Edit diagnosis",
+    "addFirst": "Add the first diagnosis"
   },
   "medications": {
     "title": "Medications",
@@ -356,7 +376,36 @@
     "frequency": "Frequency",
     "prescribedOn": "Prescribed On",
     "notes": "Notes",
-    "confirmDelete": "Are you sure you want to delete this medication?"
+    "confirmDelete": "Are you sure you want to delete this medication?",
+    "substance": "Substance",
+    "substancePlaceholder": "e.g. sertraline",
+    "dosagePlaceholder": "e.g. 50 mg",
+    "frequencyPlaceholder": "e.g. once daily",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "notesPlaceholder": "Additional information...",
+    "replacesExisting": "This medication replaces an existing one",
+    "medicationToReplace": "Medication to replace",
+    "showComparison": "Show medication comparison and decision support",
+    "comparison": "Medication comparison",
+    "currentMedication": "Current medication",
+    "replacementMedication": "New medication",
+    "tradeNames": "Trade names",
+    "indication": "Indication",
+    "sideEffects": "Side effects",
+    "contraindications": "Contraindications",
+    "sameAtcNote": "Both medications share the same ATC code and belong to the same pharmacological class.",
+    "decisionSupport": "Decision support",
+    "generateDecisionSupport": "Generate decision support",
+    "generatingDecisionSupport": "Generating decision support...",
+    "decisionSupportHint": "Generate an analysis of this medication change. The compendium data for both medications is evaluated and summarised into a recommendation.",
+    "loadingReference": "Loading compendium data…",
+    "addMedication": "Add medication",
+    "editMedication": "Edit medication",
+    "addFirst": "Add the first medication",
+    "active": "Active",
+    "ended": "Ended",
+    "replacementNotEnded": "The new medication was recorded, but the replaced medication could not be ended: "
   },
   "outcomeScores": {
     "title": "Outcome Scores",
@@ -378,7 +427,9 @@
       "moderate": "Moderate",
       "moderatelySevere": "Moderately Severe",
       "severe": "Severe"
-    }
+    },
+    "administeredOnLabel": "Date administered",
+    "notesPlaceholder": "Additional observations..."
   },
   "reports": {
     "title": "Reports",
@@ -409,7 +460,7 @@
     "goToSettings": "Go to Settings",
     "howToCreate": "How would you like to create the report?",
     "generateWithLlm": "Generate with LLM",
-    "generateWithLlmDesc": "Let the AI model generate the report based on patient context and session notes.",
+    "generateWithLlmDesc": "Let the language model generate the report based on patient context and session notes.",
     "writeManually": "Write Manually",
     "writeManuallyDesc": "Create the report manually with the enhanced editor and optional LLM suggestions.",
     "patientContext": "Patient Context",
@@ -453,7 +504,10 @@
       "befundbericht": "Comprehensive diagnostic report with findings and assessment",
       "verlaufsbericht": "Progress report documenting treatment course over time",
       "ueberweisungsschreiben": "Referral letter to transfer care to another provider"
-    }
+    },
+    "noPreviewContent": "Nothing to preview",
+    "contentPlaceholder": "Report content appears here...",
+    "compressingContext": "Compressing context..."
   },
   "files": {
     "title": "Files",
@@ -525,14 +579,24 @@
     "error": "Error",
     "noModelDesc": "No model loaded. Please load a model in Settings.",
     "openSettings": "Open Settings",
-    "typeMessageHint": "Type a message (Enter to send)…"
+    "typeMessageHint": "Type a message (Enter to send)…",
+    "thinkingLabel": "Reasoning",
+    "toolCall": "Tool",
+    "toolResult": "Result",
+    "showToolCall": "Show tool call details",
+    "hideToolCall": "Hide tool call details",
+    "showToolResult": "Show result",
+    "hideToolResult": "Hide result"
   },
   "calendar": {
     "title": "Calendar",
     "today": "Today",
     "week": "Week",
     "month": "Month",
-    "noEvents": "No events"
+    "noEvents": "No events",
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "notePending": "Notes pending"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -668,6 +732,15 @@
     "notFound": "Not found",
     "patient": "Patient",
     "createdAt": "Created",
-    "updatedAt": "Last updated"
+    "updatedAt": "Last updated",
+    "update": "Update",
+    "add": "Add",
+    "pleaseSelect": "Please select",
+    "autoGenerated": "Automatically generated",
+    "source": "Source",
+    "notes": "Notes",
+    "loadFailed": "Failed to load",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete"
   }
 }

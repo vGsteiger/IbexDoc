@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ChatMessageRow } from '$lib/api';
-  import { Zap, Check } from 'lucide-svelte';
+  import { t } from '$lib/translations';
+  import { Wrench, Check } from 'lucide-svelte';
 
   // Internal fields to hide from tool result display
   const HIDDEN_FIELDS = new Set([
@@ -22,7 +23,7 @@
 
   function formatValue(val: unknown): string {
     if (val === null || val === undefined) return '—';
-    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (typeof val === 'boolean') return val ? $t('common.yes') : $t('common.no');
     if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
       return val.slice(0, 10).split('-').reverse().join('.');
     }
@@ -78,7 +79,7 @@
 {#if message.role === 'user'}
   <div class="flex justify-end mb-3">
     <div
-      class="max-w-[75%] bg-accent text-on-accent rounded-card rounded-br-sm px-4 py-2 text-body whitespace-pre-wrap"
+      class="max-w-[75%] bg-accent text-on-accent rounded-card px-4 py-2 text-body whitespace-pre-wrap"
     >
       {message.content}
     </div>
@@ -88,13 +89,15 @@
     <div class="max-w-[80%] space-y-2">
       {#if thinkContent()}
         <div class="bg-surface-hover border border-line rounded-card px-3 py-2">
-          <p class="text-caption text-fg-subtle uppercase tracking-wide mb-1">Thinking</p>
+          <p class="text-caption text-fg-subtle uppercase tracking-wide mb-1">
+            {$t('chat.thinkingLabel')}
+          </p>
           <pre
             class="whitespace-pre-wrap font-sans text-caption text-fg-muted italic">{thinkContent()}</pre>
         </div>
       {/if}
       <div
-        class="bg-surface-hover border border-line rounded-card rounded-bl-sm px-4 py-2 text-body text-fg whitespace-pre-wrap"
+        class="bg-surface-hover border border-line rounded-card px-4 py-2 text-body text-fg whitespace-pre-wrap"
       >
         {#if mainContent()}
           {mainContent()}
@@ -109,11 +112,11 @@
     <div class="max-w-[80%]">
       <button
         onclick={() => (toolCallCollapsed = !toolCallCollapsed)}
-        aria-label={toolCallCollapsed ? 'Show tool call details' : 'Hide tool call details'}
+        aria-label={toolCallCollapsed ? $t('chat.showToolCall') : $t('chat.hideToolCall')}
         class="flex items-center gap-2 text-caption text-fg-muted hover:text-fg-muted transition-colors"
       >
-        <Zap size={14} class="text-warning-fg" />
-        <span>Tool: {message.tool_name ?? 'unknown'}</span>
+        <Wrench size={14} class="text-fg-subtle" />
+        <span>{$t('chat.toolCall')}: {message.tool_name ?? 'unknown'}</span>
         <span>{toolCallCollapsed ? '▶' : '▼'}</span>
       </button>
       {#if !toolCallCollapsed}
@@ -131,11 +134,11 @@
     <div class="max-w-[80%]">
       <button
         onclick={() => (toolResultCollapsed = !toolResultCollapsed)}
-        aria-label={toolResultCollapsed ? 'Ergebnis anzeigen' : 'Ergebnis ausblenden'}
+        aria-label={toolResultCollapsed ? $t('chat.showToolResult') : $t('chat.hideToolResult')}
         class="flex items-center gap-2 text-caption text-fg-muted hover:text-fg-muted transition-colors"
       >
         <Check size={14} class="text-success-fg" />
-        <span>Ergebnis</span>
+        <span>{$t('chat.toolResult')}</span>
         <span>{toolResultCollapsed ? '▶' : '▼'}</span>
       </button>
       {#if !toolResultCollapsed}

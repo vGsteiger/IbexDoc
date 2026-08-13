@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/translations';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import {
@@ -82,7 +83,7 @@
     {:else if !isLoading}
       <div class="flex-1 flex items-center justify-center text-fg-subtle">
         <div class="text-center">
-          <p class="text-heading mb-2">Kein Chat ausgewählt</p>
+          <p class="text-heading mb-2">{$t('chat.noChat')}</p>
           <button
             onclick={handleNewSession}
             class="text-accent-fg hover:text-accent-fg underline text-body"

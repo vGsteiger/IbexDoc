@@ -260,6 +260,13 @@
       "lastNameRequired": "Nachname ist erforderlich",
       "dateOfBirthRequired": "Geburtsdatum ist erforderlich",
       "dateOfBirthFuture": "Geburtsdatum darf nicht in der Zukunft liegen"
+    },
+    "historySuggestions": {
+      "q1": "Wann wurde die Medikation zuletzt geändert?",
+      "q2": "Was war der PHQ-9-Trend im letzten Quartal?",
+      "q3": "Wie hat sich die Stimmung in den letzten Sitzungen entwickelt?",
+      "q4": "Welche Behandlungsziele wurden erreicht?",
+      "q5": "Gab es Nebenwirkungen bei der aktuellen Medikation?"
     }
   },
   "email": {
@@ -331,7 +338,14 @@
       "crisis": "Krisenintervention",
       "phone": "Telefonanruf",
       "group": "Gruppensitzung"
-    }
+    },
+    "notesPlaceholderDetailed": "Gesprächsnotizen, Beobachtungen, Interventionen...",
+    "addFirst": "Erste Sitzung erfassen",
+    "newSessionTitle": "Neue Sitzung erfassen",
+    "saveSession": "Sitzung speichern",
+    "complete": "Sitzung abschliessen",
+    "noTime": "Keine Zeit",
+    "notesOptional": "Notizen (optional)"
   },
   "diagnoses": {
     "title": "Diagnosen",
@@ -345,7 +359,13 @@
     "resolved": "Aufgelöst",
     "search": "ICD-Codes suchen...",
     "confirmDelete": "Möchten Sie diese Diagnose wirklich löschen?",
-    "selectRequired": "Bitte wählen Sie eine ICD-10 Diagnose aus."
+    "selectRequired": "Bitte wählen Sie eine ICD-10 Diagnose aus.",
+    "resolvedOn": "Auflösungsdatum",
+    "notesPlaceholder": "Zusätzliche Informationen...",
+    "remission": "Remission",
+    "addDiagnosis": "Neue Diagnose hinzufügen",
+    "editDiagnosis": "Diagnose bearbeiten",
+    "addFirst": "Erste Diagnose erfassen"
   },
   "medications": {
     "title": "Medikation",
@@ -356,7 +376,36 @@
     "frequency": "Häufigkeit",
     "prescribedOn": "Verschrieben am",
     "notes": "Notizen",
-    "confirmDelete": "Möchten Sie dieses Medikament wirklich löschen?"
+    "confirmDelete": "Möchten Sie dieses Medikament wirklich löschen?",
+    "substance": "Wirkstoff",
+    "substancePlaceholder": "z.B. Sertralin",
+    "dosagePlaceholder": "z.B. 50 mg",
+    "frequencyPlaceholder": "z.B. 1x täglich",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "notesPlaceholder": "Zusätzliche Informationen...",
+    "replacesExisting": "Dieses Medikament ersetzt ein bestehendes Medikament",
+    "medicationToReplace": "Zu ersetzendes Medikament",
+    "showComparison": "Medikamentenvergleich & Entscheidungshilfe anzeigen",
+    "comparison": "Medikamentenvergleich",
+    "currentMedication": "Aktuelles Medikament",
+    "replacementMedication": "Neues Medikament",
+    "tradeNames": "Handelsnamen",
+    "indication": "Indikation",
+    "sideEffects": "Nebenwirkungen",
+    "contraindications": "Kontraindikationen",
+    "sameAtcNote": "Beide Medikamente haben denselben ATC-Code und gehören zur gleichen pharmakologischen Klasse.",
+    "decisionSupport": "Entscheidungshilfe",
+    "generateDecisionSupport": "Entscheidungshilfe generieren",
+    "generatingDecisionSupport": "Entscheidungshilfe wird erstellt...",
+    "decisionSupportHint": "Erstellen Sie eine Analyse des Medikamentenwechsels. Die Kompendiumdaten beider Medikamente werden ausgewertet und zu einer Empfehlung zusammengefasst.",
+    "loadingReference": "Kompendiumdaten werden geladen…",
+    "addMedication": "Neues Medikament hinzufügen",
+    "editMedication": "Medikament bearbeiten",
+    "addFirst": "Erstes Medikament erfassen",
+    "active": "Aktiv",
+    "ended": "Beendet",
+    "replacementNotEnded": "Neues Medikament wurde erfasst, aber das ersetzte Medikament konnte nicht beendet werden: "
   },
   "outcomeScores": {
     "title": "Outcome-Scores",
@@ -378,7 +427,9 @@
       "moderate": "Mittel",
       "moderatelySevere": "Mittelschwer",
       "severe": "Schwer"
-    }
+    },
+    "administeredOnLabel": "Durchführungsdatum",
+    "notesPlaceholder": "Zusätzliche Beobachtungen..."
   },
   "reports": {
     "title": "Berichte",
@@ -409,7 +460,7 @@
     "goToSettings": "Zu den Einstellungen",
     "howToCreate": "Wie möchten Sie den Bericht erstellen?",
     "generateWithLlm": "Mit LLM generieren",
-    "generateWithLlmDesc": "Lassen Sie den Bericht vom KI-Modell basierend auf Patientenkontext und Sitzungsnotizen generieren.",
+    "generateWithLlmDesc": "Lassen Sie den Bericht vom Sprachmodell basierend auf Patientenkontext und Sitzungsnotizen generieren.",
     "writeManually": "Direkt schreiben",
     "writeManuallyDesc": "Erstellen Sie den Bericht mit dem erweiterten Editor und optionalen LLM-Vorschlägen.",
     "patientContext": "Patientenkontext",
@@ -453,7 +504,10 @@
       "befundbericht": "Umfassender Diagnosebericht mit Befunden und Beurteilung",
       "verlaufsbericht": "Verlaufsbericht zur Dokumentation des Behandlungsverlaufs",
       "ueberweisungsschreiben": "Überweisungsschreiben zur Weiterleitung an einen anderen Behandler"
-    }
+    },
+    "noPreviewContent": "Kein Inhalt zur Vorschau",
+    "contentPlaceholder": "Berichtinhalt wird hier angezeigt...",
+    "compressingContext": "Kontext wird komprimiert..."
   },
   "files": {
     "title": "Dateien",
@@ -525,14 +579,24 @@
     "error": "Fehler",
     "noModelDesc": "Kein Modell geladen. Bitte laden Sie ein Modell in den Einstellungen.",
     "openSettings": "Einstellungen öffnen",
-    "typeMessageHint": "Nachricht eingeben (Enter zum Senden)…"
+    "typeMessageHint": "Nachricht eingeben (Enter zum Senden)…",
+    "thinkingLabel": "Überlegung",
+    "toolCall": "Werkzeug",
+    "toolResult": "Ergebnis",
+    "showToolCall": "Werkzeugaufruf anzeigen",
+    "hideToolCall": "Werkzeugaufruf ausblenden",
+    "showToolResult": "Ergebnis anzeigen",
+    "hideToolResult": "Ergebnis ausblenden"
   },
   "calendar": {
     "title": "Kalender",
     "today": "Heute",
     "week": "Woche",
     "month": "Monat",
-    "noEvents": "Keine Termine"
+    "noEvents": "Keine Termine",
+    "scheduled": "Geplant",
+    "completed": "Abgeschlossen",
+    "notePending": "Notizen ausstehend"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -668,6 +732,15 @@
     "notFound": "Nicht gefunden",
     "patient": "Patient",
     "createdAt": "Erstellt",
-    "updatedAt": "Zuletzt aktualisiert"
+    "updatedAt": "Zuletzt aktualisiert",
+    "update": "Aktualisieren",
+    "add": "Hinzufügen",
+    "pleaseSelect": "Bitte wählen",
+    "autoGenerated": "Automatisch erstellt",
+    "source": "Quelle",
+    "notes": "Notizen",
+    "loadFailed": "Fehler beim Laden",
+    "saveFailed": "Fehler beim Speichern",
+    "deleteFailed": "Fehler beim Löschen"
   }
 }
