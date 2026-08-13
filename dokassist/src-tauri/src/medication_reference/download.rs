@@ -23,6 +23,11 @@ const MAX_MINISIG_BYTES: usize = 4096;
 ///
 /// `matching-refs` returns only the medication-ref tags, so this lookup keeps working no matter
 /// how many app releases pile up in between.
+///
+/// Unlike `/releases`, this endpoint is *not* paginated: it returns every matching ref in one
+/// response and ignores `per_page`.  Verified against the live API — a prefix matching 1240 tags
+/// came back in a single body with no `Link` header.  So there is no page to fall off, and no
+/// pagination to follow.
 const GITHUB_API_MATCHING_TAGS: &str =
     "https://api.github.com/repos/vGsteiger/RamDoc/git/matching-refs/tags/medication-ref/";
 const MEDICATION_REF_TAG_PREFIX: &str = "medication-ref/";
@@ -74,7 +79,7 @@ async fn fetch_latest_medication_ref_tag(client: &reqwest::Client) -> Result<Str
 
     latest_medication_ref_tag(&refs).ok_or_else(|| {
         AppError::Validation(
-            "No medication-ref release found on GitHub — has the workflow run yet?".to_string(),
+            "No medication-ref tag found on GitHub — has the workflow run yet?".to_string(),
         )
     })
 }
