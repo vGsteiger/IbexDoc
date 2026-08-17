@@ -22,6 +22,7 @@
     initializeEmbedEngine,
     listModels,
     downloadAndRegisterModel,
+    importPromotedModel,
     deleteModel,
     setDefaultModel,
     getDefaultModel,
@@ -92,6 +93,7 @@
   let selectedTaskModel = $state<Record<string, string>>({});
   let modelManagementError = $state('');
   let loadingModels = $state(false);
+  let importingPromotedModel = $state(false);
   let inferenceProfile = $state<InferenceProfile>('conservative');
 
   // Embedding model state
@@ -350,6 +352,31 @@
       doneUnsubscribe?.();
       doneUnsubscribe = null;
       activeDownloadFilename = null;
+    }
+  }
+
+  async function handleImportPromotedModel() {
+    modelManagementError = '';
+    try {
+      const selected = await open({
+        title: get(t)('settings.selectPromotionDialogTitle'),
+        filters: [
+          {
+            name: 'RamDoc quantization promotion',
+            extensions: ['json'],
+          },
+        ],
+        multiple: false,
+      });
+      if (!selected) return;
+
+      importingPromotedModel = true;
+      await importPromotedModel(selected as string);
+      await loadInstalledModels();
+    } catch (e) {
+      modelManagementError = $errorText(e);
+    } finally {
+      importingPromotedModel = false;
     }
   }
 
@@ -1008,9 +1035,25 @@
 
     <!-- Installed Models List -->
     <div class="mb-6">
-      <h3 class="text-md font-semibold text-fg mb-3">
-        {$t('settings.installedModels')}
-      </h3>
+      <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 class="text-md font-semibold text-fg">
+            {$t('settings.installedModels')}
+          </h3>
+          <p class="text-caption text-fg-muted mt-1 max-w-2xl">
+            {$t('settings.promotionImportHint')}
+          </p>
+        </div>
+        <button
+          onclick={handleImportPromotedModel}
+          disabled={importingPromotedModel}
+          class="h-8 px-3 text-caption rounded-control bg-surface-selected hover:bg-surface-selected disabled:opacity-50 disabled:cursor-not-allowed text-fg transition-colors"
+        >
+          {importingPromotedModel
+            ? $t('settings.importingPromotedModel')
+            : $t('settings.importPromotedModel')}
+        </button>
+      </div>
 
       {#if loadingModels}
         <p class="text-body text-fg-muted">{$t('settings.loadingModels')}</p>
@@ -1020,7 +1063,7 @@
         </p>
       {:else}
         <div class="space-y-3">
-          {#each installedModels as model}
+          {#each installedModels as model (model.id)}
             <div class="bg-surface-hover border border-line rounded-card p-4">
               <div class="flex items-start justify-between mb-2">
                 <div class="flex-1">
@@ -1040,6 +1083,13 @@
                         {$t('settings.loadedBadge')}
                       </span>
                     {/if}
+                    {#if model.quantization_promotion}
+                      <span
+                        class="px-2 py-0.5 text-caption rounded-card bg-success text-on-success"
+                      >
+                        {$t('settings.clinicalGateBadge')}
+                      </span>
+                    {/if}
                     {#if !model.exists_on_disk}
                       <span class="px-2 py-0.5 text-caption rounded-card bg-danger text-on-danger">
                         {$t('settings.modelMissingOnDisk')}
@@ -1056,6 +1106,27 @@
                         new Date(model.last_used).toLocaleDateString()
                       )}
                     </p>
+                  {/if}
+                  {#if model.quantization_promotion}
+                    {@const promotion = model.quantization_promotion}
+                    <div
+                      class="mt-2 rounded-card border border-success-line bg-success-subtle p-2.5"
+                    >
+                      <p class="text-caption text-fg">
+                        {$t('settings.clinicalGateSummary')
+                          .replace('{study}', promotion.study_id)
+                          .replace('{quantization}', promotion.quantization)
+                          .replace('{baselines}', promotion.baseline_artifacts.join(', '))}
+                      </p>
+                      <p class="text-caption text-fg-muted mt-1">
+                        {$t('settings.clinicalGateEvidence')
+                          .replace(
+                            '{regression}',
+                            (promotion.worst_category_regression * 100).toFixed(2)
+                          )
+                          .replace('{hash}', promotion.held_out_results_sha256.slice(0, 12))}
+                      </p>
+                    </div>
                   {/if}
                 </div>
               </div>
