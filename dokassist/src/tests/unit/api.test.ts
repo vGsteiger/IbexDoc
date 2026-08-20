@@ -109,6 +109,7 @@ import {
   listModels,
   getModelInfo,
   downloadAndRegisterModel,
+  importPromotedModel,
   deleteModel,
   setDefaultModel,
   getDefaultModel,
@@ -1505,6 +1506,7 @@ describe('listModels', () => {
         is_default: true,
         is_loaded: false,
         exists_on_disk: true,
+        quantization_promotion: null,
       },
     ];
     mockInvoke.mockResolvedValueOnce(models);
@@ -1527,6 +1529,7 @@ describe('getModelInfo', () => {
       is_default: true,
       is_loaded: false,
       exists_on_disk: true,
+      quantization_promotion: null,
     };
     mockInvoke.mockResolvedValueOnce(model);
     const result = await getModelInfo('model1');
@@ -1573,6 +1576,27 @@ describe('downloadAndRegisterModel', () => {
     await expect(downloadAndRegisterModel(model)).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
     });
+  });
+});
+
+describe('importPromotedModel', () => {
+  it('calls import_promoted_model with the selected promotion record', async () => {
+    const registered = {
+      id: 'clinical-mix',
+      name: 'RamDoc clinical mix',
+      filename: 'clinical-mix.gguf',
+      sha256: 'abc123def456',
+      size_bytes: 4200000000,
+      downloaded_at: '2026-08-17T12:00:00Z',
+      last_used: null,
+      is_default: false,
+    };
+    mockInvoke.mockResolvedValueOnce(registered);
+    const result = await importPromotedModel('/tmp/clinical-mix.promotion.json');
+    expect(mockInvoke).toHaveBeenCalledWith('import_promoted_model', {
+      promotionPath: '/tmp/clinical-mix.promotion.json',
+    });
+    expect(result).toEqual(registered);
   });
 });
 

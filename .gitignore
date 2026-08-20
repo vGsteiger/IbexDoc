@@ -9,6 +9,8 @@ dist/
 .svelte-kit/
 target/
 debug/
+__pycache__/
+*.py[cod]
 
 # Rust artifacts
 **/*.rs.bk

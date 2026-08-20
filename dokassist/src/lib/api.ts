@@ -225,6 +225,21 @@ export interface ModelInfo {
   is_default: boolean;
   is_loaded: boolean;
   exists_on_disk: boolean;
+  quantization_promotion: QuantizationPromotionSummary | null;
+}
+
+export interface QuantizationPromotionSummary {
+  study_id: string;
+  created_at: string;
+  quantization: string;
+  recipe_sha256: string;
+  study_manifest_sha256: string;
+  held_out_results_sha256: string;
+  llama_cpp_commit: string;
+  categories: string[];
+  baseline_artifacts: string[];
+  dominates: string[];
+  worst_category_regression: number;
 }
 
 export interface TaskModel {
@@ -244,6 +259,10 @@ export async function getModelInfo(modelId: string): Promise<ModelInfo> {
 
 export async function downloadAndRegisterModel(model: ModelChoice): Promise<Model> {
   return await invoke<Model>('download_and_register_model', { model });
+}
+
+export async function importPromotedModel(promotionPath: string): Promise<Model> {
+  return await invoke<Model>('import_promoted_model', { promotionPath });
 }
 
 export async function deleteModel(modelId: string): Promise<void> {
