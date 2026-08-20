@@ -218,7 +218,9 @@ pub fn validate_embedded_suite() -> Result<ValidationSummary, String> {
         return Err("long_prompt_fill_ratio must stay between 0.5 and 0.9".to_string());
     }
     if manifest.random_seed != 0 || manifest.temperature != 0.0 {
-        return Err("deterministic benchmark sampling must remain at seed 0 and temperature 0".into());
+        return Err(
+            "deterministic benchmark sampling must remain at seed 0 and temperature 0".into(),
+        );
     }
     if manifest.repetitions < 2 {
         return Err("at least two repetitions are required for cold/warm load comparison".into());
