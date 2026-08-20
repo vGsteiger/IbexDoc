@@ -16,18 +16,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-    - name: Setup Python
-      uses: actions/setup-python@v7
-      with:
-        python-version: '3.12'
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
 
-    - name: Run quantization workflow tests
-      run: python -m unittest tests/test_clinical_quantization.py -v
+      - name: Run quantization workflow tests
+        run: python -m unittest tests/test_clinical_quantization.py -v
 
-    - name: Validate the synthetic study fixture
-      run: python scripts/clinical_quantization.py validate-manifest research/clinical-quantization/study.synthetic.json
+      - name: Validate the synthetic study fixture
+        run: python scripts/clinical_quantization.py validate-manifest research/clinical-quantization/study.synthetic.json
 
   prettier:
     name: Frontend Formatting
