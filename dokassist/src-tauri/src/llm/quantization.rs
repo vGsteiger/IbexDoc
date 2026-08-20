@@ -329,23 +329,37 @@ pub fn promotion_path_for_model(model_path: &Path) -> PathBuf {
 }
 
 pub fn read_promotion(path: &Path) -> Result<QuantizationPromotion, AppError> {
-    let metadata = fs::metadata(path).map_err(|error| {
+    let mut file = File::open(path).map_err(|error| {
+        AppError::Validation(format!(
+            "cannot open quantization promotion '{}': {error}",
+            path.display()
+        ))
+    })?;
+    let metadata = file.metadata().map_err(|error| {
         AppError::Validation(format!(
             "cannot inspect quantization promotion '{}': {error}",
             path.display()
         ))
     })?;
-    if !metadata.is_file() || metadata.len() == 0 || metadata.len() > MAX_PROMOTION_BYTES {
+    if !metadata.is_file() {
+        return validation_error("quantization promotion must be a regular file");
+    }
+
+    let mut bytes = Vec::new();
+    file.take(MAX_PROMOTION_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            AppError::Validation(format!(
+                "cannot read quantization promotion '{}': {error}",
+                path.display()
+            ))
+        })?;
+    if bytes.is_empty() || bytes.len() as u64 > MAX_PROMOTION_BYTES {
         return validation_error(format!(
             "quantization promotion must be a non-empty file no larger than {MAX_PROMOTION_BYTES} bytes"
         ));
     }
-    let bytes = fs::read(path).map_err(|error| {
-        AppError::Validation(format!(
-            "cannot read quantization promotion '{}': {error}",
-            path.display()
-        ))
-    })?;
+
     let promotion: QuantizationPromotion = serde_json::from_slice(&bytes).map_err(|error| {
         AppError::Validation(format!("invalid quantization promotion JSON: {error}"))
     })?;
