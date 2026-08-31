@@ -100,10 +100,10 @@
     },
     "llama_cpp": {
       "rust_crate": "llama-cpp-2",
-      "rust_crate_version": "0.1.146",
+      "rust_crate_version": "0.1.154",
       "sys_crate": "llama-cpp-sys-2",
-      "sys_crate_version": "0.1.146",
-      "sys_crate_checksum": "9b291e4bc2d10c43cd8dec16d49b6104cb3cb125f596ec380a753a5db1d965dd"
+      "sys_crate_version": "0.1.154",
+      "sys_crate_checksum": "13a9ea2ce0cdc20bcb1870534022e340b391663f8fe09133951e2fe37fbc29cf"
     }
   },
   "regression_thresholds": {
